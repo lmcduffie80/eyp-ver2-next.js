@@ -288,7 +288,7 @@ export default function Photography() {
         <div className="container">
           <h2 className="section-title">Our Photography Work</h2>
           <div className="portfolio-grid">
-            {galleries.map((gallery) => (
+            {galleries.map((gallery, galleryIndex) => (
               <div
                 key={gallery.id}
                 className="portfolio-item"
@@ -299,7 +299,7 @@ export default function Photography() {
                   src={gallery.images[0]}
                   alt={gallery.title}
                   fill
-                  loading="lazy"
+                  loading={galleryIndex === 0 ? "eager" : "lazy"}
                   decoding="async"
                 />
                 <div className="portfolio-overlay">
@@ -328,7 +328,7 @@ export default function Photography() {
                     src={img}
                     alt={`${gallery.title} - Image ${idx + 1}`}
                     fill
-                    loading="lazy"
+                    loading={img.includes('IMG_4110') ? "eager" : "lazy"}
                   />
                 </div>
               ))}

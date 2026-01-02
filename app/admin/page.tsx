@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import Contact from '@/components/Contact';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('djs');
@@ -905,6 +906,14 @@ export default function AdminDashboard() {
               
             </div>
           </div>
+        </div>
+
+        {/* Contact Form Section */}
+        <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+          <Contact 
+            title="Contact Us"
+            description="Have questions or need support? Reach out to us."
+          />
         </div>
       </div>
 
