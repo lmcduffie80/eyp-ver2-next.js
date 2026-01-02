@@ -18,6 +18,10 @@
 # misc
 .DS_Store
 *.pem
+Icon
+Icon?
+**/Icon
+**/Icon?
 
 # debug
 npm-debug.log*
