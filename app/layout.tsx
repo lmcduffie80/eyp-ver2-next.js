@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import Providers from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,24 +23,12 @@ export default function RootLayout({
         <link rel="preconnect" href="https://widget.honeybook.com" crossOrigin="anonymous" />
       </head>
       <body>
+        {/* HoneyBook script loaded once */}
         <Script
-          id="honeybook-init"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              window._HB_ = window._HB_ || {};
-              window._HB_.pid = '64f2adb3998a8300079826c0';
-            `,
-          }}
-        />
-        <Script
-          id="honeybook-widget"
-          strategy="afterInteractive"
           src="https://widget.honeybook.com/assets_users_production/websiteplacements/placement-controller.min.js"
-          async
-          defer
+          strategy="afterInteractive"
         />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
