@@ -66,23 +66,18 @@ export default function Testimonials() {
   }, []);
 
   return (
-    <section id="testimonials" className="py-20 bg-white">
-      <div className="max-w-[1200px] mx-auto px-8">
-        <h2 className="text-center text-4xl mb-12 text-primary">What Our Clients Say</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <section id="testimonials" className="testimonials">
+      <div className="container">
+        <h2 className="section-title">What Our Clients Say</h2>
+        <div className="testimonials-grid" id="testimonials-container">
           {testimonials.map((testimonial, index) => (
-            <div 
-              key={index}
-              className="bg-bg-light p-8 rounded-lg shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
-            >
-              <div className="mb-6">
-                <p className="text-lg leading-relaxed text-text-light italic m-0">
-                  &quot;{testimonial.text}&quot;
-                </p>
+            <div key={index} className="testimonial-card">
+              <div className="testimonial-content">
+                <p className="testimonial-text">&quot;{testimonial.text}&quot;</p>
               </div>
-              <div className="border-t border-[#e0e0e0] pt-4">
-                <p className="text-sm font-semibold text-primary m-0">{testimonial.service}</p>
-                <p className="text-sm text-text-light mt-1">{testimonial.date}</p>
+              <div className="testimonial-service">
+                <p className="testimonial-service-label">{testimonial.service}</p>
+                <p className="testimonial-date">{testimonial.date}</p>
               </div>
             </div>
           ))}

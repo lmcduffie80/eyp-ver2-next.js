@@ -13,12 +13,12 @@ export default function ReviewForm() {
 
     const formData = new FormData(e.currentTarget);
     const data = {
-      clientName: formData.get('clientName') as string,
-      serviceType: formData.get('serviceType') as string,
-      djUsername: formData.get('djName') as string || null,
-      rating: formData.get('rating') ? parseInt(formData.get('rating') as string) : null,
-      comment: formData.get('comment') as string,
-      eventDate: formData.get('eventDate') as string || null,
+      clientName: formData.get('review-client-name') as string,
+      serviceType: formData.get('review-service-type') as string,
+      djUsername: formData.get('review-dj-name') as string || null,
+      rating: formData.get('review-rating') ? parseInt(formData.get('review-rating') as string) : null,
+      comment: formData.get('review-comment') as string,
+      eventDate: formData.get('review-event-date') as string || null,
     };
 
     if (!data.clientName || !data.serviceType || !data.comment) {
@@ -53,35 +53,35 @@ export default function ReviewForm() {
   };
 
   return (
-    <section id="submit-review" className="py-16 bg-bg-light">
-      <div className="max-w-[1200px] mx-auto px-8">
-        <h2 className="text-center text-4xl mb-8 text-primary">Share Your Experience</h2>
-        <p className="text-center text-text-light mb-8">
+    <section id="submit-review" style={{ background: 'var(--bg-light)', padding: '4rem 0' }}>
+      <div className="container">
+        <h2 className="section-title">Share Your Experience</h2>
+        <p style={{ textAlign: 'center', color: 'var(--text-light)', marginBottom: '2rem' }}>
           We&apos;d love to hear about your experience with Externally Yours Productions!
         </p>
-        <div className="max-w-[700px] mx-auto bg-white p-8 rounded-lg shadow-[0_5px_15px_rgba(0,0,0,0.1)]">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            <div className="flex flex-col">
-              <label htmlFor="clientName" className="mb-2 font-medium text-text-dark">
+        <div style={{ maxWidth: '700px', margin: '0 auto', background: 'white', padding: '2rem', borderRadius: '10px', boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)' }}>
+          <form id="review-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <label htmlFor="review-client-name" style={{ marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-dark)' }}>
                 Your Name *
               </label>
               <input
                 type="text"
-                id="clientName"
-                name="clientName"
+                id="review-client-name"
+                name="review-client-name"
                 required
-                className="p-3 border-2 border-[#e0e0e0] rounded-md text-base"
+                style={{ padding: '0.75rem', border: '2px solid #e0e0e0', borderRadius: '5px', fontSize: '1rem', fontFamily: 'inherit' }}
               />
             </div>
-            <div className="flex flex-col">
-              <label htmlFor="serviceType" className="mb-2 font-medium text-text-dark">
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <label htmlFor="review-service-type" style={{ marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-dark)' }}>
                 Service Type *
               </label>
               <select
-                id="serviceType"
-                name="serviceType"
+                id="review-service-type"
+                name="review-service-type"
                 required
-                className="p-3 border-2 border-[#e0e0e0] rounded-md text-base"
+                style={{ padding: '0.75rem', border: '2px solid #e0e0e0', borderRadius: '5px', fontSize: '1rem', fontFamily: 'inherit' }}
               >
                 <option value="">Select a service...</option>
                 <option value="Photography Services">Photography Services</option>
@@ -89,26 +89,26 @@ export default function ReviewForm() {
                 <option value="DJ Entertainment">DJ Entertainment</option>
               </select>
             </div>
-            <div className="flex flex-col">
-              <label htmlFor="djName" className="mb-2 font-medium text-text-dark">
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <label htmlFor="review-dj-name" style={{ marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-dark)' }}>
                 DJ Name (Optional)
               </label>
               <input
                 type="text"
-                id="djName"
-                name="djName"
+                id="review-dj-name"
+                name="review-dj-name"
                 placeholder="Leave blank if not applicable"
-                className="p-3 border-2 border-[#e0e0e0] rounded-md text-base"
+                style={{ padding: '0.75rem', border: '2px solid #e0e0e0', borderRadius: '5px', fontSize: '1rem', fontFamily: 'inherit' }}
               />
             </div>
-            <div className="flex flex-col">
-              <label htmlFor="rating" className="mb-2 font-medium text-text-dark">
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <label htmlFor="review-rating" style={{ marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-dark)' }}>
                 Rating (1-5 stars)
               </label>
               <select
-                id="rating"
-                name="rating"
-                className="p-3 border-2 border-[#e0e0e0] rounded-md text-base"
+                id="review-rating"
+                name="review-rating"
+                style={{ padding: '0.75rem', border: '2px solid #e0e0e0', borderRadius: '5px', fontSize: '1rem', fontFamily: 'inherit' }}
               >
                 <option value="">Select rating...</option>
                 <option value="5">5 Stars</option>
@@ -118,49 +118,63 @@ export default function ReviewForm() {
                 <option value="1">1 Star</option>
               </select>
             </div>
-            <div className="flex flex-col">
-              <label htmlFor="comment" className="mb-2 font-medium text-text-dark">
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <label htmlFor="review-comment" style={{ marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-dark)' }}>
                 Your Review *
               </label>
               <textarea
-                id="comment"
-                name="comment"
+                id="review-comment"
+                name="review-comment"
                 required
                 rows={5}
                 placeholder="Share your experience with us..."
-                className="p-3 border-2 border-[#e0e0e0] rounded-md text-base resize-y min-h-[150px]"
+                style={{ padding: '0.75rem', border: '2px solid #e0e0e0', borderRadius: '5px', fontSize: '1rem', fontFamily: 'inherit', resize: 'vertical' }}
               />
             </div>
-            <div className="flex flex-col">
-              <label htmlFor="eventDate" className="mb-2 font-medium text-text-dark">
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <label htmlFor="review-event-date" style={{ marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-dark)' }}>
                 Event Date (Optional)
               </label>
               <input
                 type="date"
-                id="eventDate"
-                name="eventDate"
-                className="p-3 border-2 border-[#e0e0e0] rounded-md text-base"
+                id="review-event-date"
+                name="review-event-date"
+                style={{ padding: '0.75rem', border: '2px solid #e0e0e0', borderRadius: '5px', fontSize: '1rem', fontFamily: 'inherit' }}
               />
             </div>
-            {message && (
-              <div
-                className={`p-4 rounded-md mt-4 ${
-                  message.type === 'success'
-                    ? 'bg-[#d4edda] text-[#155724] border border-[#c3e6cb]'
-                    : 'bg-[#f8d7da] text-[#721c24] border border-[#f5c6cb]'
-                }`}
-              >
-                {message.text}
-              </div>
-            )}
+            <div 
+              id="review-message" 
+              style={{ 
+                display: message ? 'block' : 'none', 
+                padding: '1rem', 
+                borderRadius: '5px', 
+                marginTop: '1rem',
+                background: message?.type === 'success' ? '#d4edda' : message?.type === 'error' ? '#f8d7da' : 'transparent',
+                color: message?.type === 'success' ? '#155724' : message?.type === 'error' ? '#721c24' : 'inherit',
+                border: message?.type === 'success' ? '1px solid #c3e6cb' : message?.type === 'error' ? '1px solid #f5c6cb' : 'none'
+              }}
+            >
+              {message?.text}
+            </div>
             <button
               type="submit"
               disabled={submitting}
-              className="px-8 py-4 bg-accent text-white border-none rounded-md text-base font-bold cursor-pointer transition-colors hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ 
+                padding: '1rem 2rem', 
+                background: 'var(--accent-color)', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '5px', 
+                fontSize: '1rem', 
+                fontWeight: 'bold', 
+                cursor: submitting ? 'not-allowed' : 'pointer', 
+                transition: 'background 0.3s ease',
+                opacity: submitting ? 0.7 : 1
+              }}
             >
               {submitting ? 'Submitting...' : 'Submit Review'}
             </button>
-            <p className="text-sm text-text-light text-center mt-2">
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', textAlign: 'center', marginTop: '0.5rem' }}>
               * Reviews are subject to approval before being published.
             </p>
           </form>

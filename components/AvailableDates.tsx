@@ -81,13 +81,13 @@ export default function AvailableDates() {
   const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
 
   return (
-    <section id="available-dates" className="py-16 bg-bg-light">
-      <div className="max-w-[1200px] mx-auto px-8">
-        <h2 className="text-center text-4xl mb-12 text-primary">Available Dates</h2>
-        <p className="text-center text-text-light mb-8">
+    <section id="available-dates" className="available-dates-section">
+      <div className="container">
+        <h2 className="section-title">Available Dates</h2>
+        <p style={{ textAlign: 'center', color: 'var(--text-light)', marginBottom: '2rem' }}>
           Check our availability for upcoming bookings. Dates with scheduled events are shown as unavailable.
         </p>
-        <div className="bg-white rounded-lg p-8 shadow-[0_5px_15px_rgba(0,0,0,0.1)] max-w-[900px] mx-auto">
+        <div id="dates-calendar-container" className="dates-calendar-wrapper">
           <div className="flex justify-between items-center mb-6 flex-wrap gap-2">
             <button
               onClick={() => generateCalendar(-1)}

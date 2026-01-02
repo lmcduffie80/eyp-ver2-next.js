@@ -23,19 +23,21 @@ export default function Navigation() {
 
   return (
     <nav 
-      className="fixed top-0 w-full z-[1000] shadow-[0_2px_10px_rgba(0,0,0,0.1)]"
-      style={{ background: navBackground, backdropFilter: 'blur(10px)' }}
+      style={{ 
+        background: navBackground
+      }}
     >
-      <div className="max-w-[1200px] mx-auto px-8 flex justify-between items-center py-4">
-        <Link href="/" className="flex items-center">
+      <div className="container">
+        <Link href="/" className="logo">
           <Image
             src="/EYP Logo_New.png"
             alt="Externally Yours Productions, LLC"
             width={400}
             height={80}
-            className="h-20 w-auto max-w-[400px]"
+            style={{ height: '80px', width: 'auto', maxWidth: '400px' }}
             priority
             loading="eager"
+            decoding="async"
           />
         </Link>
         <ul className={`hidden md:flex list-none gap-8 ${mobileMenuOpen ? 'mobile-open' : ''}`}>

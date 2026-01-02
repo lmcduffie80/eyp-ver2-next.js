@@ -1,5 +1,6 @@
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import Contact from '@/components/Contact';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -46,37 +47,346 @@ export default function Photography() {
         '/Amy and Cody Hardy Wedding/E72A0956.jpg',
         '/Amy and Cody Hardy Wedding/E72A0984.jpg',
       ]
+    },
+    {
+      id: 'melissa-jeremy-gallery',
+      title: 'Melissa and Jeremy Engagement Session',
+      images: [
+        '/Melissa and Jeremy Engagement Session/7L8A0570.jpg',
+        '/Melissa and Jeremy Engagement Session/7L8A0593.jpg',
+        '/Melissa and Jeremy Engagement Session/7L8A0595.jpg',
+        '/Melissa and Jeremy Engagement Session/7L8A0635.jpg',
+        '/Melissa and Jeremy Engagement Session/7L8A0659.jpg',
+        '/Melissa and Jeremy Engagement Session/7L8A0700.jpg',
+        '/Melissa and Jeremy Engagement Session/7L8A0772.jpg',
+        '/Melissa and Jeremy Engagement Session/7L8A0776.jpg',
+        '/Melissa and Jeremy Engagement Session/7L8A0781.jpg',
+        '/Melissa and Jeremy Engagement Session/7L8A0815.jpg',
+        '/Melissa and Jeremy Engagement Session/7L8A0861.jpg',
+        '/Melissa and Jeremy Engagement Session/IMG_4618.jpg',
+        '/Melissa and Jeremy Engagement Session/IMG_4635.jpg',
+      ]
+    },
+    {
+      id: 'photography-work-gallery',
+      title: 'Photography Work',
+      images: [
+        '/PhotographyWork/7L8A0690.jpg',
+        '/PhotographyWork/7L8A0744.jpg',
+        '/PhotographyWork/7L8A0759.jpg',
+        '/PhotographyWork/7L8A0812.jpg',
+        '/PhotographyWork/7L8A4546.jpg',
+        '/PhotographyWork/7L8A4662.jpg',
+        '/PhotographyWork/7L8A4726.jpg',
+        '/PhotographyWork/7L8A4891.jpg',
+        '/PhotographyWork/7L8A5016.jpg',
+        '/PhotographyWork/7L8A5072.jpg',
+        '/PhotographyWork/7L8A5365.jpg',
+        '/PhotographyWork/7L8A5393.jpg',
+        '/PhotographyWork/E72A0908.jpg',
+        '/PhotographyWork/E72A0909.jpg',
+        '/PhotographyWork/E72A0960.jpg',
+        '/PhotographyWork/E72A0970.jpg',
+        '/PhotographyWork/E72A0985.jpg',
+        '/PhotographyWork/E72A1141.jpg',
+        '/PhotographyWork/IMG_3991.jpg',
+        '/PhotographyWork/IMG_3998.jpg',
+        '/PhotographyWork/IMG_4005.jpg',
+        '/PhotographyWork/IMG_4043.jpg',
+        '/PhotographyWork/IMG_4110.jpg',
+        '/PhotographyWork/IMG_4114.jpg',
+        '/PhotographyWork/IMG_4116.jpg',
+        '/PhotographyWork/IMG_4675.jpg',
+      ]
     }
   ];
 
   return (
     <main>
       <Navigation />
-      <section className="pt-[90px] pb-20">
-        <div className="max-w-[1200px] mx-auto px-8">
-          <h1 className="text-4xl mb-12 text-primary text-center">Photography Portfolio</h1>
-          {galleries.map((gallery) => (
-            <div key={gallery.id} id={gallery.id} className="mb-16 scroll-mt-20">
-              <h2 className="text-3xl mb-8 text-primary">{gallery.title}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {gallery.images.map((img, idx) => (
-                  <div key={idx} className="relative overflow-hidden rounded-lg aspect-video bg-primary">
-                    <Image
-                      src={img}
-                      alt={`${gallery.title} - Image ${idx + 1}`}
-                      fill
-                      className="object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+      {/* Hero Section */}
+      <section 
+        id="home" 
+        className="hero"
+        style={{
+          height: '80vh',
+          background: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/PhotographyPagePhotos/IMG_4205.jpg') center/cover"
+        }}
+      >
+        <div className="hero-content">
+          <h1>Photography</h1>
+          <p>Capturing moments that matter with artistic vision and technical excellence</p>
+          <Link href="#contact" className="cta-button">Book Your Session</Link>
         </div>
       </section>
+
+      {/* About Section */}
+      <section id="about" className="about">
+        <div className="container">
+          <h2 className="section-title">Our Photography Services</h2>
+          <div className="about-content">
+            <div className="about-text">
+              <p>At Externally Yours Productions, LLC, we specialize in high-quality photography services that capture the essence of your most important moments. From intimate wedding ceremonies to grand corporate events, we bring an artistic vision and technical excellence to every shoot.</p>
+              <p>Our photography services include wedding photography, event photography, portrait sessions, product photography, and commercial shoots. We work closely with our clients to understand their vision and deliver images that exceed expectations.</p>
+              <p>With attention to detail and a passion for storytelling through imagery, we ensure that every photo tells a story and preserves your memories for a lifetime.</p>
+            </div>
+            <Image
+              src="/Grace and Dillon Wedding/7L8A5712.jpg"
+              alt="Photography services"
+              width={600}
+              height={400}
+              className="about-image"
+              loading="lazy"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Services Section */}
+      <section id="services">
+        <div className="container">
+          <h2 className="section-title">What We Offer</h2>
+          <div className="services-grid">
+            <div className="service-card" style={{ gridColumn: '1 / -1' }}>
+              <div className="service-icon">💍</div>
+              <h3>Wedding Photography</h3>
+              <p>Comprehensive wedding photography services to capture every precious moment of your special day, from the ceremony to the reception.</p>
+              
+              <div className="packages-section">
+                <h3 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Wedding Photography Packages</h3>
+                <div className="packages-grid">
+                  <div className="package-card">
+                    <h4>Ceremony</h4>
+                    <div className="package-price">$1,800</div>
+                    <ul className="package-features">
+                      <li>Six Hours of Professional Photography Coverage</li>
+                      <li>A minimum of 100 Fully Edited Digital Downloads</li>
+                      <li>Delivery of Photos via Online Gallery</li>
+                      <li>Exclusive Printing rights</li>
+                    </ul>
+                    <Link href="#contact" className="package-button">Get Quote</Link>
+                  </div>
+                  
+                  <div className="package-card">
+                    <h4>Deluxe Package</h4>
+                    <div className="package-price">$2,250</div>
+                    <ul className="package-features">
+                      <li>8 hours of coverage</li>
+                      <li>200+ edited photos</li>
+                      <li>Online gallery</li>
+                      <li>Digital download</li>
+                      <li>Engagement session</li>
+                      <li>Second shooter</li>
+                      <li>Wedding album</li>
+                    </ul>
+                    <Link href="#contact" className="package-button">Get Quote</Link>
+                  </div>
+                  
+                  <div className="package-card">
+                    <h4>Formal Package</h4>
+                    <div className="package-price">$2,800</div>
+                    <ul className="package-features">
+                      <li>Full day coverage</li>
+                      <li>300+ edited photos</li>
+                      <li>Online gallery</li>
+                      <li>Digital download</li>
+                      <li>Engagement session</li>
+                      <li>Second shooter</li>
+                      <li>Bridal session</li>
+                    </ul>
+                    <Link href="#contact" className="package-button">Get Quote</Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="service-card">
+              <div className="service-icon">🎉</div>
+              <h3>Event Photography</h3>
+              <p>Professional event photography for corporate gatherings, parties, celebrations, and special occasions.</p>
+            </div>
+            
+            <div className="service-card" style={{ gridColumn: '1 / -1' }}>
+              <div className="service-icon">👤</div>
+              <h3>Portrait Photography</h3>
+              <p>Professional portrait sessions for individuals, families, and groups. We create stunning portraits that capture personality and emotion.</p>
+              
+              <div className="packages-section">
+                <h3 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Portrait Photography Packages</h3>
+                <div className="packages-grid">
+                  <div className="package-card">
+                    <h4>All Inclusive Session</h4>
+                    <div className="package-price">$150</div>
+                    <ul className="package-features">
+                      <li>$150 Session Fee (federal mileage rate more than 100 mile round trip)</li>
+                      <li>All images deemed editable will be available via Online Gallery (20 images)</li>
+                      <li>Digitals are in given in high-resolution Print ready versions</li>
+                      <li>Other packages are available for purchase in gallery</li>
+                    </ul>
+                    <Link href="#contact" className="package-button">Get Quote</Link>
+                  </div>
+                  
+                  <div className="package-card">
+                    <h4>Couples and Engagements</h4>
+                    <div className="package-price">$150</div>
+                    <ul className="package-features">
+                      <li>$150 Session Fee (federal mileage rate more than 100 mile round trip)</li>
+                      <li>All images deemed editable will be available via Online Gallery (30 images)</li>
+                      <li>Digital will be given in High Resolution Print ready versions</li>
+                      <li>Other packages are available for purchase in gallery</li>
+                    </ul>
+                    <Link href="#contact" className="package-button">Get Quote</Link>
+                  </div>
+                  
+                  <div className="package-card">
+                    <h4>Family Portraits</h4>
+                    <div className="package-price">$150</div>
+                    <ul className="package-features">
+                      <li>$150 Session Fee (federal mileage rate more than 100 mile round trip)</li>
+                      <li>All images deemed editable will be available via Online Gallery (30 images)</li>
+                      <li>Digital will be given in High Resolution Print ready versions</li>
+                      <li>Other packages are available for purchase in gallery</li>
+                    </ul>
+                    <Link href="#contact" className="package-button">Get Quote</Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="service-card">
+              <div className="service-icon">📦</div>
+              <h3>Product Photography</h3>
+              <p>High-quality product photography for e-commerce, catalogs, and marketing materials that showcase your products in the best light.</p>
+            </div>
+            
+            <div className="service-card">
+              <div className="service-icon">🏢</div>
+              <h3>Commercial Photography</h3>
+              <p>Professional commercial photography services for businesses, brands, and marketing campaigns.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Portfolio Section */}
+      <section id="portfolio" className="portfolio">
+        <div className="container">
+          <h2 className="section-title">Our Photography Work</h2>
+          <div className="portfolio-grid">
+            <Link href="#grace-dillon-gallery" style={{ textDecoration: 'none', display: 'block' }}>
+              <div className="portfolio-item">
+                <Image
+                  src="/Grace and Dillon Wedding/7L8A5712.jpg"
+                  alt="Grace and Dillon Wedding"
+                  fill
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div className="portfolio-overlay">
+                  <h3>Grace and Dillon Wedding</h3>
+                </div>
+              </div>
+            </Link>
+            <Link href="#yazmine-josh-gallery" style={{ textDecoration: 'none', display: 'block' }}>
+              <div className="portfolio-item">
+                <Image
+                  src="/Yazmine and Josh Wedding/IMG_3957.jpg"
+                  alt="Yazmine and Josh Wedding"
+                  fill
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div className="portfolio-overlay">
+                  <h3>Yazmine and Josh Wedding</h3>
+                </div>
+              </div>
+            </Link>
+            <Link href="#prom-2025-gallery" style={{ textDecoration: 'none', display: 'block' }}>
+              <div className="portfolio-item">
+                <Image
+                  src="/Prom 2025/7L8A9549.jpg"
+                  alt="Prom 2025"
+                  fill
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div className="portfolio-overlay">
+                  <h3>Prom 2025</h3>
+                </div>
+              </div>
+            </Link>
+            <Link href="#amy-cody-gallery" style={{ textDecoration: 'none', display: 'block' }}>
+              <div className="portfolio-item">
+                <Image
+                  src="/Amy and Cody Hardy Wedding/E72A0908.jpg"
+                  alt="Amy and Cody Hardy Wedding"
+                  fill
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div className="portfolio-overlay">
+                  <h3>Amy and Cody Hardy Wedding</h3>
+                </div>
+              </div>
+            </Link>
+            <Link href="#melissa-jeremy-gallery" style={{ textDecoration: 'none', display: 'block' }}>
+              <div className="portfolio-item">
+                <Image
+                  src="/Melissa and Jeremy Engagement Session/7L8A0570.jpg"
+                  alt="Melissa and Jeremy Engagement Session"
+                  fill
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div className="portfolio-overlay">
+                  <h3 style={{ textAlign: 'center' }}>Melissa and Jeremy Engagement Session</h3>
+                </div>
+              </div>
+            </Link>
+            <Link href="#photography-work-gallery" style={{ textDecoration: 'none', display: 'block' }}>
+              <div className="portfolio-item">
+                <Image
+                  src="/PhotographyWork/7L8A0690.jpg"
+                  alt="Photography Work"
+                  fill
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div className="portfolio-overlay">
+                  <h3>Photography Work</h3>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Gallery Sections */}
+      {galleries.map((gallery) => (
+        <section key={gallery.id} id={gallery.id} className="py-20" style={{ scrollMarginTop: '90px' }}>
+          <div className="container">
+            <h2 className="section-title">{gallery.title}</h2>
+            <div className="portfolio-grid">
+              {gallery.images.map((img, idx) => (
+                <div key={idx} className="portfolio-item">
+                  <Image
+                    src={img}
+                    alt={`${gallery.title} - Image ${idx + 1}`}
+                    fill
+                    loading="lazy"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ))}
+
+      <Contact 
+        title="Let's Capture Your Moments"
+        description="Ready to book a photography session? Contact us to discuss your project and get a quote."
+      />
       <Footer />
     </main>
   );
 }
-

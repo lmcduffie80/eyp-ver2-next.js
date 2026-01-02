@@ -60,28 +60,28 @@ export default function Portfolio() {
   ];
 
   return (
-    <section id="portfolio" className="py-20 bg-bg-light">
-      <div className="max-w-[1200px] mx-auto px-8">
-        <h2 className="text-center text-4xl mb-12 text-primary">Our Work</h2>
-        <div className="mb-16">
-          <h3 className="text-3xl mb-8 text-primary font-semibold">Photography</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <section id="portfolio" className="portfolio">
+      <div className="container">
+        <h2 className="section-title">Our Work</h2>
+        <div className="portfolio-category">
+          <h3 className="portfolio-category-title">Photography</h3>
+          <div className="portfolio-grid">
             {portfolioItems.map((item, index) => (
               <Link 
                 key={index}
                 href={item.href}
-                className="no-underline block"
+                style={{ textDecoration: 'none', display: 'block' }}
               >
-                <div className="relative overflow-hidden rounded-lg aspect-video bg-primary cursor-pointer group">
+                <div className="portfolio-item">
                   <Image
                     src={item.src}
                     alt={item.alt}
                     fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
+                    decoding="async"
                   />
-                  <div className="absolute inset-0 bg-[rgba(26,26,26,0.8)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <h3 className="text-white text-2xl">{item.title}</h3>
+                  <div className="portfolio-overlay">
+                    <h3>{item.title}</h3>
                   </div>
                 </div>
               </Link>

@@ -18,18 +18,15 @@ export default function Services() {
   ];
 
   return (
-    <section id="services" className="py-20">
-      <div className="max-w-[1200px] mx-auto px-8">
-        <h2 className="text-center text-4xl mb-12 text-primary">Our Services</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <section id="services">
+      <div className="container">
+        <h2 className="section-title">Our Services</h2>
+        <div className="services-grid">
           {services.map((service, index) => (
-            <div 
-              key={index}
-              className="bg-white p-8 rounded-lg shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
-            >
-              <div className="text-5xl mb-4">{service.icon}</div>
-              <h3 className="text-2xl mb-4 text-primary">{service.title}</h3>
-              <p className="text-text-light">{service.description}</p>
+            <div key={index} className="service-card">
+              <div className="service-icon">{service.icon}</div>
+              <h3>{service.title}</h3>
+              <p>{service.description}</p>
             </div>
           ))}
         </div>
