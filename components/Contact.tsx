@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 declare global {
   interface Window {
@@ -14,8 +14,11 @@ interface ContactProps {
 }
 
 export default function Contact({ title = "Let's Work Together", description = "Have a project in mind? We'd love to hear from you. Send us a message and we'll respond as soon as possible." }: ContactProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scriptLoadedRef = useRef(false);
+
   useEffect(() => {
-    // Load Honeybook widget
+    // Load Honeybook widget - ensure it loads on every page
     if (typeof window !== 'undefined') {
       // Initialize Honeybook global object
       window._HB_ = window._HB_ || {};
@@ -24,25 +27,54 @@ export default function Contact({ title = "Let's Work Together", description = "
       // Check if script is already loaded
       const existingScript = document.querySelector('script[src*="honeybook.com"]');
       
+      const loadHoneybookScript = () => {
+        if (scriptLoadedRef.current) return;
+        
+        // Use the same IIFE pattern as the original HTML
+        (function(h: any, b: Document, s: string, n: string, i: string, p?: any, e?: Element, t?: HTMLScriptElement) {
+          h._HB_ = h._HB_ || {};
+          h._HB_.pid = i;
+          t = b.createElement(s) as HTMLScriptElement;
+          t.type = "text/javascript";
+          t.async = true;
+          t.defer = true;
+          t.src = n;
+          e = b.getElementsByTagName(s)[0];
+          if (e && e.parentNode) {
+            e.parentNode.insertBefore(t, e);
+          } else {
+            b.head.appendChild(t);
+          }
+        })(window, document, "script", "https://widget.honeybook.com/assets_users_production/websiteplacements/placement-controller.min.js", "64f2adb3998a8300079826c0");
+        
+        scriptLoadedRef.current = true;
+      };
+      
       if (!existingScript) {
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.async = true;
-        script.defer = true;
-        script.src = 'https://widget.honeybook.com/assets_users_production/websiteplacements/placement-controller.min.js';
-        
-        // Add error handling
-        script.onerror = () => {
-          console.warn('Failed to load Honeybook widget');
-        };
-        
-        const firstScript = document.getElementsByTagName('script')[0];
-        if (firstScript && firstScript.parentNode) {
-          firstScript.parentNode.insertBefore(script, firstScript);
-        } else {
-          document.head.appendChild(script);
-        }
+        loadHoneybookScript();
+      } else {
+        scriptLoadedRef.current = true;
       }
+      
+      // Ensure widget container is ready and visible
+      // Use a timeout to ensure DOM is ready
+      setTimeout(() => {
+        if (containerRef.current) {
+          containerRef.current.style.display = 'block';
+          containerRef.current.style.width = '100%';
+          containerRef.current.style.minHeight = '600px';
+          
+          // Force widget to re-initialize if script is already loaded
+          if (existingScript && window._HB_ && window._HB_.pid) {
+            // Clear and re-set the pid to trigger re-initialization
+            const pid = window._HB_.pid;
+            window._HB_.pid = undefined;
+            setTimeout(() => {
+              window._HB_.pid = pid;
+            }, 100);
+          }
+        }
+      }, 100);
     }
   }, []);
 
@@ -58,7 +90,7 @@ export default function Contact({ title = "Let's Work Together", description = "
             <p><strong>Phone:</strong> 229-326-5408</p>
             <p><strong>Address:</strong> Tifton, Georgia 31794</p>
           </div>
-          <div className="hb-p-64f2adb3998a8300079826c0-1"></div>
+          <div ref={containerRef} className="hb-p-64f2adb3998a8300079826c0-1"></div>
           <img 
             height={1} 
             width={1} 
