@@ -19,33 +19,68 @@ export default function Contact({ title = "Let's Work Together", description = "
 
   useEffect(() => {
     // Ensure Honeybook widget detects this container
-    if (typeof window !== 'undefined') {
-      // Wait for container to be in DOM
-      const initWidget = () => {
-        if (!containerRef.current) {
-          setTimeout(initWidget, 50);
-          return;
+    if (typeof window === 'undefined') return;
+    
+    // Wait for container to be in DOM
+    const initWidget = () => {
+      if (!containerRef.current) {
+        setTimeout(initWidget, 50);
+        return;
+      }
+      
+      const container = containerRef.current;
+      
+      // Ensure container is visible and properly styled
+      container.style.display = 'block';
+      container.style.width = '100%';
+      container.style.minHeight = '600px';
+      
+      // Ensure Honeybook global is set
+      window._HB_ = window._HB_ || {};
+      window._HB_.pid = '64f2adb3998a8300079826c0';
+      
+      // Function to trigger widget initialization
+      const triggerWidget = () => {
+        // Method 1: Trigger resize event (iframeSizer listens for this)
+        window.dispatchEvent(new Event('resize'));
+        
+        // Method 2: Try to manually trigger widget by re-setting pid
+        if (window._HB_) {
+          const pid = window._HB_.pid;
+          (window._HB_ as any).pid = undefined;
+          setTimeout(() => {
+            if (window._HB_) {
+              window._HB_.pid = pid;
+            }
+          }, 10);
         }
         
-        const container = containerRef.current;
+        // Method 3: Try calling init if available
+        if (window._HB_ && typeof (window._HB_ as any).init === 'function') {
+          try {
+            (window._HB_ as any).init();
+          } catch (e) {
+            // Ignore errors
+          }
+        }
         
-        // Ensure container is visible and properly styled
-        container.style.display = 'block';
-        container.style.width = '100%';
-        container.style.minHeight = '600px';
-        
-        // Ensure Honeybook global is set
-        window._HB_ = window._HB_ || {};
-        window._HB_.pid = '64f2adb3998a8300079826c0';
-        
-        // Check if widget script is loaded
+        // Method 4: Try to find and manually initialize iframe if it exists
+        const iframe = container.querySelector('iframe');
+        if (iframe && (window as any).iFrameResize) {
+          try {
+            (window as any).iFrameResize({}, iframe);
+          } catch (e) {
+            // Ignore errors
+          }
+        }
+      };
+      
+      // Check if widget script is loaded
+      const checkScript = () => {
         const scriptLoaded = document.querySelector('script[src*="honeybook.com"]');
         
         if (scriptLoaded) {
-          // Script is loaded - need to trigger widget to detect this container
-          // The widget scans on load, so we need to manually trigger it
-          
-          // Use MutationObserver to detect when widget injects content
+          // Script is loaded - use MutationObserver to detect when widget injects content
           const observer = new MutationObserver(() => {
             const hasContent = container.querySelector('iframe, form, [id*="hb"], [class*="hb-"]');
             if (hasContent) {
@@ -60,43 +95,29 @@ export default function Contact({ title = "Let's Work Together", description = "
           });
           
           // Multiple attempts to trigger widget initialization
-          const attempts = [0, 300, 800, 1500, 2500, 4000];
+          const attempts = [0, 100, 300, 600, 1000, 2000, 3500];
           attempts.forEach((delay) => {
             setTimeout(() => {
               if (!container.querySelector('iframe, form, [id*="hb"]')) {
-                // Method 1: Trigger resize event (iframeSizer listens for this)
-                window.dispatchEvent(new Event('resize'));
-                
-                // Method 2: Try to manually trigger widget
-                if (window._HB_) {
-                  // Temporarily clear and reset pid to trigger re-scan
-                  const pid = window._HB_.pid;
-                  (window._HB_ as any).pid = undefined;
-                  setTimeout(() => {
-                    window._HB_.pid = pid;
-                  }, 10);
-                }
-                
-                // Method 3: Try calling init if available
-                if (window._HB_ && typeof (window._HB_ as any).init === 'function') {
-                  try {
-                    (window._HB_ as any).init();
-                  } catch (e) {
-                    // Ignore errors
-                  }
-                }
+                triggerWidget();
               }
             }, delay);
           });
           
-          // Cleanup observer after 10 seconds
-          setTimeout(() => observer.disconnect(), 10000);
+          // Cleanup observer after 15 seconds
+          setTimeout(() => observer.disconnect(), 15000);
+        } else {
+          // Script not loaded yet, check again
+          setTimeout(checkScript, 100);
         }
       };
       
-      // Start initialization
-      initWidget();
-    }
+      // Start checking for script
+      checkScript();
+    };
+    
+    // Start initialization
+    initWidget();
   }, []);
 
   return (

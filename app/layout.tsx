@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
-import HoneybookLoader from "./HoneybookLoader";
 
 export const metadata: Metadata = {
   title: "Externally Yours Productions, LLC",
@@ -22,7 +22,27 @@ export default function RootLayout({
         <link rel="preconnect" href="https://widget.honeybook.com" crossOrigin="anonymous" />
       </head>
       <body>
-        <HoneybookLoader />
+        <Script
+          id="honeybook-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window._HB_ = window._HB_ || {};
+              window._HB_.pid = '64f2adb3998a8300079826c0';
+            `,
+          }}
+        />
+        <Script
+          id="honeybook-widget"
+          strategy="afterInteractive"
+          src="https://widget.honeybook.com/assets_users_production/websiteplacements/placement-controller.min.js"
+          async
+          defer
+          onError={(e) => {
+            // Silently handle Honeybook script errors - the widget may still work
+            console.warn('Honeybook widget script error (non-critical):', e);
+          }}
+        />
         {children}
       </body>
     </html>
