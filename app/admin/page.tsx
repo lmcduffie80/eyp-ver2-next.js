@@ -297,10 +297,12 @@ export default function AdminDashboard() {
               <div 
                 className="stat-card" 
                 id="stat-card-all"
+                style={{ cursor: 'pointer' }}
                 onClick={() => {
                   // Filter by stat functionality will be added here
                   console.log('Filter by all');
                 }}
+                title="Click to view all projects"
               >
                 <div className="stat-card-header">
                   <h3>
@@ -314,10 +316,12 @@ export default function AdminDashboard() {
               <div 
                 className="stat-card" 
                 id="stat-card-completed"
+                style={{ cursor: 'pointer' }}
                 onClick={() => {
                   // Filter by stat functionality will be added here
                   console.log('Filter by completed');
                 }}
+                title="Click to filter completed projects"
               >
                 <div className="stat-card-header">
                   <h3>
@@ -331,10 +335,12 @@ export default function AdminDashboard() {
               <div 
                 className="stat-card" 
                 id="stat-card-future-bookings"
+                style={{ cursor: 'pointer' }}
                 onClick={() => {
                   // Filter by stat functionality will be added here
                   console.log('Filter by future bookings');
                 }}
+                title="Click to filter future bookings"
               >
                 <div className="stat-card-header">
                   <h3>
@@ -348,10 +354,12 @@ export default function AdminDashboard() {
               <div 
                 className="stat-card" 
                 id="stat-card-revenue"
+                style={{ cursor: 'pointer' }}
                 onClick={() => {
                   // Filter by stat functionality will be added here
                   console.log('Filter by revenue');
                 }}
+                title="Click to view revenue details"
               >
                 <div className="stat-card-header">
                   <h3>
@@ -365,10 +373,12 @@ export default function AdminDashboard() {
               <div 
                 className="stat-card" 
                 id="stat-card-total-revenue"
+                style={{ cursor: 'pointer' }}
                 onClick={() => {
                   // Filter by stat functionality will be added here
                   console.log('Filter by total revenue');
                 }}
+                title="Click to view total revenue details"
               >
                 <div className="stat-card-header">
                   <h3>
@@ -382,10 +392,12 @@ export default function AdminDashboard() {
               <div 
                 className="stat-card" 
                 id="stat-card-blocked-dates"
+                style={{ cursor: 'pointer' }}
                 onClick={() => {
                   // Filter by stat functionality will be added here
                   console.log('Filter by blocked dates');
                 }}
+                title="Click to view all blocked dates"
               >
                 <div className="stat-card-header">
                   <h3>
@@ -399,10 +411,12 @@ export default function AdminDashboard() {
               <div 
                 className="stat-card" 
                 id="stat-card-revenue-2025"
+                style={{ cursor: 'pointer' }}
                 onClick={() => {
                   // Filter by stat functionality will be added here
                   console.log('Filter by revenue 2025');
                 }}
+                title="Click to view 2025 revenue details"
               >
                 <div className="stat-card-header">
                   <h3>
@@ -416,10 +430,12 @@ export default function AdminDashboard() {
               <div 
                 className="stat-card" 
                 id="stat-card-revenue-2026"
+                style={{ cursor: 'pointer' }}
                 onClick={() => {
                   // Filter by stat functionality will be added here
                   console.log('Filter by revenue 2026');
                 }}
+                title="Click to view 2026 revenue details"
               >
                 <div className="stat-card-header">
                   <h3>
