@@ -101,33 +101,59 @@ export default function Contact({ title = "Let's Work Together", description = "
       
       // Check if widget script is loaded
       const checkScript = () => {
-        const scriptLoaded = document.querySelector('script[src*="honeybook.com"]');
-        const scriptReady = scriptLoaded && (scriptLoaded as HTMLScriptElement).getAttribute('data-loaded') === 'true';
+        const scriptElement = document.querySelector('script[src*="honeybook.com"]') as HTMLScriptElement;
         
-        // Also listen for the script loaded event
-        const handleScriptLoaded = () => {
-          if (scriptLoaded) {
-            (scriptLoaded as HTMLScriptElement).setAttribute('data-loaded', 'true');
-          }
-          initializeWidget();
-        };
-        
-        window.addEventListener('honeybook-script-loaded', handleScriptLoaded);
-        
-        if (scriptLoaded && scriptReady) {
-          if (scriptLoaded) {
-            (scriptLoaded as HTMLScriptElement).setAttribute('data-loaded', 'true');
-          }
-          initializeWidget();
-        } else if (scriptLoaded) {
-          // Script element exists but may not be ready yet
-          scriptLoaded.addEventListener('load', handleScriptLoaded);
-          // Fallback: try after a delay
-          setTimeout(() => {
-            if (document.querySelector('script[src*="honeybook.com"]')) {
-              initializeWidget();
+        if (scriptElement) {
+          // Check if script has loaded by checking if it has an onload handler or if _HB_ is available
+          const isScriptReady = () => {
+            // Check if window._HB_ exists and has the pid set
+            if (window._HB_ && window._HB_.pid === '64f2adb3998a8300079826c0') {
+              return true;
             }
-          }, 1000);
+            // Check if script element has loaded
+            if (scriptElement.getAttribute('data-loaded') === 'true') {
+              return true;
+            }
+            return false;
+          };
+          
+          // If script is ready, initialize widget
+          if (isScriptReady()) {
+            scriptElement.setAttribute('data-loaded', 'true');
+            initializeWidget();
+            return;
+          }
+          
+          // Script element exists but may not be ready yet
+          // Listen for load event on the script element
+          const handleScriptLoad = () => {
+            scriptElement.setAttribute('data-loaded', 'true');
+            initializeWidget();
+          };
+          
+          // Check if script already loaded (for cached scripts)
+          const scriptReadyState = (scriptElement as any).readyState;
+          if (scriptReadyState === 'complete' || scriptReadyState === 'loaded') {
+            handleScriptLoad();
+            return;
+          }
+          
+          scriptElement.addEventListener('load', handleScriptLoad);
+          scriptElement.addEventListener('error', () => {
+            // Silently handle errors - widget may still work
+            console.warn('Honeybook widget script error (non-critical)');
+          });
+          
+          // Fallback: try after delays
+          const fallbackAttempts = [500, 1000, 2000, 3000];
+          fallbackAttempts.forEach((delay) => {
+            setTimeout(() => {
+              if (isScriptReady() && !container.querySelector('iframe, form, [id*="hb"]')) {
+                scriptElement.setAttribute('data-loaded', 'true');
+                initializeWidget();
+              }
+            }, delay);
+          });
         } else {
           // Script not loaded yet, check again
           setTimeout(checkScript, 100);
