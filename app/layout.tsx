@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import HoneybookLoader from "./HoneybookLoader";
 
 export const metadata: Metadata = {
   title: "Externally Yours Productions, LLC",
@@ -20,7 +21,10 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://www.honeybook.com" />
         <link rel="preconnect" href="https://widget.honeybook.com" crossOrigin="anonymous" />
       </head>
-      <body>{children}</body>
+      <body>
+        <HoneybookLoader />
+        {children}
+      </body>
     </html>
   );
 }
