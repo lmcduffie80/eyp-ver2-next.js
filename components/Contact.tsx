@@ -44,7 +44,13 @@ export default function Contact({ title = "Let's Work Together", description = "
         // Method 1: Trigger resize event (iframeSizer listens for this)
         window.dispatchEvent(new Event('resize'));
         
-        // Method 2: Try to manually trigger widget by re-setting pid
+        // Method 2: Dispatch DOMContentLoaded event (some widgets listen for this)
+        window.dispatchEvent(new Event('DOMContentLoaded'));
+        
+        // Method 3: Dispatch a custom event that Honeybook might listen for
+        window.dispatchEvent(new CustomEvent('hb-widget-init'));
+        
+        // Method 4: Try to manually trigger widget by re-setting pid
         if (window._HB_) {
           const pid = window._HB_.pid;
           (window._HB_ as any).pid = undefined;
@@ -55,7 +61,7 @@ export default function Contact({ title = "Let's Work Together", description = "
           }, 10);
         }
         
-        // Method 3: Try calling init if available
+        // Method 5: Try calling init if available
         if (window._HB_ && typeof (window._HB_ as any).init === 'function') {
           try {
             (window._HB_ as any).init();
@@ -64,7 +70,25 @@ export default function Contact({ title = "Let's Work Together", description = "
           }
         }
         
-        // Method 4: Try to find and manually initialize iframe if it exists
+        // Method 6: Try calling scan or refresh if available
+        if (window._HB_) {
+          if (typeof (window._HB_ as any).scan === 'function') {
+            try {
+              (window._HB_ as any).scan();
+            } catch (e) {
+              // Ignore errors
+            }
+          }
+          if (typeof (window._HB_ as any).refresh === 'function') {
+            try {
+              (window._HB_ as any).refresh();
+            } catch (e) {
+              // Ignore errors
+            }
+          }
+        }
+        
+        // Method 7: Try to find and manually initialize iframe if it exists
         const iframe = container.querySelector('iframe');
         if (iframe && (window as any).iFrameResize) {
           try {
@@ -78,38 +102,66 @@ export default function Contact({ title = "Let's Work Together", description = "
       // Check if widget script is loaded
       const checkScript = () => {
         const scriptLoaded = document.querySelector('script[src*="honeybook.com"]');
+        const scriptReady = scriptLoaded && (scriptLoaded as HTMLScriptElement).getAttribute('data-loaded') === 'true';
         
-        if (scriptLoaded) {
-          // Script is loaded - use MutationObserver to detect when widget injects content
-          const observer = new MutationObserver(() => {
-            const hasContent = container.querySelector('iframe, form, [id*="hb"], [class*="hb-"]');
-            if (hasContent) {
-              observer.disconnect();
+        // Also listen for the script loaded event
+        const handleScriptLoaded = () => {
+          if (scriptLoaded) {
+            (scriptLoaded as HTMLScriptElement).setAttribute('data-loaded', 'true');
+          }
+          initializeWidget();
+        };
+        
+        window.addEventListener('honeybook-script-loaded', handleScriptLoaded);
+        
+        if (scriptLoaded && scriptReady) {
+          if (scriptLoaded) {
+            (scriptLoaded as HTMLScriptElement).setAttribute('data-loaded', 'true');
+          }
+          initializeWidget();
+        } else if (scriptLoaded) {
+          // Script element exists but may not be ready yet
+          scriptLoaded.addEventListener('load', handleScriptLoaded);
+          // Fallback: try after a delay
+          setTimeout(() => {
+            if (document.querySelector('script[src*="honeybook.com"]')) {
+              initializeWidget();
             }
-          });
-          
-          observer.observe(container, {
-            childList: true,
-            subtree: true,
-            attributes: true
-          });
-          
-          // Multiple attempts to trigger widget initialization
-          const attempts = [0, 100, 300, 600, 1000, 2000, 3500];
-          attempts.forEach((delay) => {
-            setTimeout(() => {
-              if (!container.querySelector('iframe, form, [id*="hb"]')) {
-                triggerWidget();
-              }
-            }, delay);
-          });
-          
-          // Cleanup observer after 15 seconds
-          setTimeout(() => observer.disconnect(), 15000);
+          }, 1000);
         } else {
           // Script not loaded yet, check again
           setTimeout(checkScript, 100);
         }
+      };
+      
+      // Function to initialize the widget once script is ready
+      const initializeWidget = () => {
+        // Script is loaded - use MutationObserver to detect when widget injects content
+        const observer = new MutationObserver(() => {
+          const hasContent = container.querySelector('iframe, form, [id*="hb"], [class*="hb-"]');
+          if (hasContent) {
+            observer.disconnect();
+          }
+        });
+        
+        observer.observe(container, {
+          childList: true,
+          subtree: true,
+          attributes: true
+        });
+        
+        // Multiple attempts to trigger widget initialization
+        const attempts = [0, 100, 300, 600, 1000, 2000, 3500];
+        attempts.forEach((delay) => {
+          setTimeout(() => {
+            if (!container.querySelector('iframe, form, [id*="hb"]')) {
+              triggerWidget();
+            }
+          }, delay);
+        });
+        
+        // Cleanup observer after 15 seconds
+        setTimeout(() => observer.disconnect(), 15000);
       };
       
       // Start checking for script
@@ -132,7 +184,11 @@ export default function Contact({ title = "Let's Work Together", description = "
               <p><strong>Phone:</strong> 229-326-5408</p>
               <p><strong>Address:</strong> Tifton, Georgia 31794</p>
             </div>
-            <div ref={containerRef} className="hb-p-64f2adb3998a8300079826c0-1"></div>
+            <div 
+              ref={containerRef} 
+              className="hb-p-64f2adb3998a8300079826c0-1"
+              data-hb-pid="64f2adb3998a8300079826c0"
+            ></div>
             <img 
               height={1} 
               width={1} 
