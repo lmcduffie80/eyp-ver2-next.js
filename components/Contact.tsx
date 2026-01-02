@@ -18,32 +18,243 @@ export default function Contact({ title = "Let's Work Together", description = "
   const containerRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
-  // Load script inline right after container (like original embed)
+  // Load script inline - ensure container exists first
   useEffect(() => {
-    if (!containerRef.current) return;
+    let mounted = true;
+    
+    const loadScript = () => {
+      if (!mounted || !containerRef.current) {
+        return false;
+      }
 
-    // Check if script already loaded globally
-    const existingScript = document.querySelector('script[src*="placement-controller.min.js"]');
-    if (existingScript) {
-      console.log('✅ Honeybook script already loaded globally');
-      return;
+      const container = containerRef.current;
+      
+      // Verify container is actually in the DOM
+      if (!document.body.contains(container)) {
+        console.log('⏳ Container not in DOM yet, retrying...');
+        return false;
+      }
+
+      // Check if widget already loaded in this container
+      if (container.querySelector('iframe, form')) {
+        // Widget already loaded, don't re-initialize
+        return true;
+      }
+      
+      // Check if script already loaded
+      const existingScript = document.querySelector('script[src*="placement-controller.min.js"]');
+      if (existingScript) {
+        // Script already loaded, trigger scan
+        // Initialize and force scan multiple times
+        window._HB_ = window._HB_ || {};
+        window._HB_.pid = '64f2adb3998a8300079826c0';
+        
+        // Get container reference
+        const container = containerRef.current;
+        if (!container) {
+          console.warn('Container ref not available');
+          return true;
+        }
+        
+        // Ensure container is ready
+        Object.assign(container.style, {
+          display: 'block',
+          width: '100%',
+          minHeight: '600px',
+          position: 'relative',
+          visibility: 'visible',
+          opacity: '1'
+        });
+        
+        // Aggressive retry with multiple methods
+        [0, 50, 100, 200, 500, 1000, 2000, 3000, 5000].forEach(delay => {
+          setTimeout(() => {
+            if (!mounted || !containerRef.current) return;
+            
+            const currentContainer = containerRef.current;
+            
+            window._HB_.pid = '64f2adb3998a8300079826c0';
+            window.dispatchEvent(new Event('resize'));
+            window.dispatchEvent(new Event('DOMContentLoaded'));
+            window.dispatchEvent(new CustomEvent('hb-widget-init'));
+            
+            if (window._HB_) {
+              // Try all available methods
+              ['scan', 'loadWidgets', 'init', 'refresh', 'reload'].forEach(method => {
+                if (typeof (window._HB_ as any)[method] === 'function') {
+                  try {
+                    // Call method silently
+                    (window._HB_ as any)[method]();
+                  } catch (e) {
+                    // Ignore
+                  }
+                }
+              });
+            }
+            
+            // Check if widget loaded
+            const hasWidget = currentContainer.querySelector('iframe, form, [id*="hb-widget"]');
+            if (hasWidget) {
+              // Widget loaded successfully - stop retries
+              return;
+            } else if (delay === 5000) {
+              console.warn('⚠️ Widget still not loaded after 5 seconds');
+              
+              // Detailed debug info
+              const debugInfo: any = {
+                containerInDOM: document.body.contains(currentContainer),
+                containerClass: currentContainer.className,
+                containerChildren: currentContainer.children.length,
+                containerHTML: currentContainer.innerHTML || '(empty)',
+                containerRect: currentContainer.getBoundingClientRect(),
+                _HB_exists: !!window._HB_,
+                _HB_pid: window._HB_?.pid,
+                _HB_keys: window._HB_ ? Object.keys(window._HB_) : []
+              };
+              
+              // Check for all containers with hb class
+              const allHBContainers = document.querySelectorAll('[class*="hb-p-"], [data-hb-pid]');
+              debugInfo.allHBContainers = allHBContainers.length;
+              debugInfo.allHBContainersDetails = Array.from(allHBContainers).map(el => ({
+                class: el.className,
+                id: el.id,
+                children: el.children.length,
+                inDOM: document.body.contains(el)
+              }));
+              
+              // Check for any iframes in document
+              const allIframes = document.querySelectorAll('iframe');
+              debugInfo.allIframes = allIframes.length;
+              debugInfo.iframeDetails = Array.from(allIframes).map(iframe => ({
+                src: iframe.src,
+                id: iframe.id,
+                parent: iframe.parentElement?.tagName,
+                parentClass: iframe.parentElement?.className
+              }));
+              
+              // Log _HB_ object structure (without functions)
+              if (window._HB_) {
+                debugInfo._HB_structure = {};
+                Object.keys(window._HB_).forEach(key => {
+                  const value = (window._HB_ as any)[key];
+                  if (typeof value !== 'function') {
+                    debugInfo._HB_structure[key] = value;
+                  } else {
+                    debugInfo._HB_structure[key] = '[Function]';
+                  }
+                });
+              }
+              
+              console.log('Final debug:', debugInfo);
+              
+              // Try one last manual attempt
+              console.log('🔄 Attempting final manual injection...');
+              if (window._HB_ && typeof (window._HB_ as any).loadWidgets === 'function') {
+                try {
+                  (window._HB_ as any).loadWidgets();
+                } catch (e) {
+                  console.error('Error calling loadWidgets:', e);
+                }
+              }
+            }
+          }, delay);
+        });
+        return true;
+      }
+
+      // Initialize _HB_ before script loads
+      window._HB_ = window._HB_ || {};
+      window._HB_.pid = '64f2adb3998a8300079826c0';
+      
+      // Create script element exactly like original embed
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.async = true;
+      script.src = 'https://widget.honeybook.com/assets_users_production/websiteplacements/placement-controller.min.js';
+      
+      // Insert using original embed pattern (before first script)
+      const firstScript = document.getElementsByTagName('script')[0];
+      if (firstScript && firstScript.parentNode) {
+        firstScript.parentNode.insertBefore(script, firstScript);
+      } else {
+        document.head.appendChild(script);
+      }
+      
+      script.onload = () => {
+        if (!mounted || !containerRef.current) return;
+        console.log('✅ Honeybook script loaded, waiting for widget...');
+        
+        const container = containerRef.current;
+        
+        // Watch for widget injection with MutationObserver
+        const observer = new MutationObserver((mutations) => {
+          const hasWidget = container.querySelector('iframe, form, [id*="hb-widget"]');
+          if (hasWidget) {
+            observer.disconnect();
+          }
+        });
+        
+        observer.observe(container, {
+          childList: true,
+          subtree: true,
+          attributes: true
+        });
+        
+        // Trigger scan multiple times with delays
+        [0, 100, 300, 500, 1000, 2000].forEach(delay => {
+          setTimeout(() => {
+            if (!mounted || !containerRef.current) return;
+            
+            if (window._HB_) {
+              window._HB_.pid = '64f2adb3998a8300079826c0';
+              window.dispatchEvent(new Event('resize'));
+              
+              // Try all methods
+              ['scan', 'loadWidgets', 'init', 'refresh'].forEach(method => {
+                if (typeof (window._HB_ as any)[method] === 'function') {
+                  try {
+                    (window._HB_ as any)[method]();
+                  } catch (e) {
+                    // Ignore
+                  }
+                }
+              });
+            }
+          }, delay);
+        });
+        
+        // Cleanup observer after 10 seconds
+        setTimeout(() => {
+          observer.disconnect();
+          if (!container.querySelector('iframe, form')) {
+            console.warn('⚠️ Widget did not load after 10 seconds');
+            console.log('Container state:', {
+              innerHTML: container.innerHTML,
+              children: container.children.length,
+              inDOM: document.body.contains(container)
+            });
+          }
+        }, 10000);
+      };
+      
+      console.log('✅ Script injection initiated');
+      return true;
+    };
+
+    // Try immediately, then retry if needed
+    if (!loadScript()) {
+      const retryTimer = setTimeout(() => {
+        if (mounted) loadScript();
+      }, 200);
+      return () => {
+        mounted = false;
+        clearTimeout(retryTimer);
+      };
     }
 
-    // Load script inline exactly like original embed
-    const container = containerRef.current;
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.async = true;
-    script.src = 'https://widget.honeybook.com/assets_users_production/websiteplacements/placement-controller.min.js';
-    
-    // Initialize _HB_ before script loads
-    window._HB_ = window._HB_ || {};
-    window._HB_.pid = '64f2adb3998a8300079826c0';
-    
-    // Insert script right after container (like original embed)
-    if (container.parentNode) {
-      container.parentNode.insertBefore(script, container.nextSibling);
-    }
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Initialize widget when component mounts or pathname changes
