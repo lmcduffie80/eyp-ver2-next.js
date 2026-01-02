@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DJ Portal Login - Externally Yours Productions, LLC">
+    <title>DJ Portal Login - Externally Yours Productions, LLC</title>
+    <link rel="icon" type="image/png" href="EYP Logo_New.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #1a1a1a;
+            --secondary-color: #ffffff;
+            --accent-color: #ff6b35;
+            --text-dark: #333;
+            --text-light: #666;
+            --bg-light: #f8f8f8;
+            --error-color: #dc3545;
+            --success-color: #28a745;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .login-container {
+            background: var(--secondary-color);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 3rem;
+            width: 100%;
+            max-width: 450px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header img {
+            height: 135px;
+            width: auto;
+            max-width: 507px;
+            margin-bottom: 1rem;
+        }
+
+        .login-header h1 {
+            color: var(--primary-color);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-header p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent-color);
+            color: var(--secondary-color);
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .login-button:hover {
+            background: #e55a2b;
+            transform: translateY(-2px);
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: #fee;
+            color: var(--error-color);
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+            border: 1px solid var(--error-color);
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            background: #efe;
+            color: var(--success-color);
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+            border: 1px solid var(--success-color);
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .toggle-mode {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .toggle-mode p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .toggle-mode a {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .toggle-mode a:hover {
+            text-decoration: underline;
+        }
+
+        .password-requirements {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-top: 0.5rem;
+        }
+
+        .password-requirements ul {
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .password-requirements li {
+            margin-bottom: 0.25rem;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .back-link a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .back-link a:hover {
+            color: var(--accent-color);
+        }
+
+        .form-hidden {
+            display: none;
+        }
+
+        .forgot-password-link {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .forgot-password-link a {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .forgot-password-link a:hover {
+            text-decoration: underline;
+        }
+
+        .reset-password-info {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+                align-items: flex-start;
+                padding-top: 2rem;
+            }
+
+            .login-container {
+                padding: 1.5rem;
+                border-radius: 8px;
+                max-width: 100%;
+            }
+
+            .login-header {
+                margin-bottom: 1.5rem;
+            }
+
+            .login-header img {
+                height: 101px;
+                margin-bottom: 0.75rem;
+            }
+
+            .login-header h1 {
+                font-size: 1.25rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .login-header p {
+                font-size: 0.8rem;
+            }
+
+            .form-group {
+                margin-bottom: 1rem;
+            }
+
+            .form-group label {
+                font-size: 0.875rem;
+                margin-bottom: 0.4rem;
+            }
+
+            .form-group input {
+                padding: 0.6rem 0.75rem;
+                font-size: 0.9rem;
+            }
+
+            .login-button {
+                padding: 0.65rem;
+                font-size: 0.95rem;
+            }
+
+            .error-message,
+            .success-message {
+                padding: 0.6rem;
+                font-size: 0.85rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .toggle-mode {
+                margin-top: 1rem;
+                padding-top: 1rem;
+            }
+
+            .toggle-mode p {
+                font-size: 0.85rem;
+            }
+
+            .toggle-mode a {
+                font-size: 0.85rem;
+            }
+
+            .password-requirements {
+                font-size: 0.8rem;
+            }
+
+            .forgot-password-link {
+                margin-top: 0.75rem;
+            }
+
+            .forgot-password-link a {
+                font-size: 0.85rem;
+            }
+
+            .back-link {
+                margin-top: 1rem;
+            }
+
+            .back-link a {
+                font-size: 0.85rem;
+            }
+
+            .reset-password-info {
+                padding: 0.75rem;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <img src="EYP Logo_New.png" alt="Externally Yours Productions, LLC">
+            <h1>DJ Portal</h1>
+            <p id="header-subtitle">Sign in to access your calendar and bookings</p>
+        </div>
+
+        <div id="error-message" class="error-message"></div>
+        <div id="success-message" class="success-message"></div>
+
+        <!-- Login Form -->
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Username or Email</label>
+                <input type="text" id="username" name="username" required autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="login-button">Sign In</button>
+            
+            <div style="text-align: center; margin-top: 1rem;">
+                <a href="dj-request-reset.html" style="color: var(--text-light); text-decoration: none; font-size: 0.9rem;">Forgot Password?</a>
+            </div>
+        </form>
+
+        <!-- Signup Form -->
+        <form id="signup-form" class="form-hidden">
+            <div class="form-group">
+                <label for="signup-username">Username</label>
+                <input type="text" id="signup-username" name="username" required autocomplete="username" minlength="3">
+            </div>
+
+            <div class="form-group">
+                <label for="signup-email">Email</label>
+                <input type="email" id="signup-email" name="email" required autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label for="signup-password">Password</label>
+                <input type="password" id="signup-password" name="password" required autocomplete="new-password" minlength="8">
+                <div class="password-requirements">
+                    <small>Password must be at least 8 characters long</small>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm-password">Confirm Password</label>
+                <input type="password" id="confirm-password" name="confirm-password" required autocomplete="new-password">
+            </div>
+
+            <button type="submit" class="login-button">Create Account</button>
+        </form>
+
+        <div class="toggle-mode">
+            <p id="toggle-text">Don't have an account?</p>
+            <a id="toggle-link" onclick="toggleMode()">Create Account</a>
+        </div>
+
+        <div class="back-link">
+            <a href="index.html">← Back to Website</a>
+        </div>
+    </div>
+
+    <script>
+        let isSignupMode = false;
+
+        // Initialize admin user and default DJ users if they don't exist
+        function initializeDefaultUsers() {
+            try {
+                // Get existing users, with error handling for corrupted data
+                let existingUsers = [];
+                try {
+                    const stored = localStorage.getItem('dj_users');
+                    if (stored) {
+                        existingUsers = JSON.parse(stored);
+                        if (!Array.isArray(existingUsers)) {
+                            console.warn('dj_users is not an array, resetting...');
+                            existingUsers = [];
+                        }
+                    }
+                } catch (parseError) {
+                    console.error('Error parsing dj_users from localStorage, resetting:', parseError);
+                    existingUsers = [];
+                    localStorage.removeItem('dj_users'); // Clear corrupted data
+                }
+                
+                // Define default users
+                const defaultUsers = [
+                    {
+                        username: 'admin',
+                        email: 'admin@externallyyours.com',
+                        password: 'admin123', // In production, this should be hashed!
+                        firstName: 'Admin',
+                        lastName: 'User',
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        username: 'Will Luke',
+                        email: 'will@externallyyoursproductions.com',
+                        password: 'admin123', // In production, this should be hashed!
+                        firstName: 'Will',
+                        lastName: 'Luke',
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        username: 'Gavin McDuffie',
+                        email: 'gavin@externallyyoursproductions.com',
+                        password: 'admin123', // In production, this should be hashed!
+                        firstName: 'Gavin',
+                        lastName: 'McDuffie',
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        username: 'Stephen Kena',
+                        email: 'stephen@externallyyoursproductions.com',
+                        password: 'admin123', // In production, this should be hashed!
+                        firstName: 'Stephen',
+                        lastName: 'Kena',
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        username: 'misty',
+                        email: 'mistymcduffie@yahoo.com',
+                        password: 'admin123', // In production, this should be hashed!
+                        firstName: 'Misty',
+                        lastName: 'McDuffie',
+                        createdAt: new Date().toISOString()
+                    }
+                ];
+                
+                // Ensure each default user exists with correct data
+                let usersUpdated = false;
+                defaultUsers.forEach(defaultUser => {
+                    // Check if user exists by email or by firstName+lastName
+                    const userExists = existingUsers.find(u => {
+                        const emailMatch = u.email && u.email.toLowerCase() === defaultUser.email.toLowerCase();
+                        const nameMatch = u.firstName && u.lastName && 
+                            u.firstName.toLowerCase() === defaultUser.firstName.toLowerCase() &&
+                            u.lastName.toLowerCase() === defaultUser.lastName.toLowerCase();
+                        return emailMatch || nameMatch;
+                    });
+                    
+                    if (!userExists) {
+                        existingUsers.push(defaultUser);
+                        usersUpdated = true;
+                        console.log(`Initialized user: ${defaultUser.username || defaultUser.firstName + ' ' + defaultUser.lastName}`);
+                    } else {
+                        // Update existing user to ensure it has all required fields and correct password
+                        const index = existingUsers.findIndex(u => {
+                            const emailMatch = u.email && u.email.toLowerCase() === defaultUser.email.toLowerCase();
+                            const nameMatch = u.firstName && u.lastName && 
+                                u.firstName.toLowerCase() === defaultUser.firstName.toLowerCase() &&
+                                u.lastName.toLowerCase() === defaultUser.lastName.toLowerCase();
+                            return emailMatch || nameMatch;
+                        });
+                        
+                        if (index !== -1) {
+                            // Merge existing user data with default user data (preserve custom fields, but ensure defaults exist)
+                            existingUsers[index] = {
+                                ...existingUsers[index],
+                                ...defaultUser,
+                                // Preserve existing user ID if it exists
+                                id: existingUsers[index].id || defaultUser.id
+                            };
+                            usersUpdated = true;
+                            console.log(`Updated user: ${defaultUser.username || defaultUser.firstName + ' ' + defaultUser.lastName}`);
+                        }
+                    }
+                });
+                
+                // Always save users to ensure they're persisted
+                try {
+                    localStorage.setItem('dj_users', JSON.stringify(existingUsers));
+                    console.log('Default users initialized. Total users:', existingUsers.length);
+                    if (usersUpdated) {
+                        console.log('Users in localStorage:', existingUsers.map(u => ({ 
+                            username: u.username, 
+                            email: u.email, 
+                            firstName: u.firstName, 
+                            lastName: u.lastName 
+                        })));
+                    }
+                } catch (storageError) {
+                    console.error('Error saving users to localStorage:', storageError);
+                    // If localStorage is full or disabled, show an error
+                    alert('Warning: Unable to save user data to browser storage. Please check your browser settings.');
+                }
+            } catch (error) {
+                console.error('Error initializing default users:', error);
+                // Try to continue with empty array as fallback
+                try {
+                    const fallbackUsers = [
+                        { username: 'admin', email: 'admin@externallyyours.com', password: 'admin123', firstName: 'Admin', lastName: 'User', createdAt: new Date().toISOString() },
+                        { username: 'Will Luke', email: 'will@externallyyoursproductions.com', password: 'admin123', firstName: 'Will', lastName: 'Luke', createdAt: new Date().toISOString() },
+                        { username: 'Gavin McDuffie', email: 'gavin@externallyyoursproductions.com', password: 'admin123', firstName: 'Gavin', lastName: 'McDuffie', createdAt: new Date().toISOString() },
+                        { username: 'Stephen Kena', email: 'stephen@externallyyoursproductions.com', password: 'admin123', firstName: 'Stephen', lastName: 'Kena', createdAt: new Date().toISOString() },
+                        { username: 'misty', email: 'mistymcduffie@yahoo.com', password: 'admin123', firstName: 'Misty', lastName: 'McDuffie', createdAt: new Date().toISOString() }
+                    ];
+                    localStorage.setItem('dj_users', JSON.stringify(fallbackUsers));
+                    console.log('Fallback: Initialized default users with minimal data');
+                } catch (fallbackError) {
+                    console.error('Critical error: Unable to initialize users at all:', fallbackError);
+                }
+            }
+        }
+
+        // Initialize default users on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            initializeDefaultUsers();
+        });
+        // Also run immediately in case DOMContentLoaded already fired
+        if (document.readyState === 'loading') {
+            // DOMContentLoaded hasn't fired yet, the event listener above will handle it
+        } else {
+            // DOMContentLoaded already fired, initialize now
+            initializeDefaultUsers();
+        }
+
+        // Toggle between login and signup forms
+        function toggleMode() {
+            isSignupMode = !isSignupMode;
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            const headerSubtitle = document.getElementById('header-subtitle');
+            const toggleText = document.getElementById('toggle-text');
+            const toggleLink = document.getElementById('toggle-link');
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+
+            // Hide messages
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+
+            if (isSignupMode) {
+                loginForm.classList.add('form-hidden');
+                signupForm.classList.remove('form-hidden');
+                headerSubtitle.textContent = 'Create your DJ portal account';
+                toggleText.textContent = 'Already have an account?';
+                toggleLink.textContent = 'Sign In';
+            } else {
+                loginForm.classList.remove('form-hidden');
+                signupForm.classList.add('form-hidden');
+                headerSubtitle.textContent = 'Sign in to access your calendar and bookings';
+                toggleText.textContent = "Don't have an account?";
+                toggleLink.textContent = 'Create Account';
+            }
+        }
+
+        // Signup form handling
+        document.getElementById('signup-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('signup-username').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+
+            // Clear previous messages
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+            errorMessage.textContent = '';
+            successMessage.textContent = '';
+
+            // Validation
+            if (!username || !email || !password || !confirmPassword) {
+                errorMessage.textContent = 'Please fill in all fields.';
+                errorMessage.classList.add('show');
+                return;
+            }
+
+            if (username.length < 3) {
+                errorMessage.textContent = 'Username must be at least 3 characters long.';
+                errorMessage.classList.add('show');
+                return;
+            }
+
+            if (password.length < 8) {
+                errorMessage.textContent = 'Password must be at least 8 characters long.';
+                errorMessage.classList.add('show');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                errorMessage.textContent = 'Passwords do not match.';
+                errorMessage.classList.add('show');
+                return;
+            }
+
+            // Check if username or email already exists (localStorage for dev)
+            const existingUsers = JSON.parse(localStorage.getItem('dj_users') || '[]');
+            const userExists = existingUsers.find(u => u.username === username || u.email === email);
+            
+            if (userExists) {
+                errorMessage.textContent = 'Username or email already exists.';
+                errorMessage.classList.add('show');
+                return;
+            }
+
+            // TODO: Replace with actual API call to create user
+            // In production, you would:
+            // 1. Send user data to backend API
+            // 2. Hash password server-side
+            // 3. Store in database
+            // 4. Return success/error
+
+            // For development: store in localStorage
+            const newUser = {
+                username: username,
+                email: email,
+                password: password, // In production, never store plain text passwords!
+                createdAt: new Date().toISOString()
+            };
+
+            existingUsers.push(newUser);
+            localStorage.setItem('dj_users', JSON.stringify(existingUsers));
+
+            // Show success message and switch to login
+            successMessage.textContent = 'Account created successfully! Please sign in.';
+            successMessage.classList.add('show');
+
+            // Clear form
+            document.getElementById('signup-form').reset();
+
+            // Switch to login mode after 2 seconds
+            setTimeout(() => {
+                toggleMode();
+            }, 2000);
+        });
+
+        // Login form handling
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('error-message');
+
+            // Clear previous errors
+            errorMessage.classList.remove('show');
+            errorMessage.textContent = '';
+
+            // Basic validation
+            if (!username || !password) {
+                errorMessage.textContent = 'Please enter both username and password.';
+                errorMessage.classList.add('show');
+                return;
+            }
+
+            // TODO: Replace with actual authentication API call
+            // In production, you would:
+            // 1. Send credentials to your backend API
+            // 2. Verify credentials against database
+            // 3. Create session/token
+            // 4. Redirect on success
+
+            // Ensure default users are initialized before login attempt
+            initializeDefaultUsers();
+            
+            // For development: check against localStorage
+            let existingUsers = [];
+            try {
+                const stored = localStorage.getItem('dj_users');
+                if (stored) {
+                    existingUsers = JSON.parse(stored);
+                    if (!Array.isArray(existingUsers)) {
+                        console.warn('dj_users is not an array, re-initializing...');
+                        initializeDefaultUsers();
+                        existingUsers = JSON.parse(localStorage.getItem('dj_users') || '[]');
+                    }
+                } else {
+                    // No users found, ensure initialization runs
+                    console.warn('No users found in localStorage, initializing default users...');
+                    initializeDefaultUsers();
+                    existingUsers = JSON.parse(localStorage.getItem('dj_users') || '[]');
+                }
+            } catch (error) {
+                console.error('Error reading users from localStorage:', error);
+                // Try to re-initialize
+                initializeDefaultUsers();
+                existingUsers = JSON.parse(localStorage.getItem('dj_users') || '[]');
+            }
+            
+            // Debug logging
+            console.log('Login attempt:', { username, passwordLength: password.length });
+            console.log('Existing users count:', existingUsers.length);
+            console.log('Existing users:', existingUsers.map(u => ({ 
+                username: u.username, 
+                email: u.email, 
+                firstName: u.firstName, 
+                lastName: u.lastName 
+            })));
+            
+            // Try multiple matching strategies: username, email, or firstName + lastName
+            const user = existingUsers.find(u => {
+                // Case-insensitive username match
+                const usernameMatch = u.username && u.username.toLowerCase().trim() === username.toLowerCase().trim();
+                
+                // Case-insensitive email match
+                const emailMatch = u.email && u.email.toLowerCase().trim() === username.toLowerCase().trim();
+                
+                // Case-insensitive firstName + lastName match (for "Gavin McDuffie" or "gavin mcduffie" format)
+                const fullNameMatch = u.firstName && u.lastName && 
+                    `${u.firstName} ${u.lastName}`.toLowerCase().trim() === username.toLowerCase().trim();
+                
+                // Case-insensitive firstName match (for single name login attempts)
+                const firstNameMatch = u.firstName && u.firstName.toLowerCase().trim() === username.toLowerCase().trim();
+                
+                // Check if any identifier matches
+                const identifierMatch = usernameMatch || emailMatch || fullNameMatch || firstNameMatch;
+                
+                // Password match (case-sensitive)
+                const passwordMatch = u.password === password;
+                
+                // Debug logging for this user
+                if (identifierMatch) {
+                    console.log('Identifier match found for user:', {
+                        username: u.username,
+                        email: u.email,
+                        firstName: u.firstName,
+                        lastName: u.lastName,
+                        passwordMatch,
+                        storedPassword: u.password ? '***' : 'missing'
+                    });
+                }
+                
+                return identifierMatch && passwordMatch;
+            });
+            
+            console.log('Login result:', user ? 'SUCCESS' : 'FAILED');
+
+            if (user) {
+                // Store authentication token (in production, use httpOnly cookies)
+                localStorage.setItem('dj_token', 'dev_token_' + Date.now());
+                // Store username - prefer username field, fallback to firstName + lastName for consistency
+                const storedUsername = user.username || (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : '');
+                localStorage.setItem('dj_user', storedUsername);
+                console.log('Login successful! Redirecting to dashboard...');
+                window.location.href = 'dj-dashboard.html?refresh=true';
+            } else {
+                console.log('No matching user found in localStorage');
+                // Don't try API call - it doesn't exist and causes 404 errors
+                errorMessage.textContent = 'Invalid username or password. Please check your credentials and try again.';
+                errorMessage.classList.add('show');
+            }
+        });
+
+    </script>
+</body>
+</html>
+

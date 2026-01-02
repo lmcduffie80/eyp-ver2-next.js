@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Photography Services - Externally Yours Productions, LLC - Professional wedding, event, and commercial photography">
+    <title>Photography - Externally Yours Productions, LLC</title>
+    <link rel="icon" type="image/png" href="EYP Logo_New.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #1a1a1a;
+            --secondary-color: #ffffff;
+            --accent-color: #ff6b35;
+            --text-dark: #333;
+            --text-light: #666;
+            --bg-light: #f8f8f8;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        nav .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            text-decoration: none;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 80px;
+            width: auto;
+            max-width: 400px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent-color);
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--secondary-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            z-index: 1001;
+        }
+
+        /* Mobile Menu Dropdown */
+        @media (max-width: 768px) {
+            .nav-links.mobile-open {
+                display: flex !important;
+                flex-direction: column;
+                position: fixed;
+                top: 70px;
+                left: 0;
+                right: 0;
+                width: 100%;
+                background: rgba(26, 26, 26, 0.98);
+                backdrop-filter: blur(10px);
+                padding: 1rem 0;
+                gap: 0;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+                animation: slideDown 0.3s ease;
+                z-index: 1001;
+                max-height: calc(100vh - 70px);
+                overflow-y: auto;
+            }
+
+            .nav-links.mobile-open li {
+                width: 100%;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .nav-links.mobile-open li:last-child {
+                border-bottom: none;
+            }
+
+            .nav-links.mobile-open a {
+                display: block;
+                padding: 1rem 2rem;
+                width: 100%;
+                color: var(--secondary-color);
+            }
+
+            .nav-links.mobile-open a:hover {
+                background: rgba(255, 107, 53, 0.1);
+                color: var(--accent-color);
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 80vh;
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+                        url('PhotographyPagePhotos/IMG_4205.jpg') center/cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: var(--secondary-color);
+            margin-top: 70px;
+        }
+
+        .hero-content h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: fadeInUp 1s ease;
+        }
+
+        .hero-content p {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            animation: fadeInUp 1s ease 0.2s both;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 2.5rem;
+            background: var(--accent-color);
+            color: var(--secondary-color);
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeInUp 1s ease 0.4s both;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        /* Sections */
+        section {
+            padding: 5rem 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: var(--primary-color);
+        }
+
+        /* About Section */
+        .about {
+            background: var(--bg-light);
+        }
+
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .about-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--text-light);
+        }
+
+        .about-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Services Section */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .service-card {
+            background: var(--secondary-color);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .service-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .service-card p {
+            color: var(--text-light);
+        }
+
+        .service-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Photography Packages */
+        .packages-section {
+            margin-top: 3rem;
+            padding-top: 3rem;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .packages-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .package-card {
+            background: var(--secondary-color);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .package-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border-color: var(--accent-color);
+        }
+
+        .package-card h4 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .package-price {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
+
+        .package-features {
+            list-style: none;
+            padding: 0;
+            margin: 1.5rem 0;
+        }
+
+        .package-features li {
+            padding: 0.5rem 0;
+            color: var(--text-dark);
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .package-features li:last-child {
+            border-bottom: none;
+        }
+
+        .package-features li:before {
+            content: "✓ ";
+            color: var(--accent-color);
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        .package-button {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-color);
+            color: var(--secondary-color);
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .package-button:hover {
+            background: var(--accent-color);
+        }
+
+        /* Portfolio Section */
+        .portfolio {
+            background: var(--bg-light);
+        }
+
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .portfolio-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            aspect-ratio: 16/9;
+            background: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .portfolio-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .portfolio-item:hover img {
+            transform: scale(1.1);
+        }
+
+        .portfolio-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 26, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .portfolio-item:hover .portfolio-overlay {
+            opacity: 1;
+        }
+
+        .portfolio-overlay h3 {
+            color: var(--secondary-color);
+            font-size: 1.5rem;
+        }
+
+        /* Gallery Modal */
+        .gallery-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            overflow: auto;
+        }
+
+        .gallery-modal.active {
+            display: block;
+        }
+
+        .gallery-modal-content {
+            position: relative;
+            margin: 2% auto;
+            padding: 20px;
+            max-width: 1400px;
+        }
+
+        .gallery-close {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: var(--secondary-color);
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 2001;
+        }
+
+        .gallery-close:hover {
+            color: var(--accent-color);
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 50px;
+        }
+
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            aspect-ratio: 16/9;
+            background: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        /* Gallery items should not load until modal is visible */
+        .gallery-modal:not(.active) .gallery-item img[data-src] {
+            opacity: 0;
+        }
+        
+        .gallery-modal.active .gallery-item img {
+            opacity: 1;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Image Lightbox */
+        .image-lightbox {
+            display: none;
+            position: fixed;
+            z-index: 3000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.98);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-lightbox.active {
+            display: flex;
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox-image {
+            max-width: 100%;
+            max-height: 90vh;
+            object-fit: contain;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: var(--secondary-color);
+            font-size: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 3001;
+            line-height: 1;
+            transition: color 0.3s ease;
+        }
+
+        .lightbox-close:hover {
+            color: var(--accent-color);
+        }
+
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--secondary-color);
+            border: none;
+            font-size: 40px;
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease, transform 0.3s ease;
+            z-index: 3001;
+        }
+
+        .lightbox-nav:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .lightbox-prev {
+            left: 30px;
+        }
+
+        .lightbox-next {
+            right: 30px;
+        }
+
+        .lightbox-counter {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--secondary-color);
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 3001;
+        }
+
+        /* Contact Section */
+        .contact-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+        }
+
+        .contact-info h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .contact-info p {
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .hb-p-64f2adb3998a8300079826c0-1 {
+            width: 100%;
+            min-height: 600px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .form-group input,
+        .form-group textarea {
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .submit-button {
+            padding: 1rem 2rem;
+            background: var(--primary-color);
+            color: var(--secondary-color);
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+
+        .submit-button:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--primary-color);
+            color: var(--secondary-color);
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1.5rem;
+            list-style: none;
+        }
+
+        .social-links a {
+            color: var(--secondary-color);
+            font-size: 1.5rem;
+            transition: color 0.3s ease;
+        }
+
+        .social-links a:hover {
+            color: var(--accent-color);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            nav .container {
+                position: relative;
+            }
+
+            .nav-links {
+                display: none !important;
+            }
+
+            .mobile-menu-toggle {
+                display: block !important;
+            }
+
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-content p {
+                font-size: 1.2rem;
+            }
+
+            .about-content,
+            .contact-content {
+                grid-template-columns: 1fr;
+            }
+
+            .services-grid,
+            .portfolio-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <a href="index.html" class="logo">
+                <img src="EYP Logo_New.png" alt="Externally Yours Productions, LLC">
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="photography.html" class="active">Photography</a></li>
+                <li><a href="videography.html">Videography</a></li>
+                <li><a href="dj-entertainment.html">DJ Entertainment</a></li>
+                <li><a href="index.html#contact">Contact</a></li>
+            </ul>
+            <button class="mobile-menu-toggle">☰</button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1>Photography</h1>
+            <p>Capturing moments that matter with artistic vision and technical excellence</p>
+            <a href="#contact" class="cta-button">Book Your Session</a>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <h2 class="section-title">Our Photography Services</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <p>At Externally Yours Productions, LLC, we specialize in high-quality photography services that capture the essence of your most important moments. From intimate wedding ceremonies to grand corporate events, we bring an artistic vision and technical excellence to every shoot.</p>
+                    <p>Our photography services include wedding photography, event photography, portrait sessions, product photography, and commercial shoots. We work closely with our clients to understand their vision and deliver images that exceed expectations.</p>
+                    <p>With attention to detail and a passion for storytelling through imagery, we ensure that every photo tells a story and preserves your memories for a lifetime.</p>
+                </div>
+                <img src="Grace and Dillon Wedding/7L8A5712.jpg" alt="Photography services" class="about-image" loading="lazy" decoding="async" fetchpriority="auto">
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services">
+        <div class="container">
+            <h2 class="section-title">What We Offer</h2>
+            <div class="services-grid">
+                <div class="service-card" style="grid-column: 1 / -1;">
+                    <div class="service-icon">💍</div>
+                    <h3>Wedding Photography</h3>
+                    <p>Comprehensive wedding photography services to capture every precious moment of your special day, from the ceremony to the reception.</p>
+                    
+                    <!-- Photography Packages -->
+                    <div class="packages-section">
+                        <h3 style="margin-top: 0; color: var(--primary-color);">Wedding Photography Packages</h3>
+                        <div class="packages-grid">
+                            <!-- Package 1 - Ceremony -->
+                            <div class="package-card">
+                                <h4>Ceremony</h4>
+                                <div class="package-price">$1,800</div>
+                                <ul class="package-features">
+                                    <li>Six Hours of Professional Photography Coverage</li>
+                                    <li>A minimum of 100 Fully Edited Digital Downloads</li>
+                                    <li>Delivery of Photos via Online Gallery</li>
+                                    <li>Exclusive Printing rights</li>
+                                </ul>
+                                <a href="#contact" class="package-button">Get Quote</a>
+                            </div>
+                            
+                            <!-- Package 2 - Deluxe -->
+                            <div class="package-card">
+                                <h4>Deluxe Package</h4>
+                                <div class="package-price">$2,250</div>
+                                <ul class="package-features">
+                                    <li>8 hours of coverage</li>
+                                    <li>200+ edited photos</li>
+                                    <li>Online gallery</li>
+                                    <li>Digital download</li>
+                                    <li>Engagement session</li>
+                                    <li>Second shooter</li>
+                                    <li>Wedding album</li>
+                                </ul>
+                                <a href="#contact" class="package-button">Get Quote</a>
+                            </div>
+                            
+                            <!-- Package 4 - Formal -->
+                            <div class="package-card">
+                                <h4>Formal Package</h4>
+                                <div class="package-price">$2,800</div>
+                                <ul class="package-features">
+                                    <li>Full day coverage</li>
+                                    <li>300+ edited photos</li>
+                                    <li>Online gallery</li>
+                                    <li>Digital download</li>
+                                    <li>Engagement session</li>
+                                    <li>Second shooter</li>
+                                    <li>Bridal session</li>
+                                </ul>
+                                <a href="#contact" class="package-button">Get Quote</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">🎉</div>
+                    <h3>Event Photography</h3>
+                    <p>Professional event photography for corporate gatherings, parties, celebrations, and special occasions.</p>
+                </div>
+                <div class="service-card" style="grid-column: 1 / -1;">
+                    <div class="service-icon">👤</div>
+                    <h3>Portrait Photography</h3>
+                    <p>Professional portrait sessions for individuals, families, and groups. We create stunning portraits that capture personality and emotion.</p>
+                    
+                    <!-- Portrait Photography Packages -->
+                    <div class="packages-section">
+                        <h3 style="margin-top: 0; color: var(--primary-color);">Portrait Photography Packages</h3>
+                        <div class="packages-grid">
+                            <!-- Package 1 - All Inclusive Session -->
+                            <div class="package-card">
+                                <h4>All Inclusive Session</h4>
+                                <div class="package-price">$150</div>
+                                <ul class="package-features">
+                                    <li>$150 Session Fee (federal mileage rate more than 100 mile round trip)</li>
+                                    <li>All images deemed editable will be available via Online Gallery (20 images)</li>
+                                    <li>Digitals are in given in high-resolution Print ready versions</li>
+                                    <li>Other packages are available for purchase in gallery</li>
+                                </ul>
+                                <a href="#contact" class="package-button">Get Quote</a>
+                            </div>
+                            
+                            <!-- Package 2 - Couples and Engagements -->
+                            <div class="package-card">
+                                <h4>Couples and Engagements</h4>
+                                <div class="package-price">$150</div>
+                                <ul class="package-features">
+                                    <li>$150 Session Fee (federal mileage rate more than 100 mile round trip)</li>
+                                    <li>All images deemed editable will be available via Online Gallery (30 images)</li>
+                                    <li>Digital will be given in High Resolution Print ready versions</li>
+                                    <li>Other packages are available for purchase in gallery</li>
+                                </ul>
+                                <a href="#contact" class="package-button">Get Quote</a>
+                            </div>
+                            
+                            <!-- Package 3 - Family Portraits -->
+                            <div class="package-card">
+                                <h4>Family Portraits</h4>
+                                <div class="package-price">$150</div>
+                                <ul class="package-features">
+                                    <li>$150 Session Fee (federal mileage rate more than 100 mile round trip)</li>
+                                    <li>All images deemed editable will be available via Online Gallery (30 images)</li>
+                                    <li>Digital will be given in High Resolution Print ready versions</li>
+                                    <li>Other packages are available for purchase in gallery</li>
+                                </ul>
+                                <a href="#contact" class="package-button">Get Quote</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">📦</div>
+                    <h3>Product Photography</h3>
+                    <p>High-quality product photography for e-commerce, catalogs, and marketing materials that showcase your products in the best light.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">🏢</div>
+                    <h3>Commercial Photography</h3>
+                    <p>Professional commercial photography services for businesses, brands, and marketing campaigns.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Portfolio Section -->
+    <section id="portfolio" class="portfolio">
+        <div class="container">
+            <h2 class="section-title">Our Photography Work</h2>
+            <div class="portfolio-grid">
+                <div class="portfolio-item" onclick="openGallery('grace-dillon-gallery')">
+                    <img src="Grace and Dillon Wedding/7L8A5712.jpg" alt="Grace and Dillon Wedding" loading="lazy" decoding="async" fetchpriority="auto">
+                    <div class="portfolio-overlay">
+                        <h3>Grace and Dillon Wedding</h3>
+                    </div>
+                </div>
+                <div class="portfolio-item" onclick="openGallery('yazmine-josh-gallery')">
+                    <img data-src="Yazmine and Josh Wedding/IMG_3957.jpg" loading="lazy" decoding="async" fetchpriority="auto">
+                    <div class="portfolio-overlay">
+                        <h3>Yazmine and Josh Wedding</h3>
+                    </div>
+                </div>
+                <div class="portfolio-item" onclick="openGallery('prom-2025-gallery')">
+                    <img data-src="Prom 2025/7L8A9549.jpg" loading="lazy" decoding="async" fetchpriority="auto">
+                    <div class="portfolio-overlay">
+                        <h3>Prom 2025</h3>
+                    </div>
+                </div>
+                <div class="portfolio-item" onclick="openGallery('amy-cody-gallery')">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A0908.jpg" loading="lazy" decoding="async" fetchpriority="auto">
+                    <div class="portfolio-overlay">
+                        <h3>Amy and Cody Hardy Wedding</h3>
+                    </div>
+                </div>
+                <div class="portfolio-item" onclick="openGallery('melissa-jeremy-gallery')">
+                    <img data-src="Melissa and Jeremy Engagement Session/7L8A0570.jpg" loading="lazy" decoding="async" fetchpriority="auto">
+                    <div class="portfolio-overlay">
+                        <h3 style="text-align: center;">Melissa and Jeremy Engagement Session</h3>
+                    </div>
+                </div>
+                <div class="portfolio-item" onclick="openGallery('photography-work-gallery')">
+                    <img data-src="PhotographyWork/7L8A0690.jpg" loading="lazy" decoding="async" fetchpriority="auto">
+                    <div class="portfolio-overlay">
+                        <h3>Photography Work</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact">
+        <div class="container">
+            <h2 class="section-title">Get In Touch</h2>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <h3>Let's Capture Your Moments</h3>
+                    <p>Ready to book a photography session? Contact us to discuss your project and get a quote.</p>
+                    <p><strong>Email:</strong> lee@externallyyoursproductions.com</p>
+                    <p><strong>Phone:</strong> 229-326-5408</p>
+                    <p><strong>Address:</strong> Tifton, Georgia 31794</p>
+                </div>
+                <div class="hb-p-64f2adb3998a8300079826c0-1"></div>
+                <img height="1" width="1" style="display:none" src="https://www.honeybook.com/p.png?pid=64f2adb3998a8300079826c0">
+                <script>
+                  (function(h,b,s,n,i,p,e,t) {
+                    h._HB_ = h._HB_ || {};h._HB_.pid = i;;;;
+                    t=b.createElement(s);t.type="text/javascript";t.async=!0;t.src=n;
+                    e=b.getElementsByTagName(s)[0];e.parentNode.insertBefore(t,e);
+                  })(window,document,"script","https://widget.honeybook.com/assets_users_production/websiteplacements/placement-controller.min.js","64f2adb3998a8300079826c0");
+                </script>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery Modal -->
+    <div id="grace-dillon-gallery" class="gallery-modal">
+        <span class="gallery-close" onclick="closeGallery('grace-dillon-gallery')">&times;</span>
+        <div class="gallery-modal-content">
+            <h2 style="color: white; text-align: center; margin-top: 20px;">Grace and Dillon Wedding</h2>
+            <div class="gallery-grid">
+                <div class="gallery-item">
+                    <img data-src="Grace and Dillon Wedding/7L8A5365.jpg" alt="Grace and Dillon Wedding" loading="lazy" decoding="async">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Grace and Dillon Wedding/7L8A5634.jpg" alt="Grace and Dillon Wedding" loading="lazy" decoding="async">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Grace and Dillon Wedding/7L8A5712.jpg" alt="Grace and Dillon Wedding" loading="lazy" decoding="async">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Grace and Dillon Wedding/IMG_2274.jpg" alt="Grace and Dillon Wedding" loading="lazy" decoding="async">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Grace and Dillon Wedding/IMG_2400.jpg" alt="Grace and Dillon Wedding" loading="lazy" decoding="async">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Grace and Dillon Wedding/IMG_2497 (1).jpg" alt="Grace and Dillon Wedding" loading="lazy" decoding="async">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Grace and Dillon Wedding/IMG_2543.jpg" alt="Grace and Dillon Wedding" loading="lazy" decoding="async">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Yazmine and Josh Wedding Gallery Modal -->
+    <div id="yazmine-josh-gallery" class="gallery-modal">
+        <span class="gallery-close" onclick="closeGallery('yazmine-josh-gallery')">&times;</span>
+        <div class="gallery-modal-content">
+            <h2 style="color: white; text-align: center; margin-top: 20px;">Yazmine and Josh Wedding</h2>
+            <div class="gallery-grid">
+                <div class="gallery-item">
+                    <img data-src="Yazmine and Josh Wedding/IMG_3957.jpg" loading="lazy" decoding="async">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Yazmine and Josh Wedding/IMG_4058.jpg" loading="lazy" decoding="async" alt="Yazmine and Josh Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Yazmine and Josh Wedding/IMG_4085.jpg" loading="lazy" decoding="async" alt="Yazmine and Josh Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Yazmine and Josh Wedding/IMG_4116.jpg" loading="lazy" decoding="async" alt="Yazmine and Josh Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Yazmine and Josh Wedding/IMG_4133.jpg" loading="lazy" decoding="async" alt="Yazmine and Josh Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Yazmine and Josh Wedding/IMG_4205.jpg" loading="lazy" decoding="async" alt="Yazmine and Josh Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Yazmine and Josh Wedding/IMG_4324.jpg" loading="lazy" decoding="async" alt="Yazmine and Josh Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Yazmine and Josh Wedding/IMG_4385.jpg" loading="lazy" decoding="async" alt="Yazmine and Josh Wedding">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prom 2025 Gallery Modal -->
+    <div id="prom-2025-gallery" class="gallery-modal">
+        <span class="gallery-close" onclick="closeGallery('prom-2025-gallery')">&times;</span>
+        <div class="gallery-modal-content">
+            <h2 style="color: white; text-align: center; margin-top: 20px;">Prom 2025</h2>
+            <div class="gallery-grid">
+                <div class="gallery-item">
+                    <img data-src="Prom 2025/7L8A9549.jpg" loading="lazy" decoding="async" alt="Prom 2025">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Prom 2025/7L8A9551.jpg" loading="lazy" decoding="async" alt="Prom 2025">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Prom 2025/7L8A9552.jpg" loading="lazy" decoding="async" alt="Prom 2025">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Prom 2025/7L8A9553.jpg" loading="lazy" decoding="async" alt="Prom 2025">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Prom 2025/7L8A9562.jpg" loading="lazy" decoding="async" alt="Prom 2025">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Prom 2025/7L8A9598.jpg" loading="lazy" decoding="async" alt="Prom 2025">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Prom 2025/7L8A9613.jpg" loading="lazy" decoding="async" alt="Prom 2025">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Prom 2025/7L8A9649.jpg" loading="lazy" decoding="async" alt="Prom 2025">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Prom 2025/7L8A9661.jpg" loading="lazy" decoding="async" alt="Prom 2025">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Amy and Cody Hardy Wedding Gallery Modal -->
+    <div id="amy-cody-gallery" class="gallery-modal">
+        <span class="gallery-close" onclick="closeGallery('amy-cody-gallery')">&times;</span>
+        <div class="gallery-modal-content">
+            <h2 style="color: white; text-align: center; margin-top: 20px;">Amy and Cody Hardy Wedding</h2>
+            <div class="gallery-grid">
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A0908.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A0914.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A0917.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A0919.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A0931.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A0956.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A0963.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A0970.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A0975.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A0983.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A0984.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A1000.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A1008.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A1102.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A1126.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Amy and Cody Hardy Wedding/E72A1180.jpg" loading="lazy" decoding="async" alt="Amy and Cody Hardy Wedding">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Melissa and Jeremy Engagement Session Gallery Modal -->
+    <div id="melissa-jeremy-gallery" class="gallery-modal">
+        <span class="gallery-close" onclick="closeGallery('melissa-jeremy-gallery')">&times;</span>
+        <div class="gallery-modal-content">
+            <h2 style="color: white; text-align: center; margin-top: 20px;">Melissa and Jeremy Engagement Session</h2>
+            <div class="gallery-grid">
+                <div class="gallery-item">
+                    <img data-src="Melissa and Jeremy Engagement Session/7L8A0570.jpg" loading="lazy" decoding="async" alt="Melissa and Jeremy Engagement Session">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Melissa and Jeremy Engagement Session/7L8A0593.jpg" loading="lazy" decoding="async" alt="Melissa and Jeremy Engagement Session">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Melissa and Jeremy Engagement Session/7L8A0595.jpg" loading="lazy" decoding="async" alt="Melissa and Jeremy Engagement Session">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Melissa and Jeremy Engagement Session/7L8A0635.jpg" loading="lazy" decoding="async" alt="Melissa and Jeremy Engagement Session">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Melissa and Jeremy Engagement Session/7L8A0659.jpg" loading="lazy" decoding="async" alt="Melissa and Jeremy Engagement Session">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Melissa and Jeremy Engagement Session/7L8A0700.jpg" loading="lazy" decoding="async" alt="Melissa and Jeremy Engagement Session">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Melissa and Jeremy Engagement Session/7L8A0772.jpg" loading="lazy" decoding="async" alt="Melissa and Jeremy Engagement Session">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Melissa and Jeremy Engagement Session/7L8A0776.jpg" loading="lazy" decoding="async" alt="Melissa and Jeremy Engagement Session">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Melissa and Jeremy Engagement Session/7L8A0781.jpg" loading="lazy" decoding="async" alt="Melissa and Jeremy Engagement Session">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Melissa and Jeremy Engagement Session/7L8A0815.jpg" loading="lazy" decoding="async" alt="Melissa and Jeremy Engagement Session">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Melissa and Jeremy Engagement Session/7L8A0861.jpg" loading="lazy" decoding="async" alt="Melissa and Jeremy Engagement Session">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Melissa and Jeremy Engagement Session/IMG_4618.jpg" loading="lazy" decoding="async" alt="Melissa and Jeremy Engagement Session">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="Melissa and Jeremy Engagement Session/IMG_4635.jpg" loading="lazy" decoding="async" alt="Melissa and Jeremy Engagement Session">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photography Work Gallery Modal -->
+    <div id="photography-work-gallery" class="gallery-modal">
+        <span class="gallery-close" onclick="closeGallery('photography-work-gallery')">&times;</span>
+        <div class="gallery-modal-content">
+            <h2 style="color: white; text-align: center; margin-top: 20px;">Photography Work</h2>
+            <div class="gallery-grid">
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/7L8A0690.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/7L8A0744.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/7L8A0759.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/7L8A0812.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/7L8A4546.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/7L8A4662.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/7L8A4726.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/7L8A4891.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/7L8A5016.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/7L8A5072.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/7L8A5365.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/7L8A5393.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/E72A0908.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/E72A0909.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/E72A0960.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/E72A0970.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/E72A0985.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/E72A1141.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/IMG_3991.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/IMG_3998.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/IMG_4005.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/IMG_4043.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/IMG_4110.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/IMG_4114.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/IMG_4116.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+                <div class="gallery-item">
+                    <img data-src="PhotographyWork/IMG_4675.jpg" loading="lazy" decoding="async" alt="Photography Work">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Lightbox -->
+    <div id="image-lightbox" class="image-lightbox">
+        <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+        <button class="lightbox-nav lightbox-prev" onclick="prevImage()">&#8249;</button>
+        <div class="lightbox-content">
+            <img class="lightbox-image" src="" alt="Gallery image">
+            <div class="lightbox-counter"></div>
+        </div>
+        <button class="lightbox-nav lightbox-next" onclick="nextImage()">&#8250;</button>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2024 Externally Yours Productions, LLC. All rights reserved.</p>
+                <ul class="social-links">
+                    <li><a href="#" aria-label="Facebook">📘</a></li>
+                    <li><a href="#" aria-label="Instagram">📷</a></li>
+                    <li><a href="#" aria-label="Twitter">🐦</a></li>
+                    <li><a href="#" aria-label="YouTube">📺</a></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle with dropdown
+        const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+        const navLinks = document.querySelector('.nav-links');
+        
+        if (mobileMenuToggle && navLinks) {
+            // Ensure menu is hidden on page load
+            navLinks.classList.remove('mobile-open');
+            
+            mobileMenuToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Toggle the mobile-open class
+                const isOpen = navLinks.classList.contains('mobile-open');
+                
+                if (isOpen) {
+                    navLinks.classList.remove('mobile-open');
+                    mobileMenuToggle.textContent = '☰';
+                } else {
+                    navLinks.classList.add('mobile-open');
+                    mobileMenuToggle.textContent = '✕';
+                }
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (navLinks.classList.contains('mobile-open')) {
+                    if (!navLinks.contains(e.target) && !mobileMenuToggle.contains(e.target)) {
+                        navLinks.classList.remove('mobile-open');
+                        mobileMenuToggle.textContent = '☰';
+                    }
+                }
+            });
+
+            // Close menu when clicking a link
+            const navLinksItems = navLinks.querySelectorAll('a');
+            navLinksItems.forEach(link => {
+                link.addEventListener('click', () => {
+                    navLinks.classList.remove('mobile-open');
+                    mobileMenuToggle.textContent = '☰';
+                });
+            });
+        }
+
+        // Form submission
+
+        // Navbar background on scroll
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 100) {
+                nav.style.background = 'rgba(26, 26, 26, 0.98)';
+            } else {
+                nav.style.background = 'rgba(26, 26, 26, 0.95)';
+            }
+        });
+
+        // Gallery modal functions
+        function openGallery(galleryId) {
+            const modal = document.getElementById(galleryId);
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                
+                // Load images when gallery is opened (lazy load for gallery modals)
+                const galleryImages = modal.querySelectorAll('.gallery-item img[data-src]');
+                galleryImages.forEach(img => {
+                    if (img.dataset.src && !img.src) {
+                        img.src = img.dataset.src;
+                        img.loading = 'lazy';
+                        img.decoding = 'async';
+                        img.removeAttribute('data-src');
+                    }
+                });
+            }
+        }
+
+        function closeGallery(galleryId) {
+            const modal = document.getElementById(galleryId);
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Close gallery when clicking outside the content
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('gallery-modal')) {
+                e.target.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // Close gallery with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const activeGallery = document.querySelector('.gallery-modal.active');
+                if (activeGallery) {
+                    activeGallery.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            }
+        });
+
+        // Image Lightbox functionality
+        let currentImageIndex = 0;
+        let currentImages = [];
+
+        function openLightbox(images, index) {
+            // Close any open gallery modals first
+            document.querySelectorAll('.gallery-modal.active').forEach(modal => {
+                modal.classList.remove('active');
+            });
+            
+            currentImages = images;
+            currentImageIndex = index;
+            updateLightboxImage();
+            document.getElementById('image-lightbox').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            document.getElementById('image-lightbox').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function updateLightboxImage() {
+            if (currentImages.length > 0) {
+                const img = document.querySelector('.lightbox-image');
+                const counter = document.querySelector('.lightbox-counter');
+                img.src = currentImages[currentImageIndex].src;
+                img.alt = currentImages[currentImageIndex].alt || 'Gallery image';
+                counter.textContent = `${currentImageIndex + 1} / ${currentImages.length}`;
+                
+                // Show/hide navigation arrows
+                document.querySelector('.lightbox-prev').style.display = currentImageIndex > 0 ? 'flex' : 'none';
+                document.querySelector('.lightbox-next').style.display = currentImageIndex < currentImages.length - 1 ? 'flex' : 'none';
+            }
+        }
+
+        function nextImage() {
+            if (currentImageIndex < currentImages.length - 1) {
+                currentImageIndex++;
+                updateLightboxImage();
+            }
+        }
+
+        function prevImage() {
+            if (currentImageIndex > 0) {
+                currentImageIndex--;
+                updateLightboxImage();
+            }
+        }
+
+        // Make gallery items clickable to open in lightbox
+        document.querySelectorAll('.gallery-item').forEach((item, index) => {
+            item.addEventListener('click', function(e) {
+                // Get all images in the same gallery
+                const gallery = this.closest('.gallery-grid');
+                const allItems = Array.from(gallery.querySelectorAll('.gallery-item img'));
+                const currentImg = this.querySelector('img');
+                const currentIndex = allItems.indexOf(currentImg);
+                
+                openLightbox(allItems, currentIndex);
+            });
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            const lightbox = document.getElementById('image-lightbox');
+            if (lightbox && lightbox.classList.contains('active')) {
+                if (e.key === 'Escape') {
+                    closeLightbox();
+                } else if (e.key === 'ArrowLeft') {
+                    prevImage();
+                } else if (e.key === 'ArrowRight') {
+                    nextImage();
+                }
+            }
+        });
+
+        // Open gallery from URL hash (when linked from home page)
+        function handleHashGallery() {
+            const hash = window.location.hash;
+            if (hash) {
+                const galleryId = hash.substring(1); // Remove the # symbol
+                const gallery = document.getElementById(galleryId);
+                if (gallery) {
+                    // Scroll to portfolio section first
+                    const portfolioSection = document.getElementById('portfolio');
+                    if (portfolioSection) {
+                        portfolioSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                    // Open the gallery after a short delay
+                    setTimeout(() => {
+                        openGallery(galleryId);
+                    }, 500);
+                }
+            }
+        }
+
+        // Check if DOM is already loaded (script is at end of body)
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', handleHashGallery);
+        } else {
+            // DOM is already loaded, run immediately
+            handleHashGallery();
+        }
+    </script>
+    <!-- Cookie Consent -->
+    <script src="cookie-consent.js"></script>
+    <!-- Analytics Tracking -->
+    <script src="analytics.js"></script>
+</body>
+</html>
+
