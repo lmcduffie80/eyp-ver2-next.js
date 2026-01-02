@@ -7,6 +7,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'eyp-static.vercel.app',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
     unoptimized: true,
   },

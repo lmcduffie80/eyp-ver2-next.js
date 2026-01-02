@@ -16,25 +16,38 @@ interface ContactProps {
 export default function Contact({ title = "Let's Work Together", description = "Have a project in mind? We'd love to hear from you. Send us a message and we'll respond as soon as possible." }: ContactProps) {
   useEffect(() => {
     // Load Honeybook widget
-    if (typeof window !== 'undefined' && !window._HB_) {
+    if (typeof window !== 'undefined') {
+      // Initialize Honeybook global object
       window._HB_ = window._HB_ || {};
       window._HB_.pid = '64f2adb3998a8300079826c0';
       
-      const script = document.createElement('script');
-      script.type = 'text/javascript';
-      script.async = true;
-      script.defer = true;
-      script.src = 'https://widget.honeybook.com/assets_users_production/websiteplacements/placement-controller.min.js';
+      // Check if script is already loaded
+      const existingScript = document.querySelector('script[src*="honeybook.com"]');
       
-      const firstScript = document.getElementsByTagName('script')[0];
-      if (firstScript && firstScript.parentNode) {
-        firstScript.parentNode.insertBefore(script, firstScript);
+      if (!existingScript) {
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.async = true;
+        script.defer = true;
+        script.src = 'https://widget.honeybook.com/assets_users_production/websiteplacements/placement-controller.min.js';
+        
+        // Add error handling
+        script.onerror = () => {
+          console.warn('Failed to load Honeybook widget');
+        };
+        
+        const firstScript = document.getElementsByTagName('script')[0];
+        if (firstScript && firstScript.parentNode) {
+          firstScript.parentNode.insertBefore(script, firstScript);
+        } else {
+          document.head.appendChild(script);
+        }
       }
     }
   }, []);
 
   return (
-    <section id="contact">
+    <section id="contact" className="contact-section">
       <div className="container">
         <h2 className="section-title">Get In Touch</h2>
         <div className="contact-content">
