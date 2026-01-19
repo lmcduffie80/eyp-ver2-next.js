@@ -7,6 +7,7 @@ import Link from 'next/link';
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('djs');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     // Prevent body scroll when dashboard is open
@@ -80,11 +81,20 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="dashboard-wrapper">
+    <div className={`dashboard-wrapper ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       {/* Sidebar Navigation - Modern Design */}
-      <nav className={`sidebar sidebar-modern ${sidebarOpen ? 'open' : ''}`}>
+      <nav className={`sidebar sidebar-modern ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        {/* Sidebar Toggle Button */}
+        <button 
+          className="sidebar-toggle-btn"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          aria-label="Toggle sidebar"
+        >
+          {sidebarCollapsed ? '☰' : '✕'}
+        </button>
+        
         {/* Logo Area */}
-        <div style={{ padding: '2rem 1.5rem', background: '#ffffff', borderBottom: '1px solid #e0e0e0' }}>
+        <div style={{ padding: '0', background: '#ffffff', borderBottom: '1px solid #e0e0e0' }}>
           <a 
             href="#" 
             onClick={(e) => { e.preventDefault(); switchTab('djs'); }} 
@@ -93,9 +103,9 @@ export default function AdminDashboard() {
             <Image
               src="/EYP Logo_New.png"
               alt="EYP Logo"
-              width={120}
-              height={40}
-              style={{ height: 'auto', width: '100%', maxWidth: '120px', margin: '0 auto', display: 'block' }}
+              width={200}
+              height={65}
+              style={{ height: 'auto', width: '100%', maxWidth: '200px', margin: '0 auto', display: 'block' }}
               priority
             />
           </a>
@@ -186,134 +196,6 @@ export default function AdminDashboard() {
             <div style={{ textAlign: 'right', marginRight: '1rem' }}>
               <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Administrator</div>
               <div id="admin-name" style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Admin</div>
-            </div>
-            {/* Mobile Hamburger Menu */}
-            <div className="mobile-hamburger-menu">
-              <button 
-                className="hamburger-btn" 
-                onClick={() => {
-                  const dropdown = document.getElementById('hamburger-menu-dropdown');
-                  const btn = document.querySelector('.hamburger-btn');
-                  if (dropdown && btn) {
-                    dropdown.classList.toggle('show');
-                    btn.classList.toggle('active');
-                  }
-                }}
-                aria-label="Toggle menu"
-                type="button"
-              >
-                <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>☰</span>
-              </button>
-              <div className="hamburger-menu-dropdown" id="hamburger-menu-dropdown">
-                <a 
-                  className={`hamburger-menu-item ${activeTab === 'djs' ? 'active' : ''}`}
-                  onClick={() => {
-                    switchTab('djs');
-                    const dropdown = document.getElementById('hamburger-menu-dropdown');
-                    const btn = document.querySelector('.hamburger-btn');
-                    if (dropdown && btn) {
-                      dropdown.classList.remove('show');
-                      btn.classList.remove('active');
-                    }
-                  }}
-                  id="hamburger-nav-djs"
-                >
-                  <span>
-                    <span className="hamburger-menu-icon">🏠</span>
-                    <span>Home</span>
-                  </span>
-                </a>
-                <a 
-                  className={`hamburger-menu-item ${activeTab === 'bookings' ? 'active' : ''}`}
-                  onClick={() => {
-                    switchTab('bookings');
-                    const dropdown = document.getElementById('hamburger-menu-dropdown');
-                    const btn = document.querySelector('.hamburger-btn');
-                    if (dropdown && btn) {
-                      dropdown.classList.remove('show');
-                      btn.classList.remove('active');
-                    }
-                  }}
-                  id="hamburger-nav-bookings"
-                >
-                  <span>
-                    <span className="hamburger-menu-icon">📋</span>
-                    <span>Projects</span>
-                  </span>
-                </a>
-                <a 
-                  className={`hamburger-menu-item ${activeTab === 'users' ? 'active' : ''}`}
-                  onClick={() => {
-                    switchTab('users');
-                    const dropdown = document.getElementById('hamburger-menu-dropdown');
-                    const btn = document.querySelector('.hamburger-btn');
-                    if (dropdown && btn) {
-                      dropdown.classList.remove('show');
-                      btn.classList.remove('active');
-                    }
-                  }}
-                  id="hamburger-nav-users"
-                >
-                  <span>
-                    <span className="hamburger-menu-icon">👥</span>
-                    <span>Users</span>
-                  </span>
-                </a>
-                <a 
-                  className={`hamburger-menu-item ${activeTab === 'calendar' ? 'active' : ''}`}
-                  onClick={() => {
-                    switchTab('calendar');
-                    const dropdown = document.getElementById('hamburger-menu-dropdown');
-                    const btn = document.querySelector('.hamburger-btn');
-                    if (dropdown && btn) {
-                      dropdown.classList.remove('show');
-                      btn.classList.remove('active');
-                    }
-                  }}
-                  id="hamburger-nav-calendar"
-                >
-                  <span>
-                    <span className="hamburger-menu-icon">📅</span>
-                    <span>Calendar</span>
-                  </span>
-                </a>
-                <a 
-                  className={`hamburger-menu-item ${activeTab === 'analytics' ? 'active' : ''}`}
-                  onClick={() => {
-                    switchTab('analytics');
-                    const dropdown = document.getElementById('hamburger-menu-dropdown');
-                    const btn = document.querySelector('.hamburger-btn');
-                    if (dropdown && btn) {
-                      dropdown.classList.remove('show');
-                      btn.classList.remove('active');
-                    }
-                  }}
-                  id="hamburger-nav-analytics"
-                >
-                  <span>
-                    <span className="hamburger-menu-icon">📊</span>
-                    <span>Analytics</span>
-                  </span>
-                </a>
-                <a 
-                  className={`hamburger-menu-item ${activeTab === 'reviews' ? 'active' : ''}`}
-                  onClick={() => {
-                    switchTab('reviews');
-                    const dropdown = document.getElementById('hamburger-menu-dropdown');
-                    const btn = document.querySelector('.hamburger-btn');
-                    if (dropdown && btn) {
-                      dropdown.classList.remove('show');
-                      btn.classList.remove('active');
-                    }
-                  }}
-                  id="hamburger-nav-reviews"
-                >
-                  <span>
-                    <span className="hamburger-menu-icon">⭐</span>
-                    <span>Reviews</span>
-                  </span>
-                </a>
-              </div>
             </div>
             <button className="logout-btn" onClick={handleLogout}>
               Logout
