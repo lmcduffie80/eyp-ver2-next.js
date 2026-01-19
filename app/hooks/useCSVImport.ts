@@ -361,6 +361,9 @@ export function useCSVImport() {
 
       // Replace all existing bookings with new ones
       try {
+        // Helper function to add delay between API calls
+        const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+        
         // First, get all existing bookings and delete them
         updateStatus(
           'Deleting Old Data',
@@ -369,9 +372,14 @@ export function useCSVImport() {
         );
         const existingBookings = await fetchAllBookings();
 
-        for (const booking of existingBookings) {
+        for (let i = 0; i < existingBookings.length; i++) {
+          const booking = existingBookings[i];
           if (booking.id) {
             await deleteBooking(booking.id);
+            // Add small delay every 5 deletions to prevent cache warnings
+            if ((i + 1) % 5 === 0) {
+              await delay(100); // 100ms delay
+            }
           }
         }
 
@@ -387,6 +395,11 @@ export function useCSVImport() {
           try {
             await createBooking(newBookings[i]);
             successCount++;
+            
+            // Add small delay every 5 creates to prevent cache warnings
+            if ((i + 1) % 5 === 0) {
+              await delay(100); // 100ms delay
+            }
             
             // Update progress every 10 bookings
             if ((i + 1) % 10 === 0 || i === newBookings.length - 1) {
