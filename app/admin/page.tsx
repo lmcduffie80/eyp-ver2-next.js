@@ -29,6 +29,56 @@ export default function AdminDashboard() {
     setSidebarOpen(false);
   };
 
+  const handleLogout = async () => {
+    // Show confirmation
+    if (!confirm('Are you sure you want to logout?')) {
+      return;
+    }
+
+    try {
+      // Show loading state
+      const logoutBtn = document.querySelector('.logout-btn');
+      if (logoutBtn) {
+        logoutBtn.textContent = 'Logging out...';
+        (logoutBtn as HTMLButtonElement).disabled = true;
+      }
+
+      // 1. Call logout API to clear server-side session
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // 2. Clear localStorage
+      localStorage.clear();
+
+      // 3. Clear sessionStorage
+      sessionStorage.clear();
+
+      // 4. Clear any client-side auth data
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+
+      // 5. Redirect to login
+      window.location.href = '/admin-login';
+    } catch (error) {
+      console.error('Logout error:', error);
+      alert('Logout failed. Please try again.');
+      
+      // Reset button state
+      const logoutBtn = document.querySelector('.logout-btn');
+      if (logoutBtn) {
+        logoutBtn.textContent = 'Logout';
+        (logoutBtn as HTMLButtonElement).disabled = false;
+      }
+    }
+  };
+
   return (
     <div className="dashboard-wrapper">
       {/* Sidebar Navigation - Modern Design */}
@@ -265,11 +315,7 @@ export default function AdminDashboard() {
                 </a>
               </div>
             </div>
-            <button className="logout-btn" onClick={() => {
-              if (confirm('Are you sure you want to logout?')) {
-                window.location.href = '/admin-login';
-              }
-            }}>
+            <button className="logout-btn" onClick={handleLogout}>
               Logout
             </button>
           </div>
