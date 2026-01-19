@@ -12,7 +12,11 @@ export async function GET(request: NextRequest) {
     // Create a mock request object compatible with the existing handler
     const req = {
       method: 'GET',
-      query: dj_user ? { dj_user } : {}
+      query: dj_user ? { dj_user } : {},
+      headers: {
+        origin: request.headers.get('origin') || '',
+        host: request.headers.get('host') || ''
+      }
     };
     
     // Create a mock response object to capture the response
@@ -69,7 +73,11 @@ export async function POST(request: NextRequest) {
     const req = {
       method: 'POST',
       body: body,
-      query: {}
+      query: {},
+      headers: {
+        origin: request.headers.get('origin') || '',
+        host: request.headers.get('host') || ''
+      }
     };
     
     // Create a mock response object to capture the response
