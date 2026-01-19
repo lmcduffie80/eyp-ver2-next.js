@@ -126,6 +126,51 @@ export async function DELETE(
 4. Test each endpoint with curl
 5. Test CSV import functionality
 
+## Additional Fix: Rate Limiting API Calls
+
+The current CSV import makes too many simultaneous API calls, causing Next.js cache warnings:
+```
+Persisting failed: Another write batch or compaction is already active
+```
+
+**Update `app/hooks/useCSVImport.ts`** to batch API calls with delays:
+
+```typescript
+// Add delay helper
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// In the import function, batch deletes:
+for (let i = 0; i < existingBookings.length; i++) {
+  if (booking.id) {
+    await deleteBooking(booking.id);
+    // Add small delay every 5 deletions
+    if ((i + 1) % 5 === 0) {
+      await delay(100); // 100ms delay
+    }
+  }
+}
+
+// Batch creates:
+for (let i = 0; i < newBookings.length; i++) {
+  try {
+    await createBooking(newBookings[i]);
+    successCount++;
+    
+    // Add small delay every 5 creates
+    if ((i + 1) % 5 === 0) {
+      await delay(100); // 100ms delay
+    }
+    
+    // Update progress
+    if ((i + 1) % 10 === 0 || i === newBookings.length - 1) {
+      updateStatus(...);
+    }
+  } catch (error) {
+    console.error(`Failed to create booking ${i + 1}:`, error);
+  }
+}
+```
+
 ## Expected Result
 
 - ✅ `/api/users` returns JSON array of users
@@ -133,3 +178,5 @@ export async function DELETE(
 - ✅ POST `/api/bookings` creates new booking
 - ✅ DELETE `/api/bookings/{id}` deletes booking
 - ✅ CSV import works without errors
+- ✅ No Next.js cache warnings
+- ✅ Smooth import with progress updates
