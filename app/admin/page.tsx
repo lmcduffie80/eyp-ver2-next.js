@@ -630,19 +630,19 @@ export default function AdminDashboard() {
 
               {/* Analytics Overview Cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '1.5rem', borderRadius: '10px' }}>
+                <div style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)', color: 'white', padding: '1.5rem', borderRadius: '10px' }}>
                   <div style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '0.5rem' }}>Total Visits</div>
                   <div style={{ fontSize: '2.5rem', fontWeight: 700 }} id="total-visits">0</div>
                 </div>
-                <div style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white', padding: '1.5rem', borderRadius: '10px' }}>
+                <div style={{ background: 'linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%)', color: 'white', padding: '1.5rem', borderRadius: '10px' }}>
                   <div style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '0.5rem' }}>Page Views</div>
                   <div style={{ fontSize: '2.5rem', fontWeight: 700 }} id="total-page-views">0</div>
                 </div>
-                <div style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white', padding: '1.5rem', borderRadius: '10px' }}>
+                <div style={{ background: 'linear-gradient(135deg, #3d3d3d 0%, #2d2d2d 100%)', color: 'white', padding: '1.5rem', borderRadius: '10px' }}>
                   <div style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '0.5rem' }}>Unique Visitors</div>
                   <div style={{ fontSize: '2.5rem', fontWeight: 700 }} id="unique-visitors">0</div>
                 </div>
-                <div style={{ background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', color: 'white', padding: '1.5rem', borderRadius: '10px' }}>
+                <div style={{ background: 'linear-gradient(135deg, #4d4d4d 0%, #3d3d3d 100%)', color: 'white', padding: '1.5rem', borderRadius: '10px' }}>
                   <div style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '0.5rem' }}>Avg. Session</div>
                   <div style={{ fontSize: '2.5rem', fontWeight: 700 }} id="avg-session-duration">0m</div>
                 </div>
