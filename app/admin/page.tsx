@@ -43,9 +43,9 @@ export default function AdminDashboard() {
             <Image
               src="/EYP Logo_New.png"
               alt="EYP Logo"
-              width={240}
-              height={80}
-              style={{ height: 'auto', width: '100%', maxWidth: '240px', margin: '0 auto', display: 'block' }}
+              width={120}
+              height={40}
+              style={{ height: 'auto', width: '100%', maxWidth: '120px', margin: '0 auto', display: 'block' }}
               priority
             />
           </a>
