@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
+import { useCSVImport } from '../hooks/useCSVImport';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('djs');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { importing, status, importCSV } = useCSVImport();
 
   useEffect(() => {
     // Prevent body scroll when dashboard is open
@@ -424,24 +425,75 @@ export default function AdminDashboard() {
                 />
                 <button 
                   className="btn btn-primary"
-                  onClick={() => {
-                    // Import CSV functionality will be added here
-                    console.log('Import CSV clicked');
+                  onClick={async () => {
+                    const fileInput = document.getElementById('csv-file-input') as HTMLInputElement;
+                    const file = fileInput?.files?.[0];
+                    if (!file) {
+                      alert('Please select a CSV file first');
+                      return;
+                    }
+                    await importCSV(file);
+                    // Clear the file input after import
+                    fileInput.value = '';
                   }}
-                  style={{ padding: '0.5rem 1.5rem', background: 'var(--accent-color)', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
+                  disabled={importing}
+                  style={{ 
+                    padding: '0.5rem 1.5rem', 
+                    background: 'var(--accent-color)', 
+                    color: 'white', 
+                    border: 'none', 
+                    borderRadius: '5px', 
+                    cursor: importing ? 'not-allowed' : 'pointer', 
+                    fontWeight: 'bold',
+                    opacity: importing ? 0.6 : 1
+                  }}
                 >
-                  Import CSV
+                  {importing ? 'Importing...' : 'Import CSV'}
                 </button>
               </div>
-              <div id="import-status-box" style={{ display: 'none', marginTop: '1rem', padding: '1rem', borderRadius: '8px', background: '#f8f9fa', border: '2px solid #e0e0e0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                  <div id="import-status-spinner" style={{ width: '20px', height: '20px', border: '3px solid #f3f3f3', borderTop: '3px solid var(--accent-color)', borderRadius: '50%', animation: 'spin 1s linear infinite', display: 'none' }}></div>
-                  <div id="import-status-icon" style={{ fontSize: '1.25rem' }}></div>
-                  <strong id="import-status-title" style={{ fontSize: '1rem', color: 'var(--text-dark)' }}>Import Status</strong>
+              {status.visible && (
+                <div style={{ 
+                  display: 'block',
+                  marginTop: '1rem', 
+                  padding: '1rem', 
+                  borderRadius: '8px', 
+                  background: status.type === 'error' ? '#f8d7da' : 
+                              status.type === 'success' ? '#d4edda' : 
+                              status.type === 'warning' ? '#fff3cd' : '#f8f9fa',
+                  border: `2px solid ${
+                    status.type === 'error' ? '#f5c6cb' : 
+                    status.type === 'success' ? '#c3e6cb' : 
+                    status.type === 'warning' ? '#ffeaa7' : '#e0e0e0'
+                  }`
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                    {importing && (
+                      <div style={{ 
+                        width: '20px', 
+                        height: '20px', 
+                        border: '3px solid #f3f3f3', 
+                        borderTop: '3px solid var(--accent-color)', 
+                        borderRadius: '50%', 
+                        animation: 'spin 1s linear infinite'
+                      }}></div>
+                    )}
+                    <div style={{ fontSize: '1.25rem' }}>
+                      {status.type === 'success' ? '✅' : 
+                       status.type === 'error' ? '❌' : 
+                       status.type === 'warning' ? '⚠️' : 'ℹ️'}
+                    </div>
+                    <strong style={{ fontSize: '1rem', color: 'var(--text-dark)' }}>{status.title}</strong>
+                  </div>
+                  <div style={{ color: 'var(--text-dark)', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                    {status.message}
+                  </div>
+                  {status.details && (
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-light)' }}>
+                      {status.details}
+                    </div>
+                  )}
                 </div>
-                <div id="import-status-message" style={{ color: 'var(--text-dark)', fontSize: '0.95rem', lineHeight: 1.5 }}></div>
-                <div id="import-status-details" style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-light)' }}></div>
-              </div>
+              )}
             </div>
             
             <div className="section-card">
