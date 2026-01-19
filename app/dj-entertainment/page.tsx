@@ -14,7 +14,7 @@ export default function DJEntertainment() {
         className="hero"
         style={{
           height: '80vh',
-          background: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/DJ Entertainment/mixer-1284507_1280.jpg') center/cover"
+          background: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1571330735066-03aaa9429d89?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80') center/cover"
         }}
       >
         <div className="hero-content">

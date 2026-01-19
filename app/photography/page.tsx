@@ -1,10 +1,25 @@
+'use client';
+
+import { useState } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import Contact from '@/components/Contact';
+import ImageLightbox from '@/components/ImageLightbox';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function Photography() {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxTitle, setLightboxTitle] = useState('');
+
+  const openLightbox = (images: string[], index: number, title: string) => {
+    setLightboxImages(images);
+    setLightboxIndex(index);
+    setLightboxTitle(title);
+    setLightboxOpen(true);
+  };
   const galleries = [
     {
       id: 'grace-dillon-gallery',
@@ -273,90 +288,25 @@ export default function Photography() {
         <div className="container">
           <h2 className="section-title">Our Photography Work</h2>
           <div className="portfolio-grid">
-            <Link href="#grace-dillon-gallery" style={{ textDecoration: 'none', display: 'block' }}>
-              <div className="portfolio-item">
+            {galleries.map((gallery, galleryIndex) => (
+              <div
+                key={gallery.id}
+                className="portfolio-item"
+                onClick={() => openLightbox(gallery.images, 0, gallery.title)}
+                style={{ cursor: 'pointer' }}
+              >
                 <Image
-                  src="/Grace and Dillon Wedding/7L8A5712.jpg"
-                  alt="Grace and Dillon Wedding"
+                  src={gallery.images[0]}
+                  alt={gallery.title}
                   fill
-                  loading="lazy"
+                  loading={galleryIndex === 0 ? "eager" : "lazy"}
                   decoding="async"
                 />
                 <div className="portfolio-overlay">
-                  <h3>Grace and Dillon Wedding</h3>
+                  <h3>{gallery.title}</h3>
                 </div>
               </div>
-            </Link>
-            <Link href="#yazmine-josh-gallery" style={{ textDecoration: 'none', display: 'block' }}>
-              <div className="portfolio-item">
-                <Image
-                  src="/Yazmine and Josh Wedding/IMG_3957.jpg"
-                  alt="Yazmine and Josh Wedding"
-                  fill
-                  loading="lazy"
-                  decoding="async"
-                />
-                <div className="portfolio-overlay">
-                  <h3>Yazmine and Josh Wedding</h3>
-                </div>
-              </div>
-            </Link>
-            <Link href="#prom-2025-gallery" style={{ textDecoration: 'none', display: 'block' }}>
-              <div className="portfolio-item">
-                <Image
-                  src="/Prom 2025/7L8A9549.jpg"
-                  alt="Prom 2025"
-                  fill
-                  loading="lazy"
-                  decoding="async"
-                />
-                <div className="portfolio-overlay">
-                  <h3>Prom 2025</h3>
-                </div>
-              </div>
-            </Link>
-            <Link href="#amy-cody-gallery" style={{ textDecoration: 'none', display: 'block' }}>
-              <div className="portfolio-item">
-                <Image
-                  src="/Amy and Cody Hardy Wedding/E72A0908.jpg"
-                  alt="Amy and Cody Hardy Wedding"
-                  fill
-                  loading="lazy"
-                  decoding="async"
-                />
-                <div className="portfolio-overlay">
-                  <h3>Amy and Cody Hardy Wedding</h3>
-                </div>
-              </div>
-            </Link>
-            <Link href="#melissa-jeremy-gallery" style={{ textDecoration: 'none', display: 'block' }}>
-              <div className="portfolio-item">
-                <Image
-                  src="/Melissa and Jeremy Engagement Session/7L8A0570.jpg"
-                  alt="Melissa and Jeremy Engagement Session"
-                  fill
-                  loading="lazy"
-                  decoding="async"
-                />
-                <div className="portfolio-overlay">
-                  <h3 style={{ textAlign: 'center' }}>Melissa and Jeremy Engagement Session</h3>
-                </div>
-              </div>
-            </Link>
-            <Link href="#photography-work-gallery" style={{ textDecoration: 'none', display: 'block' }}>
-              <div className="portfolio-item">
-                <Image
-                  src="/PhotographyWork/7L8A0690.jpg"
-                  alt="Photography Work"
-                  fill
-                  loading="lazy"
-                  decoding="async"
-                />
-                <div className="portfolio-overlay">
-                  <h3>Photography Work</h3>
-                </div>
-              </div>
-            </Link>
+            ))}
           </div>
         </div>
       </section>
@@ -368,12 +318,17 @@ export default function Photography() {
             <h2 className="section-title">{gallery.title}</h2>
             <div className="portfolio-grid">
               {gallery.images.map((img, idx) => (
-                <div key={idx} className="portfolio-item">
+                <div 
+                  key={idx} 
+                  className="portfolio-item"
+                  onClick={() => openLightbox(gallery.images, idx, gallery.title)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <Image
                     src={img}
                     alt={`${gallery.title} - Image ${idx + 1}`}
                     fill
-                    loading="lazy"
+                    loading={img.includes('IMG_4110') ? "eager" : "lazy"}
                   />
                 </div>
               ))}
@@ -381,6 +336,15 @@ export default function Photography() {
           </div>
         </section>
       ))}
+
+      {/* Image Lightbox */}
+      <ImageLightbox
+        images={lightboxImages}
+        currentIndex={lightboxIndex}
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        galleryTitle={lightboxTitle}
+      />
 
       <Contact 
         title="Let's Capture Your Moments"

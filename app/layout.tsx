@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import Providers from "./providers";
+import HoneybookErrorHandler from "./HoneybookErrorHandler";
+import HoneybookLoader from "@/components/HoneybookLoader";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,7 +23,11 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://www.honeybook.com" />
         <link rel="preconnect" href="https://widget.honeybook.com" crossOrigin="anonymous" />
       </head>
-      <body>{children}</body>
+      <body>
+        <HoneybookErrorHandler />
+        {/* Honeybook script is now loaded inline in Contact component */}
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

@@ -14,7 +14,7 @@ export default function Videography() {
         className="hero"
         style={{
           height: '80vh',
-          background: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/Our Videography Services/E72A0960.jpg') center/cover"
+            background: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/Our Videography Services/E72A1915.jpg') center/cover"
         }}
       >
         <div className="hero-content">
