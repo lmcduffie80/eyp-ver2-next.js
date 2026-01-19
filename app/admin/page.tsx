@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { useCSVImport } from '../hooks/useCSVImport';
 
 export default function AdminDashboard() {
@@ -85,31 +84,78 @@ export default function AdminDashboard() {
     <div className={`dashboard-wrapper ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       {/* Sidebar Navigation - Modern Design */}
       <nav className={`sidebar sidebar-modern ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
-        {/* Sidebar Toggle Button */}
-        <button 
-          className="sidebar-toggle-btn"
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          aria-label="Toggle sidebar"
-        >
-          {sidebarCollapsed ? '☰' : '✕'}
-        </button>
-        
-        {/* Logo Area */}
-        <div style={{ padding: '0', background: '#ffffff', borderBottom: '1px solid #e0e0e0' }}>
+        {/* Admin Panel Header */}
+        <div style={{ 
+          padding: '1rem', 
+          background: '#1a1a1a', 
+          borderBottom: '1px solid #2d2d2d',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          position: 'relative'
+        }}>
           <a 
             href="#" 
             onClick={(e) => { e.preventDefault(); switchTab('djs'); }} 
-            style={{ display: 'block', cursor: 'pointer' }}
+            style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              cursor: 'pointer',
+              textDecoration: 'none',
+              color: '#ffffff',
+              flex: 1
+            }}
           >
-            <Image
-              src="/EYP Logo_New.png"
-              alt="EYP Logo"
-              width={200}
-              height={65}
-              style={{ height: 'auto', width: '100%', maxWidth: '200px', margin: '0 auto', display: 'block' }}
-              priority
-            />
+            {/* Avatar Circle */}
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.25rem',
+              fontWeight: 'bold',
+              color: '#ffffff',
+              flexShrink: 0
+            }}>
+              A
+            </div>
+            {/* Admin Panel Text */}
+            <span className="admin-panel-text" style={{ 
+              fontSize: '1.1rem',
+              fontWeight: '600',
+              whiteSpace: 'nowrap'
+            }}>
+              Admin Panel
+            </span>
           </a>
+          {/* Collapse Button */}
+          <button 
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            aria-label="Toggle sidebar"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: '#2d2d2d',
+              border: 'none',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              flexShrink: 0,
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#404040'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#2d2d2d'}
+          >
+            {sidebarCollapsed ? '→' : '←'}
+          </button>
         </div>
         
         {/* Navigation Groups */}
