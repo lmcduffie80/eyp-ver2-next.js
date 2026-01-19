@@ -420,21 +420,34 @@ export default function AdminDashboard() {
                 <input 
                   type="file" 
                   id="csv-file-input" 
-                  accept=".csv" 
+                  accept=".csv"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      await importCSV(file);
+                      e.target.value = ''; // Clear for next import
+                    }
+                  }}
                   style={{ padding: '0.5rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
                 />
                 <button 
                   className="btn btn-primary"
-                  onClick={async () => {
+                  onClick={() => {
                     const fileInput = document.getElementById('csv-file-input') as HTMLInputElement;
                     const file = fileInput?.files?.[0];
+                    
                     if (!file) {
-                      alert('Please select a CSV file first');
+                      // Trigger file picker instead of showing alert
+                      fileInput?.click();
                       return;
                     }
-                    await importCSV(file);
-                    // Clear the file input after import
-                    fileInput.value = '';
+                    
+                    // File already selected, import it
+                    importCSV(file).then(() => {
+                      if (fileInput) {
+                        fileInput.value = '';
+                      }
+                    });
                   }}
                   disabled={importing}
                   style={{ 
