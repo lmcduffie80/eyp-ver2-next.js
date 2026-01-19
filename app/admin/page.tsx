@@ -31,74 +31,85 @@ export default function AdminDashboard() {
 
   return (
     <div className="dashboard-wrapper">
-      {/* Sidebar Navigation */}
-      <nav className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div style={{ padding: '1.5rem', textAlign: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+      {/* Sidebar Navigation - Modern Design */}
+      <nav className={`sidebar sidebar-modern ${sidebarOpen ? 'open' : ''}`}>
+        {/* Logo Area */}
+        <div style={{ padding: '2rem 1.5rem', background: '#ffffff', borderBottom: '1px solid #e0e0e0' }}>
           <a 
             href="#" 
             onClick={(e) => { e.preventDefault(); switchTab('djs'); }} 
-            style={{ display: 'inline-block', cursor: 'pointer', textDecoration: 'none' }}
+            style={{ display: 'block', cursor: 'pointer' }}
           >
             <Image
               src="/EYP Logo_New.png"
               alt="EYP Logo"
-              width={200}
-              height={60}
-              style={{ height: '60px', width: 'auto', maxWidth: '100%' }}
+              width={240}
+              height={80}
+              style={{ height: 'auto', width: '100%', maxWidth: '240px', margin: '0 auto', display: 'block' }}
               priority
             />
           </a>
         </div>
-        <ul className="sidebar-nav">
-          <li className="sidebar-nav-item">
-            <a 
-              className={`sidebar-nav-link ${activeTab === 'djs' ? 'active' : ''}`}
-              onClick={() => switchTab('djs')}
-            >
-              <span>Home</span>
-            </a>
-          </li>
-          <li className="sidebar-nav-item">
-            <a 
-              className={`sidebar-nav-link ${activeTab === 'bookings' ? 'active' : ''}`}
-              onClick={() => switchTab('bookings')}
-            >
-              <span>Projects</span>
-            </a>
-          </li>
-          <li className="sidebar-nav-item">
-            <a 
-              className={`sidebar-nav-link ${activeTab === 'users' ? 'active' : ''}`}
-              onClick={() => switchTab('users')}
-            >
-              <span>Users</span>
-            </a>
-          </li>
-          <li className="sidebar-nav-item">
-            <a 
-              className={`sidebar-nav-link ${activeTab === 'calendar' ? 'active' : ''}`}
-              onClick={() => switchTab('calendar')}
-            >
-              <span>Calendar</span>
-            </a>
-          </li>
-          <li className="sidebar-nav-item">
-            <a 
-              className={`sidebar-nav-link ${activeTab === 'analytics' ? 'active' : ''}`}
-              onClick={() => switchTab('analytics')}
-            >
-              <span>Analytics</span>
-            </a>
-          </li>
-          <li className="sidebar-nav-item">
-            <a 
-              className={`sidebar-nav-link ${activeTab === 'reviews' ? 'active' : ''}`}
-              onClick={() => switchTab('reviews')}
-            >
-              <span>Reviews</span>
-            </a>
-          </li>
-        </ul>
+        
+        {/* Navigation Groups */}
+        <div className="sidebar-nav-group">
+          <div className="nav-group-title">Dashboard</div>
+          <a 
+            className={`sidebar-nav-link ${activeTab === 'djs' ? 'active' : ''}`}
+            onClick={() => switchTab('djs')}
+          >
+            <span className="nav-icon">🏠</span>
+            <span>Home</span>
+          </a>
+          <a 
+            className={`sidebar-nav-link ${activeTab === 'analytics' ? 'active' : ''}`}
+            onClick={() => switchTab('analytics')}
+          >
+            <span className="nav-icon">📊</span>
+            <span>Analytics</span>
+          </a>
+        </div>
+
+        <div className="sidebar-nav-group">
+          <div className="nav-group-title">Management</div>
+          <a 
+            className={`sidebar-nav-link ${activeTab === 'bookings' ? 'active' : ''}`}
+            onClick={() => switchTab('bookings')}
+          >
+            <span className="nav-icon">📋</span>
+            <span>Projects</span>
+          </a>
+          <a 
+            className={`sidebar-nav-link ${activeTab === 'users' ? 'active' : ''}`}
+            onClick={() => switchTab('users')}
+          >
+            <span className="nav-icon">👥</span>
+            <span>Users</span>
+          </a>
+          <a 
+            className={`sidebar-nav-link ${activeTab === 'calendar' ? 'active' : ''}`}
+            onClick={() => switchTab('calendar')}
+          >
+            <span className="nav-icon">📅</span>
+            <span>Calendar</span>
+          </a>
+          <a 
+            className={`sidebar-nav-link ${activeTab === 'reviews' ? 'active' : ''}`}
+            onClick={() => switchTab('reviews')}
+          >
+            <span className="nav-icon">⭐</span>
+            <span>Reviews</span>
+          </a>
+        </div>
+
+        {/* User Profile at Bottom */}
+        <div className="sidebar-user-profile">
+          <div className="user-avatar">A</div>
+          <div className="user-info">
+            <div className="user-name">Admin</div>
+            <div className="user-role">Super Admin</div>
+          </div>
+        </div>
       </nav>
 
       {/* Sidebar Overlay for Mobile */}
@@ -109,7 +120,7 @@ export default function AdminDashboard() {
 
       {/* Main Content Area */}
       <div className="main-content">
-        <div className="dashboard-header">
+        <div className="dashboard-header-modern">
           <button 
             className="mobile-menu-btn" 
             onClick={toggleSidebar}
@@ -117,10 +128,10 @@ export default function AdminDashboard() {
           >
             ☰
           </button>
-          <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span>Admin Dashboard</span>
-            <span id="welcome-message" style={{ fontSize: '1rem', fontWeight: 400 }}>Welcome</span>
-          </h1>
+          <div>
+            <h1>Welcome back, Admin</h1>
+            <p className="subtitle">Here's what's happening today.</p>
+          </div>
           <div className="header-actions">
             <div style={{ textAlign: 'right', marginRight: '1rem' }}>
               <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Administrator</div>
@@ -361,6 +372,111 @@ export default function AdminDashboard() {
               <div id="djs-container" className="dj-list">
                 {/* DJs will be populated here */}
               </div>
+            </div>
+
+            {/* Two-Column Content Layout */}
+            <div className="content-grid-modern">
+              {/* Left Column - Recent Orders */}
+              <div className="content-section">
+                <div className="section-header">
+                  <h2>Recent Projects</h2>
+                  <a href="#" onClick={(e) => { e.preventDefault(); switchTab('bookings'); }} className="view-all-link">View all</a>
+                </div>
+                <div className="orders-list-modern">
+                  <div className="order-item">
+                    <div className="order-info">
+                      <div className="order-number">#PRJ-2026-001</div>
+                      <div className="order-email">client@example.com</div>
+                    </div>
+                    <div className="order-price">$2,500.00</div>
+                    <span className="status-badge delivered">completed</span>
+                  </div>
+                  <div className="order-item">
+                    <div className="order-info">
+                      <div className="order-number">#PRJ-2026-002</div>
+                      <div className="order-email">event@company.com</div>
+                    </div>
+                    <div className="order-price">$3,200.00</div>
+                    <span className="status-badge pending">pending</span>
+                  </div>
+                  <div className="order-item">
+                    <div className="order-info">
+                      <div className="order-number">#PRJ-2026-003</div>
+                      <div className="order-email">booking@venue.com</div>
+                    </div>
+                    <div className="order-price">$1,800.00</div>
+                    <span className="status-badge cancelled">cancelled</span>
+                  </div>
+                  <div className="order-item">
+                    <div className="order-info">
+                      <div className="order-number">#PRJ-2026-004</div>
+                      <div className="order-email">contact@business.com</div>
+                    </div>
+                    <div className="order-price">$4,500.00</div>
+                    <span className="status-badge delivered">completed</span>
+                  </div>
+                  <div className="order-item">
+                    <div className="order-info">
+                      <div className="order-number">#PRJ-2026-005</div>
+                      <div className="order-email">info@organization.com</div>
+                    </div>
+                    <div className="order-price">$2,100.00</div>
+                    <span className="status-badge pending">pending</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Recent Activity */}
+              <div className="content-section">
+                <div className="section-header">
+                  <h2>Recent Activity</h2>
+                  <a href="#" className="view-all-link">View all</a>
+                </div>
+                <div className="activity-feed">
+                  <div className="activity-item">
+                    <div className="activity-icon">📝</div>
+                    <div className="activity-content">
+                      <div className="activity-text">Admin updated project #PRJ-2026-005</div>
+                      <div className="activity-time">Jan 18, 11:40 PM</div>
+                    </div>
+                  </div>
+                  <div className="activity-item">
+                    <div className="activity-icon">✅</div>
+                    <div className="activity-content">
+                      <div className="activity-text">Admin status_change project #PRJ-2026-004</div>
+                      <div className="activity-time">Jan 18, 11:35 PM</div>
+                    </div>
+                  </div>
+                  <div className="activity-item">
+                    <div className="activity-icon">📅</div>
+                    <div className="activity-content">
+                      <div className="activity-text">Admin added new booking for Feb 15, 2026</div>
+                      <div className="activity-time">Jan 18, 10:20 PM</div>
+                    </div>
+                  </div>
+                  <div className="activity-item">
+                    <div className="activity-icon">💰</div>
+                    <div className="activity-content">
+                      <div className="activity-text">Payment received for #PRJ-2026-001</div>
+                      <div className="activity-time">Jan 18, 9:15 PM</div>
+                    </div>
+                  </div>
+                  <div className="activity-item">
+                    <div className="activity-icon">👤</div>
+                    <div className="activity-content">
+                      <div className="activity-text">New client registered</div>
+                      <div className="activity-time">Jan 18, 8:05 PM</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Alert Banner */}
+            <div className="alert-banner">
+              <span className="alert-icon">⚠️</span>
+              <span className="alert-text">3 pending projects awaiting processing</span>
+              <a href="#" onClick={(e) => { e.preventDefault(); switchTab('bookings'); }} className="alert-action">Review now</a>
             </div>
           </div>
 
@@ -628,23 +744,47 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Analytics Overview Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                <div style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)', color: 'white', padding: '1.5rem', borderRadius: '10px' }}>
-                  <div style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '0.5rem' }}>Total Visits</div>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 700 }} id="total-visits">0</div>
+              {/* Modern Metrics Grid */}
+              <div className="metrics-grid-modern">
+                <div className="metric-card-modern">
+                  <div className="metric-header">
+                    <span className="metric-label">Total Visits</span>
+                    <span className="metric-icon">👥</span>
+                  </div>
+                  <div className="metric-value" id="total-visits">0</div>
+                  <div className="metric-change positive">
+                    <span className="arrow">↑</span> +12.5% from last month
+                  </div>
                 </div>
-                <div style={{ background: 'linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%)', color: 'white', padding: '1.5rem', borderRadius: '10px' }}>
-                  <div style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '0.5rem' }}>Page Views</div>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 700 }} id="total-page-views">0</div>
+                <div className="metric-card-modern">
+                  <div className="metric-header">
+                    <span className="metric-label">Page Views</span>
+                    <span className="metric-icon">📄</span>
+                  </div>
+                  <div className="metric-value" id="total-page-views">0</div>
+                  <div className="metric-change positive">
+                    <span className="arrow">↑</span> +8.2% this week
+                  </div>
                 </div>
-                <div style={{ background: 'linear-gradient(135deg, #3d3d3d 0%, #2d2d2d 100%)', color: 'white', padding: '1.5rem', borderRadius: '10px' }}>
-                  <div style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '0.5rem' }}>Unique Visitors</div>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 700 }} id="unique-visitors">0</div>
+                <div className="metric-card-modern">
+                  <div className="metric-header">
+                    <span className="metric-label">Unique Visitors</span>
+                    <span className="metric-icon">🎯</span>
+                  </div>
+                  <div className="metric-value" id="unique-visitors">0</div>
+                  <div className="metric-change positive">
+                    <span className="arrow">↑</span> +5.3% this week
+                  </div>
                 </div>
-                <div style={{ background: 'linear-gradient(135deg, #4d4d4d 0%, #3d3d3d 100%)', color: 'white', padding: '1.5rem', borderRadius: '10px' }}>
-                  <div style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '0.5rem' }}>Avg. Session</div>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 700 }} id="avg-session-duration">0m</div>
+                <div className="metric-card-modern">
+                  <div className="metric-header">
+                    <span className="metric-label">Avg. Session</span>
+                    <span className="metric-icon">⏱️</span>
+                  </div>
+                  <div className="metric-value" id="avg-session-duration">0m</div>
+                  <div className="metric-change positive">
+                    <span className="arrow">↑</span> +2.4% from last month
+                  </div>
                 </div>
               </div>
 
