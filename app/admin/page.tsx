@@ -94,68 +94,54 @@ export default function AdminDashboard() {
           gap: '0.75rem',
           position: 'relative'
         }}>
-          <a 
-            href="#" 
-            onClick={(e) => { e.preventDefault(); switchTab('djs'); }} 
-            style={{ 
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              cursor: 'pointer',
-              textDecoration: 'none',
-              color: '#ffffff',
-              flex: 1
-            }}
-          >
-            {/* Avatar Circle */}
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.25rem',
-              fontWeight: 'bold',
-              color: '#ffffff',
-              flexShrink: 0
-            }}>
+          <div style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            flex: 1
+          }}>
+            {/* Avatar Circle - Clickable to toggle sidebar */}
+            <div 
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.25rem',
+                fontWeight: 'bold',
+                color: '#ffffff',
+                flexShrink: 0,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+              }}
+              title="Click to expand/collapse sidebar"
+            >
               A
             </div>
             {/* Admin Panel Text */}
-            <span className="admin-panel-text" style={{ 
-              fontSize: '1.1rem',
-              fontWeight: '600',
-              whiteSpace: 'nowrap'
-            }}>
+            <a 
+              href="#" 
+              onClick={(e) => { e.preventDefault(); switchTab('djs'); }} 
+              className="admin-panel-text" 
+              style={{ 
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                whiteSpace: 'nowrap',
+                textDecoration: 'none',
+                color: '#ffffff',
+                cursor: 'pointer'
+              }}
+            >
               Admin Panel
-            </span>
-          </a>
-          {/* Collapse Button */}
-          <button 
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            aria-label="Toggle sidebar"
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              background: '#2d2d2d',
-              border: 'none',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              flexShrink: 0,
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = '#404040'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#2d2d2d'}
-          >
-            {sidebarCollapsed ? '→' : '←'}
-          </button>
+            </a>
+          </div>
         </div>
         
         {/* Navigation Groups */}
