@@ -12,7 +12,11 @@ export async function GET(request: NextRequest) {
     // Create a mock request object compatible with the existing handler
     const req = {
       method: 'GET',
-      query: user_type ? { user_type } : {}
+      query: user_type ? { user_type } : {},
+      headers: {
+        origin: request.headers.get('origin') || '',
+        host: request.headers.get('host') || ''
+      }
     };
     
     // Create a mock response object to capture the response
