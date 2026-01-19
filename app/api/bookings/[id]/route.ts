@@ -15,7 +15,11 @@ export async function DELETE(
     const req = {
       method: 'DELETE',
       query: { id },
-      body: {}
+      body: {},
+      headers: {
+        origin: request.headers.get('origin') || '',
+        host: request.headers.get('host') || ''
+      }
     };
     
     // Create a mock response object to capture the response
@@ -69,7 +73,11 @@ export async function GET(
     const req = {
       method: 'GET',
       query: { id },
-      body: {}
+      body: {},
+      headers: {
+        origin: request.headers.get('origin') || '',
+        host: request.headers.get('host') || ''
+      }
     };
     
     let responseData: any = null;
@@ -121,7 +129,11 @@ export async function PUT(
     const req = {
       method: 'PUT',
       query: { id },
-      body: body
+      body: body,
+      headers: {
+        origin: request.headers.get('origin') || '',
+        host: request.headers.get('host') || ''
+      }
     };
     
     let responseData: any = null;
