@@ -7,6 +7,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('djs');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
   const { importing, status, importCSV } = useCSVImport();
 
   useEffect(() => {
@@ -15,6 +17,11 @@ export default function AdminDashboard() {
     return () => {
       document.body.style.overflow = 'unset';
     };
+  }, []);
+
+  useEffect(() => {
+    // Fetch bookings when component mounts
+    fetchBookings();
   }, []);
 
   const switchTab = (tab: string) => {
@@ -28,6 +35,23 @@ export default function AdminDashboard() {
 
   const closeSidebar = () => {
     setSidebarOpen(false);
+  };
+
+  const fetchBookings = async () => {
+    try {
+      setLoadingBookings(true);
+      const response = await fetch('/api/bookings');
+      if (response.ok) {
+        const data = await response.json();
+        setBookings(data);
+      } else {
+        console.error('Failed to fetch bookings:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Failed to fetch bookings:', error);
+    } finally {
+      setLoadingBookings(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -458,6 +482,8 @@ export default function AdminDashboard() {
                     if (file) {
                       await importCSV(file);
                       e.target.value = ''; // Clear for next import
+                      // Refresh bookings after import
+                      await fetchBookings();
                     }
                   }}
                   style={{ padding: '0.5rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
@@ -479,6 +505,8 @@ export default function AdminDashboard() {
                       if (fileInput) {
                         fileInput.value = '';
                       }
+                      // Refresh bookings after import
+                      fetchBookings();
                     });
                   }}
                   disabled={importing}
@@ -670,7 +698,66 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody id="all-bookings-container">
-                    {/* Projects will be populated here */}
+                    {loadingBookings ? (
+                      <tr>
+                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                          Loading bookings...
+                        </td>
+                      </tr>
+                    ) : bookings.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                          No bookings found. Import a CSV file to add bookings.
+                        </td>
+                      </tr>
+                    ) : (
+                      bookings.map((booking) => (
+                        <tr key={booking.id}>
+                          <td>{new Date(booking.date).toLocaleDateString()}</td>
+                          <td>{booking.djUser || 'N/A'}</td>
+                          <td>{booking.eventType || 'N/A'}</td>
+                          <td>{booking.location || 'N/A'}</td>
+                          <td>${booking.totalRevenue?.toFixed(2) || '0.00'}</td>
+                          <td>${booking.ccPayment?.toFixed(2) || '0.00'}</td>
+                          <td>${booking.payout?.toFixed(2) || '0.00'}</td>
+                          <td>
+                            <button
+                              onClick={() => console.log('Edit booking:', booking.id)}
+                              style={{
+                                padding: '0.25rem 0.5rem',
+                                fontSize: '0.8rem',
+                                background: 'var(--primary-color)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '3px',
+                                cursor: 'pointer',
+                                marginRight: '0.5rem'
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm('Are you sure you want to delete this booking?')) {
+                                  console.log('Delete booking:', booking.id);
+                                }
+                              }}
+                              style={{
+                                padding: '0.25rem 0.5rem',
+                                fontSize: '0.8rem',
+                                background: 'var(--error-color)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '3px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
