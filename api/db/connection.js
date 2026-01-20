@@ -106,6 +106,24 @@ function convertTemplateToQuery(queryParts, ...values) {
     return { query, values: queryValues };
 }
 
+// Global connection pool for Postgres connections
+let pgPool = null;
+
+/**
+ * Get or create PostgreSQL pool using standard pg library
+ * This works with both direct and pooled connection strings
+ */
+async function getPgPool() {
+    if (!pgPool) {
+        const { Pool } = await import("pg");
+        pgPool = new Pool({
+            connectionString: process.env.POSTGRES_URL,
+            ssl: process.env.POSTGRES_URL?.includes('neon.tech') ? { rejectUnauthorized: false } : undefined,
+        });
+    }
+    return pgPool;
+}
+
 /**
  * Execute a SQL query using template literals
  * Works with both Vercel Postgres (connection string) and AWS RDS (IAM auth)
@@ -113,13 +131,16 @@ function convertTemplateToQuery(queryParts, ...values) {
  * Usage: await sql`SELECT * FROM bookings WHERE id = ${id}`
  */
 export default async function sql(queryParts, ...values) {
-    // If we have POSTGRES_URL, use @vercel/postgres (simpler)
+    // If we have POSTGRES_URL, use standard pg library (works with any connection string)
     if (useVercelPostgres) {
         try {
-            const { sql: vercelSql } = await import("@vercel/postgres");
-            return await vercelSql(queryParts, ...values);
+            // Use standard pg Pool - works with both pooled and direct connection strings
+            const pool = await getPgPool();
+            const { query, values: queryValues } = convertTemplateToQuery(queryParts, ...values);
+            const result = await pool.query(query, queryValues);
+            return { rows: result.rows, rowCount: result.rowCount };
         } catch (error) {
-            console.error('Vercel Postgres connection error:', error);
+            console.error('PostgreSQL connection error:', error);
             throw error;
         }
     }
