@@ -2197,3 +2197,217 @@ body.dashboard-page {
     font-size: 0.9rem;
   }
 }
+
+/* ==========================================
+   PHOTOGRAPHY MANAGER STYLES
+   ========================================== */
+
+.photography-manager {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 2rem;
+  min-height: 600px;
+}
+
+.projects-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow-y: auto;
+  max-height: calc(100vh - 300px);
+}
+
+.projects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.project-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.project-item:hover {
+  border-color: var(--primary-color);
+  background: #f0f4ff;
+  transform: translateY(-2px);
+}
+
+.project-item.active {
+  border-color: var(--primary-color);
+  background: #f0f4ff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.project-cover {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f9fa;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.project-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.no-cover {
+  font-size: 2rem;
+  color: var(--text-light);
+}
+
+.project-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.project-info h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.delete-project-btn {
+  padding: 0.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  opacity: 0.5;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.delete-project-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.photos-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow-y: auto;
+  max-height: calc(100vh - 300px);
+}
+
+.upload-area {
+  margin-bottom: 2rem;
+}
+
+.photos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.photo-item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+.photo-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.photo-item img {
+  display: block;
+}
+
+.delete-photo-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.25rem;
+  opacity: 0;
+  transition: all 0.2s;
+  line-height: 1;
+  backdrop-filter: blur(4px);
+}
+
+.photo-item:hover .delete-photo-btn {
+  opacity: 1;
+}
+
+.delete-photo-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
+}
+
+/* Photography responsive adjustments */
+@media (max-width: 1024px) {
+  .photography-manager {
+    grid-template-columns: 1fr;
+  }
+
+  .projects-panel {
+    max-height: 400px;
+  }
+
+  .photos-panel {
+    max-height: none;
+  }
+
+  .photos-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .photography-manager {
+    gap: 1rem;
+  }
+
+  .projects-panel,
+  .photos-panel {
+    padding: 1rem;
+  }
+
+  .photos-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .project-item {
+    padding: 0.75rem;
+  }
+
+  .project-cover {
+    width: 50px;
+    height: 50px;
+  }
+}
