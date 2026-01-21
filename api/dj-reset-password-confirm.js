@@ -5,8 +5,6 @@
  * Validates token and updates user password
  */
 
-import crypto from 'crypto';
-
 export default async function handler(req, res) {
     // Only allow POST requests
     if (req.method !== 'POST') {
@@ -87,7 +85,8 @@ export default async function handler(req, res) {
 /**
  * Get reset token data from database
  */
-async function getResetTokenData(token) {
+// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+async function getResetTokenData(_token) {
     // Example: Using Vercel Postgres
     // const { sql } = await import('@vercel/postgres');
     // const result = await sql`SELECT * FROM password_resets WHERE token = ${token}`;
@@ -136,7 +135,8 @@ async function hashPassword(password) {
 /**
  * Update user password in database
  */
-async function updateUserPassword(email, hashedPassword) {
+// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+async function updateUserPassword(_email, _hashedPassword) {
     // Example: Using Vercel Postgres
     // const { sql } = await import('@vercel/postgres');
     // await sql`UPDATE dj_users SET password = ${hashedPassword}, updated_at = NOW() WHERE email = ${email}`;
@@ -153,7 +153,7 @@ async function updateUserPassword(email, hashedPassword) {
     // await client.close();
 
     // For development: Log update (replace with actual database update)
-    console.log(`Updating password for ${email}`);
+    console.log(`Updating password for ${_email}`);
 }
 
 /**
