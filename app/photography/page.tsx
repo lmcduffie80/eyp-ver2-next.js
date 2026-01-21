@@ -353,6 +353,8 @@ export default function Photography() {
                       src={project.cover_photo_url || project.photos[0]?.photo_url}
                       alt={project.project_name}
                       fill
+                      quality={100}
+                      unoptimized={true}
                       loading="lazy"
                       decoding="async"
                     />
@@ -429,6 +431,8 @@ export default function Photography() {
                     src={photo.photo_url}
                     alt={photo.caption || `${project.project_name} - Image ${idx + 1}`}
                     fill
+                    quality={100}
+                    unoptimized={true}
                     loading="lazy"
                   />
                 </div>
