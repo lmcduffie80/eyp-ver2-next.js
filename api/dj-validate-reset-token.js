@@ -42,7 +42,8 @@ export default async function handler(req, res) {
 /**
  * Validate reset token in database
  */
-async function validateResetToken(token) {
+// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+async function validateResetToken(_token) {
     // Example: Using Vercel Postgres
     // const { sql } = await import('@vercel/postgres');
     // const result = await sql`SELECT * FROM password_resets WHERE token = ${token} AND expires_at > NOW() AND used = false`;
