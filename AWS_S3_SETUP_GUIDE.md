@@ -73,7 +73,7 @@ This guide will help you set up AWS S3 to store your photography images with max
 ]
 ```
 
-   - Replace `https://yourdomain.com` with your actual domain
+   - Replace `https://externallyyoursproductions.com with your actual domain
    - Click **"Save changes"**
 
 ## Step 3: Create IAM User with S3 Access
