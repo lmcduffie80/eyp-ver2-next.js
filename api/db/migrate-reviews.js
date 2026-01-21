@@ -126,7 +126,7 @@ export default async function migrateReviews() {
                         `;
                         results.push('Made dj_username column nullable');
                         console.log('✓ Made dj_username column nullable');
-                    } catch (dropError) {
+                    } catch {
                         // If DROP NOT NULL fails, try recreating the column
                         console.log('DROP NOT NULL failed, trying to alter column type...');
                         await sql`
