@@ -360,47 +360,81 @@ export default function AdminDashboard() {
     setUploadProgress(0);
     const totalFiles = files.length;
     let uploadedCount = 0;
+    let failedCount = 0;
 
     try {
       for (const file of Array.from(files)) {
-        // In development, use a simple approach - in production, use S3
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('project_id', selectedProject.id.toString());
+        try {
+          // Step 1: Request presigned URL from backend
+          const uploadResponse = await fetch('/api/photography/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filename: file.name,
+              project_id: selectedProject.id,
+              contentType: file.type
+            })
+          });
 
-        // For now, create a temporary URL and save to database
-        // In production, this would upload to S3 first
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-          const photoURL = event.target?.result as string;
-          
-          try {
-            await fetch('/api/photography/photos', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                project_id: selectedProject.id,
-                photo_url: photoURL,
-                filename: file.name
-              })
-            });
-
-            uploadedCount++;
-            setUploadProgress(Math.round((uploadedCount / totalFiles) * 100));
-
-            if (uploadedCount === totalFiles) {
-              await fetchProjectPhotos(selectedProject.id);
-              await fetchPhotoProjects();
-            }
-          } catch (error) {
-            console.error('Error saving photo:', error);
+          if (!uploadResponse.ok) {
+            throw new Error('Failed to get upload URL');
           }
-        };
-        reader.readAsDataURL(file);
+
+          const uploadData = await uploadResponse.json();
+          
+          if (!uploadData.success) {
+            throw new Error(uploadData.error || 'Failed to get upload URL');
+          }
+
+          const { uploadURL, photoURL } = uploadData;
+
+          // Step 2: Upload original file directly to S3 (no compression!)
+          const s3Response = await fetch(uploadURL, {
+            method: 'PUT',
+            body: file,
+            headers: {
+              'Content-Type': file.type
+            }
+          });
+
+          if (!s3Response.ok) {
+            throw new Error('Failed to upload to S3');
+          }
+
+          // Step 3: Save photo metadata to database with S3 URL
+          await fetch('/api/photography/photos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              project_id: selectedProject.id,
+              photo_url: photoURL,
+              filename: file.name
+            })
+          });
+
+          uploadedCount++;
+          setUploadProgress(Math.round((uploadedCount / totalFiles) * 100));
+
+        } catch (error) {
+          console.error(`Error uploading ${file.name}:`, error);
+          failedCount++;
+        }
       }
+
+      // Refresh the project photos after all uploads
+      if (uploadedCount > 0) {
+        await fetchProjectPhotos(selectedProject.id);
+        await fetchPhotoProjects();
+      }
+
+      // Show summary
+      if (failedCount > 0) {
+        alert(`Uploaded ${uploadedCount} of ${totalFiles} photos. ${failedCount} failed.`);
+      }
+
     } catch (error) {
-      console.error('Error uploading photos:', error);
-      alert('Some photos failed to upload');
+      console.error('Error during photo upload:', error);
+      alert('Upload failed. Please check your AWS S3 configuration.');
     } finally {
       setTimeout(() => {
         setUploadingPhotos(false);
