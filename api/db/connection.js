@@ -167,7 +167,7 @@ export default async function sql(queryParts, ...values) {
                 if (awsPool) {
                     try {
                         await awsPool.end();
-                    } catch (e) {
+                    } catch {
                         // Ignore errors when closing
                     }
                     awsPool = null;
