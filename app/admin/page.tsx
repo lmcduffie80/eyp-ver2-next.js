@@ -16,7 +16,11 @@ export default function AdminDashboard() {
   const [userTypeFilter, setUserTypeFilter] = useState('');
   const [sortColumn, setSortColumn] = useState('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const { importing, status, importCSV } = useCSVImport();
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [calendarDJFilter, setCalendarDJFilter] = useState('');
+  const { importing, status, importCSV} = useCSVImport();
 
   useEffect(() => {
     // Prevent body scroll when dashboard is open
@@ -125,6 +129,94 @@ export default function AdminDashboard() {
 
   const closeSidebar = () => {
     setSidebarOpen(false);
+  };
+
+  // Calendar helper functions
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const generateCalendar = (year: number, month: number) => {
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const weeks: Date[][] = [];
+    let currentWeek: Date[] = [];
+    const currentDate = new Date(startDate);
+    
+    // Generate 6 weeks to ensure consistent calendar height
+    for (let i = 0; i < 42; i++) {
+      if (currentWeek.length === 7) {
+        weeks.push(currentWeek);
+        currentWeek = [];
+      }
+      currentWeek.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    if (currentWeek.length > 0) {
+      weeks.push(currentWeek);
+    }
+    
+    return weeks;
+  };
+
+  const getBookingsForDate = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    const filtered = calendarDJFilter 
+      ? bookings.filter(b => b.djUser === calendarDJFilter)
+      : bookings;
+    
+    return filtered.filter(b => {
+      const bookingDate = new Date(b.date).toISOString().split('T')[0];
+      return bookingDate === dateStr;
+    });
+  };
+
+  const getBlockedDatesForDate = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    const filtered = calendarDJFilter
+      ? blockedDates.filter(bd => bd.djUser === calendarDJFilter)
+      : blockedDates;
+    
+    return filtered.filter(bd => {
+      const blockedDateStr = new Date(bd.date).toISOString().split('T')[0];
+      return blockedDateStr === dateStr;
+    });
+  };
+
+  const changeMonth = (delta: number) => {
+    let newMonth = calendarMonth + delta;
+    let newYear = calendarYear;
+    
+    if (newMonth > 11) {
+      newMonth = 0;
+      newYear++;
+    } else if (newMonth < 0) {
+      newMonth = 11;
+      newYear--;
+    }
+    
+    setCalendarMonth(newMonth);
+    setCalendarYear(newYear);
+  };
+
+  const goToToday = () => {
+    const today = new Date();
+    setCalendarMonth(today.getMonth());
+    setCalendarYear(today.getFullYear());
+  };
+
+  const isToday = (date: Date) => {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+  };
+
+  const isCurrentMonth = (date: Date) => {
+    return date.getMonth() === calendarMonth;
   };
 
   const fetchBookings = async () => {
@@ -963,30 +1055,236 @@ export default function AdminDashboard() {
 
           {/* Calendar Tab */}
           <div id="calendar-tab" className={`tab-content ${activeTab === 'calendar' ? 'active' : ''}`}>
-            <div className="section-card" style={{ marginBottom: '2rem' }}>
-              <h2>Pending Blocked Date Requests</h2>
-              <p style={{ color: 'var(--text-light)', marginBottom: '1rem' }}>Review and approve or reject blocked date requests from DJs</p>
-              <div id="pending-blocked-dates-container">
-                {/* Pending blocked dates will be displayed here */}
-              </div>
-            </div>
-            
             <div className="section-card">
-              <h2>Master Calendar - All Blocked Dates & Projects</h2>
-              <p style={{ color: 'var(--text-light)', marginBottom: '1rem' }}>Click on any date in the calendar to block it for a DJ. Blocked dates are automatically approved.</p>
-              <div className="filter-controls">
-                <select 
-                  id="calendar-filter-dj"
-                  onChange={async () => {
-                    // Generate master calendar functionality will be added here
-                    console.log('Calendar filter changed');
-                  }}
-                >
-                  <option value="">All DJs</option>
-                </select>
+              <h2 style={{ marginBottom: '1.5rem' }}>Event Calendar</h2>
+              
+              {/* Calendar Controls */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <label style={{ fontWeight: '500', marginRight: '0.5rem' }}>Filter by DJ:</label>
+                  <select 
+                    id="calendar-filter-dj"
+                    value={calendarDJFilter}
+                    onChange={(e) => setCalendarDJFilter(e.target.value)}
+                    style={{ 
+                      padding: '0.5rem 1rem', 
+                      border: '2px solid #e0e0e0', 
+                      borderRadius: '8px',
+                      fontSize: '0.95rem'
+                    }}
+                  >
+                    <option value="">All DJs</option>
+                    {/* DJ options will be populated dynamically */}
+                  </select>
+                </div>
               </div>
-              <div id="master-calendar-container">
-                {/* Master calendar will be generated here */}
+
+              {/* Calendar Component */}
+              <div className="calendar-container">
+                {/* Calendar Header with Navigation */}
+                <div className="calendar-header">
+                  <button 
+                    onClick={() => changeMonth(-1)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: 'white',
+                      border: '2px solid #e0e0e0',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '1.25rem',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#f8f9fa'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                  >
+                    ←
+                  </button>
+                  <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>
+                    {monthNames[calendarMonth]} {calendarYear}
+                  </h3>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button 
+                      onClick={goToToday}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        background: 'white',
+                        border: '2px solid #e0e0e0',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '500',
+                        fontSize: '0.95rem',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = '#f8f9fa'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                    >
+                      Today
+                    </button>
+                    <button 
+                      onClick={() => changeMonth(1)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        background: 'white',
+                        border: '2px solid #e0e0e0',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '1.25rem',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = '#f8f9fa'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                    >
+                      →
+                    </button>
+                  </div>
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="calendar-grid">
+                  {/* Day Headers */}
+                  {dayNames.map(day => (
+                    <div key={day} className="calendar-day-header">
+                      {day}
+                    </div>
+                  ))}
+                  
+                  {/* Calendar Days */}
+                  {generateCalendar(calendarYear, calendarMonth).map((week, weekIndex) => (
+                    week.map((day, dayIndex) => {
+                      const dayBookings = getBookingsForDate(day);
+                      const dayBlockedDates = getBlockedDatesForDate(day);
+                      const isTodayDate = isToday(day);
+                      const isCurrentMonthDate = isCurrentMonth(day);
+                      
+                      return (
+                        <div 
+                          key={`${weekIndex}-${dayIndex}`}
+                          className={`calendar-day ${!isCurrentMonthDate ? 'other-month' : ''} ${isTodayDate ? 'today' : ''}`}
+                          onClick={() => setSelectedDate(day)}
+                          title={dayBookings.length > 0 || dayBlockedDates.length > 0 
+                            ? `${dayBookings.length} booking(s), ${dayBlockedDates.length} blocked`
+                            : 'No events'}
+                        >
+                          <div className="day-number">{day.getDate()}</div>
+                          <div className="day-events">
+                            {dayBookings.slice(0, 3).map((booking, i) => (
+                              <div 
+                                key={i}
+                                className="event-indicator"
+                                style={{ 
+                                  background: '#10b981',
+                                  width: '8px',
+                                  height: '8px',
+                                  borderRadius: '50%'
+                                }}
+                                title={`${booking.djUser} - ${booking.eventType} @ ${booking.location}`}
+                              />
+                            ))}
+                            {dayBookings.length > 3 && (
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-light)', fontWeight: '600' }}>
+                                +{dayBookings.length - 3}
+                              </span>
+                            )}
+                            {dayBlockedDates.length > 0 && (
+                              <div className="blocked-indicator" title={`${dayBlockedDates.length} blocked date(s)`}>
+                                🚫
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ))}
+                </div>
+
+                {/* Legend */}
+                <div style={{ marginTop: '1.5rem', display: 'flex', gap: '2rem', flexWrap: 'wrap', padding: '1rem', background: '#f8f9fa', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10b981' }}></div>
+                    <span style={{ fontSize: '0.9rem' }}>Booking</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>🚫</span>
+                    <span style={{ fontSize: '0.9rem' }}>Blocked Date</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ width: '12px', height: '12px', border: '2px solid #000', borderRadius: '2px' }}></div>
+                    <span style={{ fontSize: '0.9rem' }}>Today</span>
+                  </div>
+                </div>
+
+                {/* Selected Date Details */}
+                {selectedDate && (
+                  <div style={{ marginTop: '1.5rem', padding: '1.5rem', background: '#f8f9fa', borderRadius: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <h4 style={{ margin: 0 }}>
+                        {selectedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      </h4>
+                      <button 
+                        onClick={() => setSelectedDate(null)}
+                        style={{ 
+                          padding: '0.25rem 0.75rem', 
+                          background: 'transparent', 
+                          border: 'none', 
+                          cursor: 'pointer', 
+                          fontSize: '1.25rem' 
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    
+                    {(() => {
+                      const dayBookings = getBookingsForDate(selectedDate);
+                      const dayBlockedDates = getBlockedDatesForDate(selectedDate);
+                      
+                      return (
+                        <>
+                          {dayBookings.length > 0 && (
+                            <div style={{ marginBottom: '1rem' }}>
+                              <h5 style={{ marginBottom: '0.75rem' }}>Bookings ({dayBookings.length})</h5>
+                              {dayBookings.map((booking, i) => (
+                                <div key={i} style={{ padding: '0.75rem', background: 'white', borderRadius: '8px', marginBottom: '0.5rem', borderLeft: '4px solid #10b981' }}>
+                                  <div style={{ fontWeight: '600' }}>{booking.eventType}</div>
+                                  <div style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
+                                    DJ: {booking.djUser} • {booking.location}
+                                  </div>
+                                  <div style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
+                                    Revenue: ${booking.totalRevenue?.toFixed(2) || '0.00'}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {dayBlockedDates.length > 0 && (
+                            <div>
+                              <h5 style={{ marginBottom: '0.75rem' }}>Blocked Dates ({dayBlockedDates.length})</h5>
+                              {dayBlockedDates.map((blocked, i) => (
+                                <div key={i} style={{ padding: '0.75rem', background: 'white', borderRadius: '8px', marginBottom: '0.5rem', borderLeft: '4px solid #ef4444' }}>
+                                  <div style={{ fontWeight: '600' }}>DJ: {blocked.djUser}</div>
+                                  {blocked.reason && (
+                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
+                                      Reason: {blocked.reason}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {dayBookings.length === 0 && dayBlockedDates.length === 0 && (
+                            <p style={{ color: 'var(--text-light)', textAlign: 'center', padding: '1rem' }}>
+                              No bookings or blocked dates for this day
+                            </p>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
             </div>
           </div>
