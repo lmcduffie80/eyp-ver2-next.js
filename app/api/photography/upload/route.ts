@@ -1,13 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-// Note: This is a simplified version that returns a direct upload URL
-// For production S3 uploads, you would use AWS SDK to generate presigned URLs
-// Install: npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+// Get content type from filename extension
+function getContentType(filename: string): string {
+  const ext = filename.toLowerCase().split('.').pop();
+  const types: Record<string, string> = {
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+    'heic': 'image/heic',
+    'heif': 'image/heif'
+  };
+  return types[ext || ''] || 'image/jpeg';
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { filename, project_id } = body;
+    const { filename, project_id, contentType } = body;
     
     if (!filename) {
       return NextResponse.json({ 
@@ -16,64 +29,55 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // For development: Use local public folder
-    // For production: Generate AWS S3 presigned URL
+    // Check if AWS S3 is configured
+    if (!process.env.AWS_S3_BUCKET || !process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+      return NextResponse.json({ 
+        success: false,
+        error: 'S3 not configured. Please set AWS_S3_BUCKET, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY in .env.local' 
+      }, { status: 500 });
+    }
     
     const timestamp = Date.now();
     const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
     const key = `photography/${project_id}/${timestamp}-${safeFilename}`;
     
-    // Development mode: Use public folder
-    if (process.env.NODE_ENV === 'development' || !process.env.AWS_S3_BUCKET) {
-      const publicURL = `/uploads/${key}`;
-      
-      return NextResponse.json({ 
-        success: true,
-        uploadURL: publicURL, // In development, frontend will handle file upload differently
-        photoURL: publicURL,
-        useDirect: true // Signal to frontend to use FormData upload
-      }, { status: 200 });
-    }
+    // Determine correct content type
+    const fileContentType = contentType || getContentType(filename);
     
-    // Production mode: AWS S3 (uncomment when AWS credentials are set up)
-    /*
-    const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
-    const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
-    
+    // Initialize S3 client
     const s3Client = new S3Client({
       region: process.env.AWS_REGION || 'us-east-1',
       credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
       }
     });
     
+    // Create presigned URL for upload (no compression, original quality)
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET,
       Key: key,
-      ContentType: 'image/jpeg',
-      ACL: 'public-read'
+      ContentType: fileContentType,
+      // CacheControl: 'max-age=31536000', // Optional: Cache for 1 year
     });
     
+    // Generate presigned URL (valid for 1 hour)
     const uploadURL = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-    const photoURL = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${key}`;
+    
+    // Construct the public URL for the uploaded file
+    const region = process.env.AWS_REGION || 'us-east-1';
+    const photoURL = `https://${process.env.AWS_S3_BUCKET}.s3.${region}.amazonaws.com/${key}`;
     
     return NextResponse.json({ 
       success: true,
       uploadURL,
       photoURL,
-      useDirect: false
+      key,
+      contentType: fileContentType
     }, { status: 200 });
-    */
-    
-    // Fallback response
-    return NextResponse.json({ 
-      success: false,
-      error: 'S3 upload not configured. Set AWS environment variables.' 
-    }, { status: 500 });
     
   } catch (error) {
-    console.error('Error generating upload URL:', error);
+    console.error('Error generating S3 upload URL:', error);
     return NextResponse.json({ 
       success: false, 
       error: 'Failed to generate upload URL',
@@ -82,37 +86,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Alternative endpoint for direct file upload (development/local storage)
-export async function PUT(request: NextRequest) {
-  try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const project_id = formData.get('project_id') as string;
-    
-    if (!file) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'No file provided' 
-      }, { status: 400 });
-    }
-    
-    // In production, you would save this to S3
-    // For now, we'll return a mock URL
-    const timestamp = Date.now();
-    const safeFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const photoURL = `/uploads/photography/${project_id}/${timestamp}-${safeFilename}`;
-    
-    return NextResponse.json({ 
-      success: true,
-      photoURL
-    }, { status: 200 });
-    
-  } catch (error) {
-    console.error('Error uploading file:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Failed to upload file',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
-  }
-}
