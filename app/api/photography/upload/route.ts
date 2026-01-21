@@ -1,35 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-
-// Get content type from filename extension
-function getContentType(filename: string): string {
-  const ext = filename.toLowerCase().split('.').pop();
-  const types: Record<string, string> = {
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'png': 'image/png',
-    'gif': 'image/gif',
-    'webp': 'image/webp',
-    'heic': 'image/heic',
-    'heif': 'image/heif'
-  };
-  return types[ext || ''] || 'image/jpeg';
-}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { filename, project_id, contentType } = body;
+    // Parse form data
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+    const project_id = formData.get('project_id') as string;
     
-    if (!filename) {
+    if (!file || !project_id) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Filename is required' 
+        error: 'File and project_id are required' 
       }, { status: 400 });
     }
     
-    // Check if AWS S3 is configured
+    // Check AWS credentials
     if (!process.env.AWS_S3_BUCKET || !process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
       return NextResponse.json({ 
         success: false,
@@ -37,12 +23,14 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
     
+    // Generate unique filename
     const timestamp = Date.now();
-    const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const safeFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const key = `photography/${project_id}/${timestamp}-${safeFilename}`;
     
-    // Determine correct content type
-    const fileContentType = contentType || getContentType(filename);
+    // Convert file to buffer
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     
     // Initialize S3 client
     const s3Client = new S3Client({
@@ -53,36 +41,32 @@ export async function POST(request: NextRequest) {
       }
     });
     
-    // Create presigned URL for upload (no compression, original quality)
+    // Upload to S3
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET,
       Key: key,
-      ContentType: fileContentType,
-      // CacheControl: 'max-age=31536000', // Optional: Cache for 1 year
+      Body: buffer,
+      ContentType: file.type,
     });
     
-    // Generate presigned URL (valid for 1 hour)
-    const uploadURL = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    await s3Client.send(command);
     
-    // Construct the public URL for the uploaded file
+    // Construct public URL
     const region = process.env.AWS_REGION || 'us-east-1';
     const photoURL = `https://${process.env.AWS_S3_BUCKET}.s3.${region}.amazonaws.com/${key}`;
     
     return NextResponse.json({ 
       success: true,
-      uploadURL,
       photoURL,
-      key,
-      contentType: fileContentType
+      key
     }, { status: 200 });
     
   } catch (error) {
-    console.error('Error generating S3 upload URL:', error);
+    console.error('Error uploading to S3:', error);
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to generate upload URL',
+      error: 'Failed to upload file',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }
-
