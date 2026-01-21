@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import Contact from '@/components/Contact';
@@ -13,6 +13,44 @@ export default function Photography() {
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxTitle, setLightboxTitle] = useState('');
+  const [dbProjects, setDbProjects] = useState<any[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
+
+  useEffect(() => {
+    fetchDatabaseProjects();
+  }, []);
+
+  const fetchDatabaseProjects = async () => {
+    try {
+      setLoadingProjects(true);
+      const response = await fetch('/api/photography/projects');
+      if (response.ok) {
+        const result = await response.json();
+        const projectsData = result.data || [];
+        
+        // Fetch photos for each project
+        const projectsWithPhotos = await Promise.all(
+          projectsData.map(async (project: any) => {
+            const photosResponse = await fetch(`/api/photography/photos?project_id=${project.id}`);
+            if (photosResponse.ok) {
+              const photosResult = await photosResponse.json();
+              return {
+                ...project,
+                photos: photosResult.data || []
+              };
+            }
+            return { ...project, photos: [] };
+          })
+        );
+        
+        setDbProjects(projectsWithPhotos.filter(p => p.photos.length > 0));
+      }
+    } catch (error) {
+      console.error('Error fetching database projects:', error);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
 
   const openLightbox = (images: string[], index: number, title: string) => {
     setLightboxImages(images);
@@ -287,6 +325,50 @@ export default function Photography() {
       <section id="portfolio" className="portfolio">
         <div className="container">
           <h2 className="section-title">Our Photography Work</h2>
+          
+          {/* Database Projects - Featured Section */}
+          {!loadingProjects && dbProjects.length > 0 && (
+            <div style={{ marginBottom: '4rem' }}>
+              <h3 style={{ 
+                fontSize: '1.5rem', 
+                color: 'var(--primary-color)', 
+                marginBottom: '2rem',
+                textAlign: 'center'
+              }}>
+                Recent Projects
+              </h3>
+              <div className="portfolio-grid">
+                {dbProjects.map((project) => (
+                  <div
+                    key={project.id}
+                    className="portfolio-item"
+                    onClick={() => openLightbox(
+                      project.photos.map((p: any) => p.photo_url),
+                      0,
+                      project.project_name
+                    )}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <Image
+                      src={project.cover_photo_url || project.photos[0]?.photo_url}
+                      alt={project.project_name}
+                      fill
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <div className="portfolio-overlay">
+                      <h3>{project.project_name}</h3>
+                      <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', opacity: 0.9 }}>
+                        {project.photos.length} photos
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Static Gallery Grid */}
           <div className="portfolio-grid">
             {galleries.map((gallery) => (
               <div
@@ -310,6 +392,51 @@ export default function Photography() {
           </div>
         </div>
       </section>
+
+      {/* Database Project Gallery Sections */}
+      {dbProjects.map((project) => (
+        <section 
+          key={`db-${project.id}`} 
+          id={`project-${project.id}`} 
+          className="py-20" 
+          style={{ scrollMarginTop: '90px' }}
+        >
+          <div className="container">
+            <h2 className="section-title">{project.project_name}</h2>
+            {project.description && (
+              <p style={{ 
+                textAlign: 'center', 
+                color: 'var(--text-light)', 
+                maxWidth: '800px', 
+                margin: '0 auto 3rem' 
+              }}>
+                {project.description}
+              </p>
+            )}
+            <div className="portfolio-grid">
+              {project.photos.map((photo: any, idx: number) => (
+                <div 
+                  key={photo.id} 
+                  className="portfolio-item"
+                  onClick={() => openLightbox(
+                    project.photos.map((p: any) => p.photo_url),
+                    idx,
+                    project.project_name
+                  )}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Image
+                    src={photo.photo_url}
+                    alt={photo.caption || `${project.project_name} - Image ${idx + 1}`}
+                    fill
+                    loading="lazy"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ))}
 
       {/* Gallery Sections */}
       {galleries.map((gallery) => (
