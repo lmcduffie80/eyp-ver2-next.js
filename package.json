@@ -12,7 +12,9 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.972.0",
     "@aws-sdk/rds-signer": "^3.958.0",
+    "@aws-sdk/s3-request-presigner": "^3.972.0",
     "@sendgrid/mail": "^7.7.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@vercel/oidc-aws-credentials-provider": "^3.0.5",
