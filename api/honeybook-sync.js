@@ -44,7 +44,8 @@ export default async function handler(req, res) {
             headers: req.headers
         });
 
-        const { projects, webhook_secret, manual_sync, ...rest } = req.body;
+        // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+        const { projects, webhook_secret: _webhook_secret, manual_sync } = req.body;
 
         // Optional: Verify webhook secret for security
         // const expectedSecret = process.env.HONEYBOOK_WEBHOOK_SECRET;
