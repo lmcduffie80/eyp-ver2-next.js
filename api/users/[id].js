@@ -125,7 +125,7 @@ export default async function handler(req, res) {
                 return res.status(403).json({ success: false, error: 'Cannot delete super user' });
             }
 
-            const result = await sql`DELETE FROM users WHERE id = ${id} RETURNING id`;
+            await sql`DELETE FROM users WHERE id = ${id}`;
             
             return res.status(200).json({
                 success: true,
