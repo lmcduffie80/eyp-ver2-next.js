@@ -45,7 +45,7 @@ export default function ReviewForm() {
       } else {
         setMessage({ text: result.error || 'Failed to submit review. Please try again.', type: 'error' });
       }
-    } catch (error) {
+    } catch {
       setMessage({ text: 'An error occurred while submitting your review. Please try again later.', type: 'error' });
     } finally {
       setSubmitting(false);
