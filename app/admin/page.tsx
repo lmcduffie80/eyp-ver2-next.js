@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCSVImport } from '../hooks/useCSVImport';
 
 export default function AdminDashboard() {
@@ -10,16 +10,26 @@ export default function AdminDashboard() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [blockedDates, setBlockedDates] = useState<any[]>([]);
-  const [loadingBlockedDates, setLoadingBlockedDates] = useState(true);
   const [userTab, setUserTab] = useState('create');
   const [userSearch, setUserSearch] = useState('');
   const [userTypeFilter, setUserTypeFilter] = useState('');
-  const [sortColumn, setSortColumn] = useState('');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarDJFilter, setCalendarDJFilter] = useState('');
+  
+  // Photography state
+  const [photoProjects, setPhotoProjects] = useState<any[]>([]);
+  const [selectedProject, setSelectedProject] = useState<any | null>(null);
+  const [projectPhotos, setProjectPhotos] = useState<any[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [loadingPhotos, setLoadingPhotos] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDescription, setNewProjectDescription] = useState('');
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  
   const { importing, status, importCSV} = useCSVImport();
 
   useEffect(() => {
@@ -137,7 +147,6 @@ export default function AdminDashboard() {
 
   const generateCalendar = (year: number, month: number) => {
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
     
@@ -238,7 +247,6 @@ export default function AdminDashboard() {
 
   const fetchBlockedDates = async () => {
     try {
-      setLoadingBlockedDates(true);
       const response = await fetch('/api/blocked-dates');
       if (response.ok) {
         const data = await response.json();
@@ -248,10 +256,192 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Failed to fetch blocked dates:', error);
-    } finally {
-      setLoadingBlockedDates(false);
     }
   };
+
+  // Photography Management Functions
+  const fetchPhotoProjects = async () => {
+    try {
+      setLoadingProjects(true);
+      const response = await fetch('/api/photography/projects');
+      if (response.ok) {
+        const result = await response.json();
+        setPhotoProjects(result.data || []);
+      } else {
+        console.error('Failed to fetch photography projects');
+      }
+    } catch (error) {
+      console.error('Error fetching photography projects:', error);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  const fetchProjectPhotos = async (projectId: number) => {
+    try {
+      setLoadingPhotos(true);
+      const response = await fetch(`/api/photography/photos?project_id=${projectId}`);
+      if (response.ok) {
+        const result = await response.json();
+        setProjectPhotos(result.data || []);
+      } else {
+        console.error('Failed to fetch project photos');
+      }
+    } catch (error) {
+      console.error('Error fetching project photos:', error);
+    } finally {
+      setLoadingPhotos(false);
+    }
+  };
+
+  const createProject = async () => {
+    if (!newProjectName.trim()) {
+      alert('Please enter a project name');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/photography/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_name: newProjectName,
+          description: newProjectDescription
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setNewProjectName('');
+        setNewProjectDescription('');
+        setShowProjectForm(false);
+        await fetchPhotoProjects();
+        setSelectedProject(result.data);
+      } else {
+        const error = await response.json();
+        alert(`Failed to create project: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error creating project:', error);
+      alert('Failed to create project');
+    }
+  };
+
+  const deleteProject = async (projectId: number) => {
+    if (!confirm('Are you sure you want to delete this project? All photos will be deleted.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/photography/projects?id=${projectId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        if (selectedProject?.id === projectId) {
+          setSelectedProject(null);
+          setProjectPhotos([]);
+        }
+        await fetchPhotoProjects();
+      } else {
+        alert('Failed to delete project');
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('Failed to delete project');
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !selectedProject) return;
+
+    setUploadingPhotos(true);
+    setUploadProgress(0);
+    const totalFiles = files.length;
+    let uploadedCount = 0;
+
+    try {
+      for (const file of Array.from(files)) {
+        // In development, use a simple approach - in production, use S3
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('project_id', selectedProject.id.toString());
+
+        // For now, create a temporary URL and save to database
+        // In production, this would upload to S3 first
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          const photoURL = event.target?.result as string;
+          
+          try {
+            await fetch('/api/photography/photos', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                project_id: selectedProject.id,
+                photo_url: photoURL,
+                filename: file.name
+              })
+            });
+
+            uploadedCount++;
+            setUploadProgress(Math.round((uploadedCount / totalFiles) * 100));
+
+            if (uploadedCount === totalFiles) {
+              await fetchProjectPhotos(selectedProject.id);
+              await fetchPhotoProjects();
+            }
+          } catch (error) {
+            console.error('Error saving photo:', error);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (error) {
+      console.error('Error uploading photos:', error);
+      alert('Some photos failed to upload');
+    } finally {
+      setTimeout(() => {
+        setUploadingPhotos(false);
+        setUploadProgress(0);
+      }, 1000);
+    }
+  };
+
+  const deletePhoto = async (photoId: number) => {
+    if (!confirm('Are you sure you want to delete this photo?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/photography/photos?id=${photoId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok && selectedProject) {
+        await fetchProjectPhotos(selectedProject.id);
+        await fetchPhotoProjects();
+      } else {
+        alert('Failed to delete photo');
+      }
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+      alert('Failed to delete photo');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'photography') {
+      fetchPhotoProjects();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (selectedProject) {
+      fetchProjectPhotos(selectedProject.id);
+    }
+  }, [selectedProject]);
 
   const handleLogout = async () => {
     // Show confirmation
@@ -415,6 +605,13 @@ export default function AdminDashboard() {
           >
             <span className="nav-icon">⭐</span>
             <span>Reviews</span>
+          </a>
+          <a 
+            className={`sidebar-nav-link ${activeTab === 'photography' ? 'active' : ''}`}
+            onClick={() => switchTab('photography')}
+          >
+            <span className="nav-icon">📸</span>
+            <span>Photography</span>
           </a>
         </div>
 
@@ -1312,6 +1509,263 @@ export default function AdminDashboard() {
               </div>
               <div id="reviews-container">
                 {/* Reviews will be displayed here */}
+              </div>
+            </div>
+          </div>
+
+          {/* Photography Tab */}
+          <div id="photography-tab" className={`tab-content ${activeTab === 'photography' ? 'active' : ''}`}>
+            <div className="section-card" style={{ marginBottom: '2rem' }}>
+              <h2 style={{ marginBottom: '1.5rem' }}>Photography Portfolio Manager</h2>
+              <p style={{ color: 'var(--text-light)', marginBottom: '2rem' }}>
+                Manage your photography projects and upload photos that will appear on the public photography page.
+              </p>
+
+              <div className="photography-manager">
+                {/* Projects Panel */}
+                <div className="projects-panel">
+                  <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0 }}>Projects</h3>
+                    <button 
+                      onClick={() => setShowProjectForm(!showProjectForm)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        background: 'var(--primary-color)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '0.95rem'
+                      }}
+                    >
+                      {showProjectForm ? 'Cancel' : '+ New Project'}
+                    </button>
+                  </div>
+
+                  {showProjectForm && (
+                    <div className="project-form" style={{ 
+                      padding: '1.5rem', 
+                      background: '#f8f9fa', 
+                      borderRadius: '8px', 
+                      marginBottom: '1.5rem' 
+                    }}>
+                      <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                          Project Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={newProjectName}
+                          onChange={(e) => setNewProjectName(e.target.value)}
+                          placeholder="e.g., Smith Wedding 2025"
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            border: '2px solid #e0e0e0',
+                            borderRadius: '8px',
+                            fontSize: '0.95rem'
+                          }}
+                        />
+                      </div>
+                      <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                          Description (Optional)
+                        </label>
+                        <textarea
+                          value={newProjectDescription}
+                          onChange={(e) => setNewProjectDescription(e.target.value)}
+                          placeholder="Brief description of this project..."
+                          rows={3}
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            border: '2px solid #e0e0e0',
+                            borderRadius: '8px',
+                            fontSize: '0.95rem',
+                            resize: 'vertical'
+                          }}
+                        />
+                      </div>
+                      <button
+                        onClick={createProject}
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          background: 'var(--primary-color)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: '0.95rem'
+                        }}
+                      >
+                        Create Project
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="projects-list">
+                    {loadingProjects ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                        Loading projects...
+                      </div>
+                    ) : photoProjects.length === 0 ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                        No projects yet. Create your first project to get started!
+                      </div>
+                    ) : (
+                      photoProjects.map(project => (
+                        <div
+                          key={project.id}
+                          className={`project-item ${selectedProject?.id === project.id ? 'active' : ''}`}
+                          onClick={() => setSelectedProject(project)}
+                        >
+                          <div className="project-cover">
+                            {project.cover_photo_url ? (
+                              <img src={project.cover_photo_url} alt={project.project_name} />
+                            ) : (
+                              <div className="no-cover">📸</div>
+                            )}
+                          </div>
+                          <div className="project-info">
+                            <h4>{project.project_name}</h4>
+                            <p>{project.photo_count || 0} photos</p>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteProject(project.id);
+                            }}
+                            className="delete-project-btn"
+                            title="Delete project"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Photos Panel */}
+                <div className="photos-panel">
+                  {!selectedProject ? (
+                    <div style={{ 
+                      height: '100%', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      color: 'var(--text-light)',
+                      textAlign: 'center',
+                      padding: '2rem'
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📸</div>
+                        <p>Select a project from the left to view and upload photos</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <h3 style={{ margin: 0, marginBottom: '0.5rem' }}>{selectedProject.project_name}</h3>
+                        {selectedProject.description && (
+                          <p style={{ color: 'var(--text-light)', margin: 0 }}>{selectedProject.description}</p>
+                        )}
+                      </div>
+
+                      <div className="upload-area">
+                        <input
+                          type="file"
+                          id="photo-upload-input"
+                          multiple
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          style={{ display: 'none' }}
+                        />
+                        <label
+                          htmlFor="photo-upload-input"
+                          style={{
+                            display: 'block',
+                            padding: '3rem 2rem',
+                            border: '3px dashed #e0e0e0',
+                            borderRadius: '12px',
+                            textAlign: 'center',
+                            cursor: 'pointer',
+                            background: '#f8f9fa',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--primary-color)';
+                            e.currentTarget.style.background = '#f0f4ff';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.borderColor = '#e0e0e0';
+                            e.currentTarget.style.background = '#f8f9fa';
+                          }}
+                        >
+                          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📁</div>
+                          <p style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                            {uploadingPhotos ? `Uploading... ${uploadProgress}%` : 'Click to upload or drag photos here'}
+                          </p>
+                          <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>
+                            Supports: JPG, PNG, GIF, WEBP • Max 10MB per file
+                          </p>
+                        </label>
+                        {uploadingPhotos && (
+                          <div style={{ marginTop: '1rem' }}>
+                            <div style={{ 
+                              height: '8px', 
+                              background: '#e0e0e0', 
+                              borderRadius: '4px', 
+                              overflow: 'hidden' 
+                            }}>
+                              <div style={{ 
+                                height: '100%', 
+                                background: 'var(--primary-color)', 
+                                width: `${uploadProgress}%`,
+                                transition: 'width 0.3s ease'
+                              }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ marginTop: '2rem' }}>
+                        <h4 style={{ marginBottom: '1rem' }}>Photos ({projectPhotos.length})</h4>
+                        
+                        {loadingPhotos ? (
+                          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                            Loading photos...
+                          </div>
+                        ) : projectPhotos.length === 0 ? (
+                          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                            No photos yet. Upload your first photo!
+                          </div>
+                        ) : (
+                          <div className="photos-grid">
+                            {projectPhotos.map(photo => (
+                              <div key={photo.id} className="photo-item">
+                                <img 
+                                  src={photo.thumbnail_url || photo.photo_url} 
+                                  alt={photo.caption || 'Project photo'}
+                                  style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '8px' }}
+                                />
+                                <button
+                                  onClick={() => deletePhoto(photo.id)}
+                                  className="delete-photo-btn"
+                                  title="Delete photo"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
