@@ -9,6 +9,13 @@ export default function AdminDashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [bookings, setBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
+  const [blockedDates, setBlockedDates] = useState<any[]>([]);
+  const [loadingBlockedDates, setLoadingBlockedDates] = useState(true);
+  const [userTab, setUserTab] = useState('create');
+  const [userSearch, setUserSearch] = useState('');
+  const [userTypeFilter, setUserTypeFilter] = useState('');
+  const [sortColumn, setSortColumn] = useState('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { importing, status, importCSV } = useCSVImport();
 
   useEffect(() => {
@@ -20,9 +27,92 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    // Fetch bookings when component mounts
+    // Fetch bookings and blocked dates when component mounts
     fetchBookings();
+    fetchBlockedDates();
   }, []);
+
+  // Calculate and update dashboard statistics when bookings change
+  useEffect(() => {
+    if (bookings.length > 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Total Projects
+      const totalProjects = bookings.length;
+      
+      // Completed Projects (past dates)
+      const completed = bookings.filter(b => new Date(b.date) < today).length;
+      
+      // Future Bookings
+      const futureBookings = bookings.filter(b => new Date(b.date) >= today).length;
+      
+      // Total Revenue
+      const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalRevenue || 0), 0);
+      
+      // DJ Revenue (sum of DJ payouts)
+      const djRevenue = bookings.reduce((sum, b) => sum + (b.payout || 0), 0);
+      
+      // Revenue by Year
+      const revenue2025 = bookings
+        .filter(b => new Date(b.date).getFullYear() === 2025)
+        .reduce((sum, b) => sum + (b.totalRevenue || 0), 0);
+      
+      const revenue2026 = bookings
+        .filter(b => new Date(b.date).getFullYear() === 2026)
+        .reduce((sum, b) => sum + (b.totalRevenue || 0), 0);
+      
+      // Calculate percentages
+      const completionRate = totalProjects > 0 ? ((completed / totalProjects) * 100) : 0;
+      const djRevenuePercentage = totalRevenue > 0 ? ((djRevenue / totalRevenue) * 100) : 0;
+      
+      // Update DOM elements
+      const totalProjectsEl = document.getElementById('total-projects');
+      const completedProjectsEl = document.getElementById('completed-projects');
+      const futureBookingsEl = document.getElementById('future-bookings-projects');
+      const totalRevenueEl = document.getElementById('total-revenue');
+      const djRevenueEl = document.getElementById('dj-revenue');
+      const revenue2025El = document.getElementById('revenue-2025');
+      const revenue2026El = document.getElementById('revenue-2026');
+      
+      // Progress bar elements
+      const completedProgressBar = document.getElementById('completed-progress-bar');
+      const completedPercentage = document.getElementById('completed-percentage');
+      
+      // DJ revenue display and bar
+      const djRevenueDisplay = document.getElementById('dj-revenue-display');
+      const djRevenueBar = document.getElementById('dj-revenue-bar');
+      
+      if (totalProjectsEl) totalProjectsEl.textContent = totalProjects.toString();
+      if (completedProjectsEl) completedProjectsEl.textContent = completed.toString();
+      if (futureBookingsEl) futureBookingsEl.textContent = futureBookings.toString();
+      if (totalRevenueEl) totalRevenueEl.textContent = `$${totalRevenue.toFixed(2)}`;
+      if (djRevenueEl) djRevenueEl.textContent = `$${djRevenue.toFixed(2)}`;
+      if (revenue2025El) revenue2025El.textContent = `$${revenue2025.toFixed(2)}`;
+      if (revenue2026El) revenue2026El.textContent = `$${revenue2026.toFixed(2)}`;
+      
+      // Update progress bar for completed projects
+      if (completedProgressBar) completedProgressBar.style.width = `${completionRate}%`;
+      if (completedPercentage) completedPercentage.textContent = `${completionRate.toFixed(0)}% completion rate`;
+      
+      // Update DJ revenue display and bar
+      if (djRevenueDisplay) djRevenueDisplay.textContent = `$${djRevenue.toFixed(2)} (${djRevenuePercentage.toFixed(0)}%)`;
+      if (djRevenueBar) djRevenueBar.style.width = `${djRevenuePercentage}%`;
+    }
+  }, [bookings]);
+
+  // Update blocked dates count when blocked dates change
+  useEffect(() => {
+    if (blockedDates.length > 0) {
+      // Count only approved blocked dates
+      const approvedCount = blockedDates.filter(bd => 
+        bd.status === 'approved' || !bd.status
+      ).length;
+      
+      const blockedDatesEl = document.getElementById('blocked-dates-count');
+      if (blockedDatesEl) blockedDatesEl.textContent = approvedCount.toString();
+    }
+  }, [blockedDates]);
 
   const switchTab = (tab: string) => {
     setActiveTab(tab);
@@ -51,6 +141,23 @@ export default function AdminDashboard() {
       console.error('Failed to fetch bookings:', error);
     } finally {
       setLoadingBookings(false);
+    }
+  };
+
+  const fetchBlockedDates = async () => {
+    try {
+      setLoadingBlockedDates(true);
+      const response = await fetch('/api/blocked-dates');
+      if (response.ok) {
+        const data = await response.json();
+        setBlockedDates(data);
+      } else {
+        console.error('Failed to fetch blocked dates:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Failed to fetch blocked dates:', error);
+    } finally {
+      setLoadingBlockedDates(false);
     }
   };
 
@@ -271,6 +378,7 @@ export default function AdminDashboard() {
           {/* DJs Tab */}
           <div id="djs-tab" className={`tab-content ${activeTab === 'djs' ? 'active' : ''}`}>
             <div className="stats-grid">
+              {/* Total Projects */}
               <div className="stat-card">
                 <div className="stat-card-header">
                   <h3>
@@ -281,6 +389,8 @@ export default function AdminDashboard() {
                 </div>
                 <div className="stat-value" id="total-projects">0</div>
               </div>
+
+              {/* Completed Projects with Progress Bar */}
               <div className="stat-card">
                 <div className="stat-card-header">
                   <h3>
@@ -290,7 +400,27 @@ export default function AdminDashboard() {
                   <span className="stat-info-icon" title="Click to filter completed projects">ℹ️</span>
                 </div>
                 <div className="stat-value" id="completed-projects">0</div>
+                <div id="completed-progress-container" style={{ marginTop: '0.75rem' }}>
+                  <div style={{ 
+                    height: '6px',
+                    background: '#e0e0e0',
+                    borderRadius: '3px',
+                    overflow: 'hidden'
+                  }}>
+                    <div id="completed-progress-bar" style={{
+                      height: '100%',
+                      background: 'linear-gradient(90deg, #10b981, #059669)',
+                      width: '0%',
+                      transition: 'width 0.3s ease'
+                    }} />
+                  </div>
+                  <small id="completed-percentage" style={{ color: 'var(--text-light)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                    0% completion rate
+                  </small>
+                </div>
               </div>
+
+              {/* Future Bookings */}
               <div className="stat-card">
                 <div className="stat-card-header">
                   <h3>
@@ -301,26 +431,8 @@ export default function AdminDashboard() {
                 </div>
                 <div className="stat-value" id="future-bookings-projects">0</div>
               </div>
-              <div className="stat-card">
-                <div className="stat-card-header">
-                  <h3>
-                    <span className="stat-icon">💰</span>
-                    DJ Revenue
-                  </h3>
-                  <span className="stat-info-icon" title="Click to view revenue details">ℹ️</span>
-                </div>
-                <div className="stat-value" id="dj-revenue">$0.00</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-card-header">
-                  <h3>
-                    <span className="stat-icon">💵</span>
-                    Total Revenue
-                  </h3>
-                  <span className="stat-info-icon" title="Click to view total revenue details">ℹ️</span>
-                </div>
-                <div className="stat-value" id="total-revenue">$0.00</div>
-              </div>
+
+              {/* Blocked Dates */}
               <div className="stat-card">
                 <div className="stat-card-header">
                   <h3>
@@ -331,31 +443,116 @@ export default function AdminDashboard() {
                 </div>
                 <div className="stat-value" id="blocked-dates-count">0</div>
               </div>
-              <div className="stat-card">
+
+              {/* Consolidated Revenue Overview Card - Spans 2 Columns */}
+              <div className="stat-card span-2">
                 <div className="stat-card-header">
                   <h3>
                     <span className="stat-icon">💰</span>
-                    2025 Revenue
+                    Revenue Overview
                   </h3>
-                  <span className="stat-info-icon" title="Click to view 2025 revenue details">ℹ️</span>
+                  <span className="stat-info-icon" title="Comprehensive revenue breakdown">ℹ️</span>
                 </div>
-                <div className="stat-value" id="revenue-2025">$0.00</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-card-header">
-                  <h3>
-                    <span className="stat-icon">💰</span>
-                    2026 Revenue
-                  </h3>
-                  <span className="stat-info-icon" title="Click to view 2026 revenue details">ℹ️</span>
+                
+                {/* Main Total Revenue */}
+                <div className="stat-value" id="total-revenue" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>$0.00</div>
+                
+                {/* DJ vs Company Revenue Split */}
+                <div style={{ margin: '1rem 0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.95rem', color: 'var(--text-light)' }}>DJ Payout</span>
+                    <span id="dj-revenue-display" style={{ fontSize: '0.95rem', fontWeight: '600' }}>$0.00 (0%)</span>
+                  </div>
+                  <div style={{ height: '8px', background: '#e0e0e0', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div id="dj-revenue-bar" style={{ 
+                      height: '100%', 
+                      background: 'linear-gradient(90deg, #3b82f6, #2563eb)',
+                      width: '0%',
+                      transition: 'width 0.3s ease'
+                    }} />
+                  </div>
                 </div>
-                <div className="stat-value" id="revenue-2026">$0.00</div>
+                
+                {/* Year Comparison */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1.25rem' }}>
+                  <div style={{ padding: '0.75rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginBottom: '0.25rem' }}>2025 Revenue</div>
+                    <div id="revenue-2025" style={{ fontSize: '1.35rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>$0.00</div>
+                  </div>
+                  <div style={{ padding: '0.75rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginBottom: '0.25rem' }}>2026 Revenue</div>
+                    <div id="revenue-2026" style={{ fontSize: '1.35rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>$0.00</div>
+                  </div>
+                </div>
+                
+                {/* Hidden elements for backward compatibility */}
+                <div style={{ display: 'none' }}>
+                  <span id="dj-revenue">$0.00</span>
+                </div>
               </div>
             </div>
             <div className="section-card">
               <h2>All DJs Overview</h2>
               <div id="djs-container" className="dj-list">
                 {/* DJs will be populated here */}
+              </div>
+            </div>
+
+            {/* All DJs Upcoming Projects Table */}
+            <div className="section-card" style={{ marginTop: '2rem' }}>
+              <h2>All DJs Upcoming Projects</h2>
+              <p style={{ color: 'var(--text-light)', marginBottom: '1rem' }}>
+                Showing all future bookings across all DJs
+              </p>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="bookings-table" style={{ width: '100%', minWidth: '900px' }}>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>DJ</th>
+                      <th>Project</th>
+                      <th>Location</th>
+                      <th>Revenue</th>
+                      <th>DJ Payout</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loadingBookings ? (
+                      <tr>
+                        <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                          Loading upcoming projects...
+                        </td>
+                      </tr>
+                    ) : (
+                      (() => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const upcomingBookings = bookings
+                          .filter(b => new Date(b.date) >= today)
+                          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                        
+                        return upcomingBookings.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                              No upcoming projects scheduled
+                            </td>
+                          </tr>
+                        ) : (
+                          upcomingBookings.map(booking => (
+                            <tr key={booking.id}>
+                              <td>{new Date(booking.date).toLocaleDateString()}</td>
+                              <td>{booking.djUser || 'N/A'}</td>
+                              <td>{booking.eventType || 'N/A'}</td>
+                              <td>{booking.location || 'N/A'}</td>
+                              <td>${booking.totalRevenue?.toFixed(2) || '0.00'}</td>
+                              <td>${booking.payout?.toFixed(2) || '0.00'}</td>
+                            </tr>
+                          ))
+                        );
+                      })()
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -948,121 +1145,180 @@ export default function AdminDashboard() {
           {/* User Management Tab */}
           <div id="users-tab" className={`tab-content ${activeTab === 'users' ? 'active' : ''}`}>
             <div className="section-card">
-              <h2>User Management</h2>
+              <h2 style={{ marginBottom: '1.5rem' }}>User Management</h2>
               
-              {/* Create/Edit User Form */}
-              <div style={{ background: 'var(--bg-light)', padding: '2rem', borderRadius: '10px', marginBottom: '2rem' }}>
-                <h3 id="user-form-title" style={{ marginBottom: '1rem', color: 'var(--primary-color)' }}>Create New User</h3>
-                <form id="create-user-form" onSubmit={(e) => { e.preventDefault(); /* Form submission will be handled here */ }} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-                  <input type="hidden" id="edit-mode" value="false" />
-                  <input type="hidden" id="edit-original-username" value="" />
-                  <input type="hidden" id="edit-original-usertype" value="" />
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>First Name</label>
-                    <input 
-                      type="text" 
-                      id="new-firstname" 
-                      required 
-                      style={{ width: '100%', padding: '0.75rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Last Name</label>
-                    <input 
-                      type="text" 
-                      id="new-lastname" 
-                      required 
-                      style={{ width: '100%', padding: '0.75rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
-                    />
-                  </div>
-                  <div id="username-field-container">
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Username</label>
-                    <input 
-                      type="text" 
-                      id="new-username" 
-                      required 
-                      style={{ width: '100%', padding: '0.75rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
-                    />
-                    <small id="username-hint" style={{ display: 'none', marginTop: '0.25rem', color: 'var(--text-light)', fontSize: '0.85rem' }}>For admin users, username is the same as first name</small>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Email</label>
-                    <input 
-                      type="email" 
-                      id="new-email" 
-                      required 
-                      style={{ width: '100%', padding: '0.75rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Phone Number</label>
-                    <input 
-                      type="tel" 
-                      id="new-phone" 
-                      placeholder="(555) 123-4567"
-                      style={{ width: '100%', padding: '0.75rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
-                    />
-                    <small style={{ display: 'block', marginTop: '0.25rem', color: 'var(--text-light)', fontSize: '0.85rem' }}>Required for SMS reminders</small>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>User Type</label>
-                    <select 
-                      id="new-user-type" 
-                      required 
-                      style={{ width: '100%', padding: '0.75rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
-                    >
-                      <option value="dj">DJ</option>
-                      <option value="photographer">Photographer</option>
-                      <option value="videographer">Videographer</option>
-                      <option value="coordination">Coordination</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Password</label>
-                    <input 
-                      type="password" 
-                      id="new-password" 
-                      minLength={8}
-                      style={{ width: '100%', padding: '0.75rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
-                    />
-                    <small id="password-hint" style={{ display: 'block', marginTop: '0.25rem', color: 'var(--text-light)', fontSize: '0.85rem' }}>Leave blank to keep existing password</small>
-                  </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem' }}>
-                    <button 
-                      type="submit"
-                      id="submit-user-button"
-                      style={{ padding: '0.75rem 2rem', background: 'var(--accent-color)', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer', flex: 1 }}
-                    >
-                      Create User
-                    </button>
-                    <button 
-                      type="button"
-                      id="cancel-edit-button"
-                      onClick={() => {
-                        // Cancel edit functionality will be added here
-                        console.log('Cancel edit');
-                      }}
-                      style={{ display: 'none', padding: '0.75rem 1.5rem', background: 'var(--text-light)', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-                <div id="create-user-message" style={{ marginTop: '1rem', padding: '0.75rem', borderRadius: '5px', display: 'none' }}></div>
+              {/* Tab Navigation */}
+              <div className="user-management-tabs">
+                <button 
+                  className={`tab ${userTab === 'create' ? 'active' : ''}`}
+                  onClick={() => setUserTab('create')}
+                >
+                  <span>➕</span> Create User
+                </button>
+                <button 
+                  className={`tab ${userTab === 'manage' ? 'active' : ''}`}
+                  onClick={() => setUserTab('manage')}
+                >
+                  <span>👥</span> Manage Users
+                </button>
               </div>
 
-              {/* Users List */}
-              <div>
-                <h3 style={{ marginBottom: '1rem', color: 'var(--primary-color)' }}>All Users</h3>
-                <div style={{ display: 'grid', gap: '1rem' }}>
-                  <div id="users-list-container">
-                    {/* Users will be populated here */}
+              {/* Create User Tab Content */}
+              {userTab === 'create' && (
+                <div style={{ background: 'var(--bg-light)', padding: '2rem', borderRadius: '12px' }}>
+                  <h3 id="user-form-title" style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', fontSize: '1.25rem' }}>Create New User</h3>
+                  <form id="create-user-form" onSubmit={(e) => { e.preventDefault(); /* Form submission will be handled here */ }}>
+                    <input type="hidden" id="edit-mode" value="false" />
+                    <input type="hidden" id="edit-original-username" value="" />
+                    <input type="hidden" id="edit-original-usertype" value="" />
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
+                      <div className="form-field">
+                        <label>First Name *</label>
+                        <input 
+                          type="text" 
+                          id="new-firstname" 
+                          required 
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label>Last Name *</label>
+                        <input 
+                          type="text" 
+                          id="new-lastname" 
+                          required 
+                        />
+                      </div>
+                      <div className="form-field" id="username-field-container">
+                        <label>Username *</label>
+                        <input 
+                          type="text" 
+                          id="new-username" 
+                          required 
+                        />
+                        <small id="username-hint" style={{ display: 'none', marginTop: '0.25rem', fontSize: '0.85rem' }}>For admin users, username is the same as first name</small>
+                      </div>
+                      <div className="form-field">
+                        <label>Email *</label>
+                        <input 
+                          type="email" 
+                          id="new-email" 
+                          required 
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label>Phone Number</label>
+                        <input 
+                          type="tel" 
+                          id="new-phone" 
+                          placeholder="(555) 123-4567"
+                        />
+                        <small style={{ marginTop: '0.25rem', fontSize: '0.85rem' }}>Required for SMS reminders</small>
+                      </div>
+                      <div className="form-field">
+                        <label>User Type *</label>
+                        <select id="new-user-type" required>
+                          <option value="dj">DJ</option>
+                          <option value="photographer">Photographer</option>
+                          <option value="videographer">Videographer</option>
+                          <option value="coordination">Coordination</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </div>
+                      <div className="form-field" style={{ gridColumn: 'span 3' }}>
+                        <label>Password</label>
+                        <input 
+                          type="password" 
+                          id="new-password" 
+                          minLength={8}
+                        />
+                        <small id="password-hint" style={{ marginTop: '0.25rem', fontSize: '0.85rem' }}>Leave blank to keep existing password (edit mode)</small>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '2rem' }}>
+                      <button 
+                        type="submit"
+                        id="submit-user-button"
+                        style={{ 
+                          padding: '0.875rem 2rem', 
+                          background: '#000', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '8px', 
+                          fontWeight: '600', 
+                          cursor: 'pointer',
+                          fontSize: '1rem',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = '#2d2d2d'}
+                        onMouseOut={(e) => e.currentTarget.style.background = '#000'}
+                      >
+                        Create User
+                      </button>
+                      <button 
+                        type="button"
+                        id="cancel-edit-button"
+                        onClick={() => {
+                          // Cancel edit functionality will be added here
+                          console.log('Cancel edit');
+                        }}
+                        style={{ 
+                          display: 'none', 
+                          padding: '0.875rem 1.5rem', 
+                          background: 'var(--text-light)', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '8px', 
+                          fontWeight: '600', 
+                          cursor: 'pointer' 
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                  <div id="create-user-message" style={{ marginTop: '1rem', padding: '0.75rem', borderRadius: '8px', display: 'none' }}></div>
+                </div>
+              )}
+
+              {/* Manage Users Tab Content */}
+              {userTab === 'manage' && (
+                <div>
+                  <div className="table-controls">
+                    <input 
+                      type="search" 
+                      placeholder="🔍 Search users by name, email, or username..."
+                      className="search-input"
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                    />
+                    <select 
+                      className="filter-select"
+                      value={userTypeFilter}
+                      onChange={(e) => setUserTypeFilter(e.target.value)}
+                      style={{ 
+                        padding: '0.75rem 1rem', 
+                        border: '2px solid #e0e0e0', 
+                        borderRadius: '8px',
+                        fontSize: '1rem',
+                        minWidth: '150px'
+                      }}
+                    >
+                      <option value="">All Types</option>
+                      <option value="dj">DJs</option>
+                      <option value="photographer">Photographers</option>
+                      <option value="videographer">Videographers</option>
+                      <option value="coordination">Coordination</option>
+                      <option value="admin">Admins</option>
+                    </select>
+                  </div>
+                  
+                  <div id="users-list-container" className="user-list-modern">
+                    {/* Users table will be populated here by existing JS */}
                   </div>
                 </div>
-              </div>
+              )}
               
             </div>
           </div>
