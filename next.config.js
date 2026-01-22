@@ -22,6 +22,25 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
+  async redirects() {
+    return [
+      {
+        source: '/dj-portal',
+        destination: '/DJ',
+        permanent: true,
+      },
+      {
+        source: '/dj-portal/',
+        destination: '/DJ',
+        permanent: true,
+      },
+      {
+        source: '/dj-portal/index.html',
+        destination: '/DJ',
+        permanent: true,
+      },
+    ];
+  },
 }
 
 module.exports = nextConfig
