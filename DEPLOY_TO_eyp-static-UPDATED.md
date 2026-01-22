@@ -67,7 +67,7 @@ https://console.aws.amazon.com/s3/buckets/eyp-static
 - ✅ photography.html
 - ✅ videography.html
 - ✅ dj-entertainment.html
-- ✅ dj-login.html
+- ✅ dj-login.html (legacy - redirects to /DJ)
 - ✅ dj-dashboard.html
 - ✅ admin-login.html
 - ✅ admin-dashboard.html
@@ -88,7 +88,9 @@ https://console.aws.amazon.com/s3/buckets/eyp-static
 - ✅ Tray and Kelly Stapleton Wedding/
 - ✅ Yazmine and Josh Wedding/
 - ✅ DJ Entertainment/
-- ✅ dj-portal/ (folder)
+- ✅ dj-portal/ (folder - legacy, redirects to /DJ)
+
+**Note:** DJ login is now handled by Next.js route at `/DJ`. Old URLs redirect for backward compatibility.
 
 4. Click **Upload**
 5. Wait for upload to complete
