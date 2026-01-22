@@ -1157,6 +1157,7 @@ body.dashboard-page {
   user-select: none;
   position: relative;
   padding-right: 2rem;
+  transition: background 0.2s ease;
 }
 
 .bookings-table th:hover {
@@ -1272,11 +1273,42 @@ body.dashboard-page {
   }
 
   .mobile-menu-btn {
-    display: block;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    font-size: 1.5rem;
+    color: #ff6b35;
+    background: rgba(255, 107, 53, 0.1) !important;
+    border-radius: 8px;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .mobile-menu-btn:active {
+    background: rgba(255, 107, 53, 0.2) !important;
+    transform: scale(0.95);
+  }
+
+  .mobile-menu-btn:hover,
+  .mobile-menu-btn:focus {
+    transform: scale(1.05);
+    background: rgba(255, 107, 53, 0.15) !important;
+  }
+
+  .sidebar-close-btn {
+    display: block !important;
   }
 
   .dashboard-container {
-    padding: 1rem;
+    padding: 1rem !important;
+  }
+
+  .main-content {
+    width: 100%;
+    margin-left: 0 !important;
   }
 
   .stats-grid {
@@ -1290,6 +1322,86 @@ body.dashboard-page {
   .bookings-table th,
   .bookings-table td {
     padding: 0.5rem;
+  }
+
+  /* Header optimizations */
+  .dashboard-header-modern {
+    padding: 1rem !important;
+    gap: 0.75rem;
+  }
+
+  .dashboard-header-modern h1 {
+    font-size: 1.25rem !important;
+  }
+
+  .dashboard-header-modern .subtitle,
+  .dashboard-header-modern p {
+    font-size: 0.85rem !important;
+  }
+
+  /* Stats cards - ensure they stack */
+  div[style*="grid-template-columns: repeat(auto-fit"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stat-card {
+    padding: 1.25rem !important;
+  }
+
+  /* Ensure grid stacks properly */
+  div[style*="display: 'grid'"][style*="gap"] {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* Remove extra margins on stats cards */
+  div[style*="marginBottom: '2rem'"] {
+    margin-bottom: 1rem !important;
+  }
+
+  /* Calendar responsive */
+  .calendar-container,
+  div[style*="maxWidth: '645px'"] {
+    max-width: 100% !important;
+    padding: 1rem !important;
+  }
+
+  /* Calendar day cells */
+  .calendar-day {
+    font-size: 0.75rem !important;
+    min-height: 45px !important;
+    padding: 0.25rem !important;
+  }
+
+  /* Filter buttons */
+  div[style*="gap: '1rem'"] button {
+    font-size: 0.85rem !important;
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  /* Project cards - make details stack */
+  div[style*="gridTemplateColumns: 'repeat(2, 1fr)'"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Booking cards */
+  div[style*="padding: '1.5rem'"][style*="borderRadius: '10px'"] {
+    padding: 1rem !important;
+  }
+
+  /* Make buttons touch-friendly (min 44px height) */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Responsive text in cards */
+  div[style*="fontSize: '1.5rem'"] {
+    font-size: 1.25rem !important;
+  }
+
+  div[style*="fontSize: '2rem'"] {
+    font-size: 1.5rem !important;
   }
 }
 

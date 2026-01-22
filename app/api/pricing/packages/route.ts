@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getConnection } from '@/api/db/connection';
+import { getConnection } from '@/api-old/db/connection';
 
 // GET all pricing packages (with optional service_type filter)
 export async function GET(request: NextRequest) {

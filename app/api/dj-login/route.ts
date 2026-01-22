@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import sql from '@/api/db/connection';
-import { comparePassword } from '@/api/utils/password';
+import sql from '@/api-old/db/connection';
+import { comparePassword } from '@/api-old/utils/password';
 
 export async function POST(request: Request) {
   try {
@@ -23,10 +23,10 @@ export async function POST(request: Request) {
       ? username.substring(1) 
       : username;
 
-    // Query database for user by username or email
+    // Query database for user by username or email (case-insensitive)
     const result = await sql`
       SELECT * FROM users 
-      WHERE (username = ${normalizedUsername} OR email = ${normalizedUsername})
+      WHERE (LOWER(username) = LOWER(${normalizedUsername}) OR LOWER(email) = LOWER(${normalizedUsername}))
       AND user_type = 'dj'
       LIMIT 1
     `;
@@ -60,12 +60,18 @@ export async function POST(request: Request) {
     // Generate a simple token (in production, use JWT)
     const token = `dj_token_${user.id}_${Date.now()}`;
 
+    // Compute normalized display name for API queries (matches booking storage format)
+    const normalizedName = (user.first_name && user.last_name) 
+      ? `${user.first_name} ${user.last_name}` 
+      : user.username;
+
     // Return success with user info and token
     return NextResponse.json(
       {
         success: true,
         token: token,
         user: user.username,
+        displayName: normalizedName,
         userId: user.id,
         firstName: user.first_name,
         lastName: user.last_name,

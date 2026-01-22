@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getConnection } from '@/api/db/connection';
+import { getConnection } from '@/api-old/db/connection';
 import bcrypt from 'bcryptjs';
 
 // GET all users (with optional search and filter)

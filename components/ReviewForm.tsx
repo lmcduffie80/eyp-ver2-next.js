@@ -11,7 +11,10 @@ export default function ReviewForm() {
     setSubmitting(true);
     setMessage(null);
 
-    const formData = new FormData(e.currentTarget);
+    // Store form reference before async operation (React event pooling issue)
+    const form = e.currentTarget;
+    
+    const formData = new FormData(form);
     const data = {
       clientName: formData.get('review-client-name') as string,
       serviceType: formData.get('review-service-type') as string,
@@ -35,17 +38,20 @@ export default function ReviewForm() {
       });
 
       const result = await response.json();
+      
+      console.log('[ReviewForm] API response:', { status: response.status, result });
 
       if (result.success) {
         setMessage({ 
           text: 'Thank you for your review! It has been submitted and will be reviewed before being published.', 
           type: 'success' 
         });
-        e.currentTarget.reset();
+        form.reset(); // Use stored form reference instead of e.currentTarget
       } else {
         setMessage({ text: result.error || 'Failed to submit review. Please try again.', type: 'error' });
       }
-    } catch {
+    } catch (error) {
+      console.error('[ReviewForm] Error submitting review:', error);
       setMessage({ text: 'An error occurred while submitting your review. Please try again later.', type: 'error' });
     } finally {
       setSubmitting(false);

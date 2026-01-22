@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getConnection } from '@/api/db/connection';
+import { getConnection } from '@/api-old/db/connection';
 
 // GET reviews with filters
 export async function GET(request: NextRequest) {
@@ -91,6 +91,24 @@ export async function POST(request: NextRequest) {
     
     client = await getConnection();
     
+    // Intelligent DJ assignment: parse DJ name from comment
+    let assignedDjUsername = djUsername; // Use explicit DJ if provided
+    
+    // If no explicit DJ provided, try to parse from comment
+    if (!assignedDjUsername && comment && serviceType === 'DJ Entertainment') {
+      try {
+        const parseDJName = (await import('@/api-old/utils/parse-dj-name.js')).default;
+        assignedDjUsername = await parseDJName(comment, djUsername);
+        
+        if (assignedDjUsername) {
+          console.log(`[Review API] Auto-assigned DJ: ${assignedDjUsername} from comment`);
+        }
+      } catch (parseError) {
+        console.error('[Review API] DJ name parsing failed:', parseError);
+        // Continue without DJ assignment if parsing fails
+      }
+    }
+    
     // Insert new review with pending status
     const result = await client.query(`
       INSERT INTO reviews (
@@ -104,12 +122,18 @@ export async function POST(request: NextRequest) {
     `, [
       clientName,
       serviceType,
-      djUsername || null,
+      assignedDjUsername || null,
       rating || null,
       comment,
       eventDate || null,
       eventName || null
     ]);
+    
+    console.log('[Review API] Review created successfully:', {
+      id: result.rows[0].id,
+      djUsername: result.rows[0].dj_username,
+      clientName: result.rows[0].client_name
+    });
     
     return NextResponse.json({
       success: true,

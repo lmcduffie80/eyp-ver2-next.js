@@ -77,6 +77,24 @@ export default async function handler(req, res) {
                 });
             }
 
+            // Intelligent DJ assignment: parse DJ name from comment
+            let assignedDjUsername = djUsername; // Use explicit DJ if provided
+            
+            // If no explicit DJ provided, try to parse from comment
+            if (!assignedDjUsername && comment && serviceType === 'DJ Entertainment') {
+                try {
+                    const parseDJName = (await import('../utils/parse-dj-name.js')).default;
+                    assignedDjUsername = await parseDJName(comment, djUsername);
+                    
+                    if (assignedDjUsername) {
+                        console.log(`[Review API] Auto-assigned DJ: ${assignedDjUsername} from comment`);
+                    }
+                } catch (parseError) {
+                    console.error('[Review API] DJ name parsing failed:', parseError);
+                    // Continue without DJ assignment if parsing fails
+                }
+            }
+
             // Try to insert - if columns don't exist, run migration and retry
             let result;
             try {
@@ -84,7 +102,7 @@ export default async function handler(req, res) {
                     INSERT INTO reviews (
                         dj_username, client_name, rating, comment, event_date, service_type, status
                     ) VALUES (
-                        ${djUsername || null}, ${clientName}, ${rating || null}, ${comment},
+                        ${assignedDjUsername || null}, ${clientName}, ${rating || null}, ${comment},
                         ${eventDate || null}, ${serviceType || null}, 'pending'
                     ) RETURNING *
                 `;
@@ -102,7 +120,7 @@ export default async function handler(req, res) {
                             INSERT INTO reviews (
                                 dj_username, client_name, rating, comment, event_date, service_type, status
                             ) VALUES (
-                                ${djUsername || null}, ${clientName}, ${rating || null}, ${comment},
+                                ${assignedDjUsername || null}, ${clientName}, ${rating || null}, ${comment},
                                 ${eventDate || null}, ${serviceType || null}, 'pending'
                             ) RETURNING *
                         `;
@@ -120,6 +138,13 @@ export default async function handler(req, res) {
             }
 
             const review = result.rows[0];
+            
+            console.log('[Review API] Review created successfully:', {
+                id: review.id,
+                djUsername: review.dj_username,
+                clientName: review.client_name
+            });
+            
             return res.status(201).json({
                 success: true,
                 data: {

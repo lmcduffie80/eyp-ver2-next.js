@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getConnection } from '@/api/db/connection';
+import { getConnection } from '@/api-old/db/connection';
 
 // Extract YouTube video ID from various URL formats
 function extractYouTubeVideoId(url: string): string | null {

@@ -27,6 +27,7 @@ interface Booking {
   totalRevenue: number;
   ccPayment: number;
   payout: number;
+  status?: string;
 }
 
 interface BlockedDate {
@@ -34,6 +35,9 @@ interface BlockedDate {
   djUser: string;
   date: string;
   reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt?: string;
+  blockedBy?: string;
 }
 
 type Section = 'dashboard' | 'projects' | 'reviews';
@@ -42,6 +46,7 @@ type ProjectFilter = 'all' | 'upcoming' | 'past';
 export default function DJDashboard() {
   // Authentication
   const [djUsername, setDjUsername] = useState('');
+  const [djDisplayName, setDjDisplayName] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   // Navigation
@@ -63,7 +68,7 @@ export default function DJDashboard() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   
   // Projects filter
-  const [projectFilter, setProjectFilter] = useState<ProjectFilter>('all');
+  const [projectFilter, setProjectFilter] = useState<ProjectFilter>('upcoming');
   
   // Blocked date form
   const [newBlockedDate, setNewBlockedDate] = useState('');
@@ -71,19 +76,34 @@ export default function DJDashboard() {
   
   // Selected booking for modal
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  
+  // Expanded notes tracking
+  const [expandedNoteId, setExpandedNoteId] = useState<number | null>(null);
 
   useEffect(() => {
     // Check if DJ is authenticated from main login
     const storedUsername = localStorage.getItem('dj_user');
     const storedToken = localStorage.getItem('dj_token');
     
-    if (storedUsername && storedToken) {
+    // FALLBACK: Use username if dj_display_name is missing (for backward compatibility)
+    // The API will normalize any username variation (will, Will, Will Luke, etc.)
+    const storedDisplayName = localStorage.getItem('dj_display_name') || storedUsername;
+    
+    console.log('=== DJ Dashboard Auth Check ===');
+    console.log('storedUsername:', storedUsername);
+    console.log('storedDisplayName:', storedDisplayName);
+    console.log('storedToken:', storedToken ? 'EXISTS' : 'MISSING');
+    
+    if (storedUsername && storedToken && storedDisplayName) {
       setDjUsername(storedUsername);
+      setDjDisplayName(storedDisplayName);
       setIsAuthenticated(true);
-      // Fetch all data
+      
+      // Fetch reviews using username (matches how reviews are assigned)
+      // Fetch bookings/blocked dates using display name (matches database format)
       fetchReviews(storedUsername);
-      fetchBookings(storedUsername);
-      fetchBlockedDates(storedUsername);
+      fetchBookings(storedDisplayName);
+      fetchBlockedDates(storedDisplayName);
     } else {
       // Redirect to main login if not authenticated
       window.location.href = '/DJ';
@@ -93,8 +113,15 @@ export default function DJDashboard() {
   const fetchReviews = async (username: string) => {
     setLoadingReviews(true);
     try {
+      console.log('=== Fetching Reviews ===');
+      console.log('Querying for DJ username:', username);
+      
       const response = await fetch(`/api/reviews?dj_username=${encodeURIComponent(username)}&status=approved`);
       const data = await response.json();
+      
+      console.log('Reviews API response:', data);
+      console.log('Reviews count:', data.data?.length || 0);
+      
       if (data.success) {
         setReviews(data.data || []);
       }
@@ -108,14 +135,38 @@ export default function DJDashboard() {
   const fetchBookings = async (username: string) => {
     setLoadingBookings(true);
     try {
-      const response = await fetch(`/api/bookings`);
+      console.log('=== Fetching Bookings ===');
+      console.log('Requesting for username:', username);
+      const url = `/api/bookings?dj_user=${encodeURIComponent(username)}`;
+      console.log('API URL:', url);
+      
+      const response = await fetch(url);
       const data = await response.json();
-      if (data.success) {
-        // Filter bookings for this DJ
-        const djBookings = (data.data || []).filter(
-          (b: Booking) => b.djUser === username
-        );
-        setBookings(djBookings);
+      
+      console.log('API Response:', data);
+      console.log('Response type:', typeof data);
+      console.log('Is array?:', Array.isArray(data));
+      console.log('data.success:', data.success);
+      console.log('data.data:', data.data);
+      console.log('data.data type:', typeof data.data);
+      console.log('data.data is array?:', Array.isArray(data.data));
+      console.log('Bookings count:', data.data?.length || 0);
+      
+      // Robust parsing with multiple fallbacks
+      if (data.success && data.data && Array.isArray(data.data)) {
+        console.log('✅ Setting bookings from data.data:', data.data.length, 'items');
+        setBookings(data.data);
+      } else if (Array.isArray(data)) {
+        // Fallback: if response is directly an array
+        console.log('✅ Setting bookings directly from array:', data.length, 'items');
+        setBookings(data);
+      } else if (data.data && Array.isArray(data.data)) {
+        // Fallback: if there's a data property but success is missing/false
+        console.log('✅ Setting bookings from data.data (no success flag):', data.data.length, 'items');
+        setBookings(data.data);
+      } else {
+        console.log('❌ Could not parse bookings from response');
+        setBookings([]);
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);
@@ -130,11 +181,17 @@ export default function DJDashboard() {
       const response = await fetch(`/api/blocked-dates`);
       const data = await response.json();
       if (data.success) {
-        // Filter blocked dates for this DJ
+        // Get all blocked dates for this DJ
         const djBlockedDates = (data.data || []).filter(
           (bd: BlockedDate) => bd.djUser === username
         );
         setBlockedDates(djBlockedDates);
+        
+        console.log(`=== Blocked Dates for ${username} ===`);
+        console.log('Total requests:', djBlockedDates.length);
+        console.log('Pending:', djBlockedDates.filter((bd: BlockedDate) => bd.status === 'pending').length);
+        console.log('Approved:', djBlockedDates.filter((bd: BlockedDate) => bd.status === 'approved').length);
+        console.log('Rejected:', djBlockedDates.filter((bd: BlockedDate) => bd.status === 'rejected').length);
       }
     } catch (error) {
       console.error('Error fetching blocked dates:', error);
@@ -160,7 +217,7 @@ export default function DJDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          djUser: djUsername,
+          djUser: djDisplayName,
           date: newBlockedDate,
           reason: newBlockedReason || 'Unavailable'
         })
@@ -169,7 +226,7 @@ export default function DJDashboard() {
       if (response.ok) {
         setNewBlockedDate('');
         setNewBlockedReason('');
-        fetchBlockedDates(djUsername);
+        fetchBlockedDates(djDisplayName);
       }
     } catch (error) {
       console.error('Error adding blocked date:', error);
@@ -183,25 +240,94 @@ export default function DJDashboard() {
       });
 
       if (response.ok) {
-        fetchBlockedDates(djUsername);
+        fetchBlockedDates(djDisplayName);
       }
     } catch (error) {
       console.error('Error deleting blocked date:', error);
     }
   };
 
-  // Calculate stats
+  // Toggle notes visibility
+  const toggleBookingNotes = (bookingId: number) => {
+    setExpandedNoteId(expandedNoteId === bookingId ? null : bookingId);
+  };
+
+  // Print booking notes as PDF
+  const printBookingNotesAsPDF = (booking: Booking) => {
+    const clientName = booking.clientName || 'N/A';
+    let date = 'No date';
+    try {
+      date = booking.date ? new Date(booking.date).toLocaleDateString() : 'No date';
+    } catch (error) {
+      console.error('Error formatting date for PDF:', error);
+    }
+    const eventType = booking.eventType || 'Event';
+    const notes = booking.notes || '';
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <title>${eventType} - Event Details</title>
+          <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              h1 { color: #333; }
+              h2 { color: #555; margin-top: 20px; }
+              p { margin-bottom: 10px; }
+              pre { background-color: #f4f4f4; padding: 15px; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; font-family: 'Courier New', monospace; }
+          </style>
+      </head>
+      <body>
+          <h1>Event Details: ${eventType}</h1>
+          <p><strong>Client:</strong> ${clientName}</p>
+          <p><strong>Date:</strong> ${date}</p>
+          <p><strong>Time:</strong> ${booking.time || 'Not specified'}</p>
+          <p><strong>Location:</strong> ${booking.location || 'Not specified'}</p>
+          <p><strong>Payout:</strong> $${(Number(booking.payout) || 0).toFixed(2)}</p>
+          <h2>Event Details & Notes:</h2>
+          <pre>${notes}</pre>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  // Calculate stats with defensive checks
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  const upcomingBookings = bookings.filter(b => new Date(b.date) >= today);
-  const nextBooking = upcomingBookings.sort((a, b) => 
-    new Date(a.date).getTime() - new Date(b.date).getTime()
-  )[0];
+  // Filter and sort with null checks to prevent runtime errors
+  const upcomingBookings = bookings.filter(b => {
+    try {
+      return b && b.date && new Date(b.date) >= today;
+    } catch (error) {
+      console.error('Error filtering booking:', b, error);
+      return false;
+    }
+  });
   
-  const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalRevenue || 0), 0);
+  const nextBooking = upcomingBookings.length > 0 
+    ? upcomingBookings.sort((a, b) => {
+        try {
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        } catch (error) {
+          console.error('Error sorting bookings:', error);
+          return 0;
+        }
+      })[0]
+    : null;
+  
+  const totalRevenue = Array.isArray(bookings) 
+    ? bookings.reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0) 
+    : 0;
 
-  // Filter bookings for projects section
+  // Filter bookings for projects section with defensive checks
   const getFilteredBookings = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -209,14 +335,91 @@ export default function DJDashboard() {
     let filtered = [...bookings];
     
     if (projectFilter === 'upcoming') {
-      filtered = filtered.filter(b => new Date(b.date) >= today);
+      // Filter: Only future dates AND not completed status
+      filtered = filtered.filter(b => {
+        try {
+          if (!b || !b.date) return false;
+          const bookingDate = new Date(b.date);
+          const isUpcoming = bookingDate >= today;
+          const isNotCompleted = b.status !== 'completed';
+          return isUpcoming && isNotCompleted;
+        } catch (error) {
+          console.error('Error filtering upcoming booking:', b, error);
+          return false;
+        }
+      });
+      
+      // Sort: Earliest date first (ascending order) - DJ sees next project first
+      return filtered.sort((a, b) => {
+        try {
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        } catch (error) {
+          console.error('Error sorting upcoming bookings:', error);
+          return 0;
+        }
+      });
     } else if (projectFilter === 'past') {
-      filtered = filtered.filter(b => new Date(b.date) < today);
+      // Filter: Past dates OR completed status
+      filtered = filtered.filter(b => {
+        try {
+          if (!b || !b.date) return false;
+          const bookingDate = new Date(b.date);
+          const isPast = bookingDate < today;
+          const isCompleted = b.status === 'completed';
+          return isPast || isCompleted;
+        } catch (error) {
+          console.error('Error filtering past booking:', b, error);
+          return false;
+        }
+      });
+      
+      // Sort: Most recent first (descending order)
+      return filtered.sort((a, b) => {
+        try {
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        } catch (error) {
+          console.error('Error sorting past bookings:', error);
+          return 0;
+        }
+      });
     }
     
-    return filtered.sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+    // All: Show all bookings sorted by date (upcoming first)
+    return filtered.filter(b => b && b.date).sort((a, b) => {
+      try {
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      } catch (error) {
+        console.error('Error sorting all bookings:', error);
+        return 0;
+      }
+    });
+  };
+
+  // Handle Next Booking click - navigate to project details
+  const handleNextBookingClick = () => {
+    if (!nextBooking) return;
+    
+    // Switch to projects section
+    setActiveSection('projects');
+    
+    // Wait for section to render, then scroll to the specific project
+    setTimeout(() => {
+      const projectElement = document.getElementById(`booking-${nextBooking.id}`);
+      if (projectElement) {
+        projectElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add brief highlight animation
+        projectElement.style.boxShadow = '0 0 20px rgba(255, 107, 53, 0.5)';
+        setTimeout(() => {
+          projectElement.style.boxShadow = '';
+        }, 2000);
+      }
+    }, 100);
+  };
+
+  // Handle navigation click - closes mobile menu after navigating
+  const handleNavClick = (section: Section) => {
+    setActiveSection(section);
+    setIsMobileMenuOpen(false);
   };
 
   // Calendar helpers
@@ -266,13 +469,24 @@ export default function DJDashboard() {
   };
 
   const getBookingsForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    return bookings.filter(b => b.date.startsWith(dateStr));
+    try {
+      const dateStr = date.toISOString().split('T')[0];
+      return bookings.filter(b => b && b.date && b.date.startsWith(dateStr));
+    } catch (error) {
+      console.error('Error getting bookings for date:', date, error);
+      return [];
+    }
   };
 
   const getBlockedDateForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    return blockedDates.find(bd => bd.date.startsWith(dateStr));
+    try {
+      const dateStr = date.toISOString().split('T')[0];
+      // Only show approved blocked dates on calendar
+      return blockedDates.find(bd => bd && bd.date && bd.date.startsWith(dateStr) && bd.status === 'approved');
+    } catch (error) {
+      console.error('Error getting blocked date for date:', date, error);
+      return undefined;
+    }
   };
 
   const isToday = (date: Date) => {
@@ -303,7 +517,7 @@ export default function DJDashboard() {
 
   // Calculate average rating
   const averageRating = reviews.length > 0
-    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    ? (reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / reviews.length).toFixed(1)
     : '0.0';
 
   if (!isAuthenticated) {
@@ -332,7 +546,7 @@ export default function DJDashboard() {
           }}>
             {/* Avatar Circle with "D" */}
             <div 
-              onClick={() => setActiveSection('dashboard')}
+              onClick={() => handleNavClick('dashboard')}
               onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               style={{
@@ -357,7 +571,7 @@ export default function DJDashboard() {
             </div>
             {/* DJ Portal Text */}
             <div 
-              onClick={() => setActiveSection('dashboard')} 
+              onClick={() => handleNavClick('dashboard')} 
               style={{ 
                 fontSize: '1.1rem',
                 fontWeight: '600',
@@ -369,6 +583,27 @@ export default function DJDashboard() {
             >
               DJ Portal
             </div>
+            {/* Mobile Close Button */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)}
+              style={{
+                display: 'none',
+                position: 'absolute',
+                top: '0.5rem',
+                right: '0.5rem',
+                background: 'transparent',
+                border: 'none',
+                color: 'white',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                padding: '0.5rem',
+                lineHeight: 1
+              }}
+              className="sidebar-close-btn"
+              aria-label="Close menu"
+            >
+              ✕
+            </button>
           </div>
         </div>
         
@@ -377,21 +612,21 @@ export default function DJDashboard() {
           <div className="nav-group-title">Dashboard</div>
           <a 
             className={`sidebar-nav-link ${activeSection === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveSection('dashboard')}
+            onClick={() => handleNavClick('dashboard')}
           >
             <span className="nav-icon">📊</span>
             <span>Dashboard</span>
           </a>
           <a 
             className={`sidebar-nav-link ${activeSection === 'projects' ? 'active' : ''}`}
-            onClick={() => setActiveSection('projects')}
+            onClick={() => handleNavClick('projects')}
           >
             <span className="nav-icon">📅</span>
             <span>Projects</span>
           </a>
           <a 
             className={`sidebar-nav-link ${activeSection === 'reviews' ? 'active' : ''}`}
-            onClick={() => setActiveSection('reviews')}
+            onClick={() => handleNavClick('reviews')}
           >
             <span className="nav-icon">⭐</span>
             <span>Reviews</span>
@@ -434,6 +669,16 @@ export default function DJDashboard() {
             className="mobile-menu-btn" 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle menu"
+            style={{
+              display: 'none',
+              fontSize: '1.75rem',
+              padding: '0.5rem',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#333',
+              lineHeight: 1
+            }}
           >
             ☰
           </button>
@@ -453,22 +698,76 @@ export default function DJDashboard() {
             <div>
               {/* Stats Cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                <div style={{
-                  background: 'white',
-                  padding: '1.5rem',
-                  borderRadius: '12px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  cursor: nextBooking ? 'pointer' : 'default'
-                }}
-                onClick={() => nextBooking && setActiveSection('projects')}>
-                  <div style={{ color: '#666', fontSize: '0.9rem', marginBottom: '0.5rem' }}>📆 Next Booking</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1a1a1a' }}>
-                    {loadingBookings ? 'Loading...' : (
-                      nextBooking 
-                        ? `${new Date(nextBooking.date).toLocaleDateString()} - ${nextBooking.eventType}`
-                        : 'No upcoming bookings'
-                    )}
+                <div 
+                  style={{
+                    background: 'white',
+                    padding: '1.5rem',
+                    borderRadius: '12px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    cursor: nextBooking ? 'pointer' : 'default',
+                    transition: 'all 0.3s ease',
+                    textAlign: 'center'
+                  }}
+                  onClick={nextBooking ? handleNextBookingClick : undefined}
+                  onMouseEnter={(e) => {
+                    if (nextBooking) {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (nextBooking) {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                    }
+                  }}
+                >
+                  <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>📅</div>
+                  <div style={{ 
+                    fontSize: '0.85rem', 
+                    fontWeight: '600', 
+                    color: '#666',
+                    marginBottom: '0.5rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    Next Booking
                   </div>
+                  {loadingBookings ? (
+                    <div style={{ fontSize: '1rem', color: '#999' }}>Loading...</div>
+                  ) : nextBooking ? (
+                    <>
+                      <div style={{ 
+                        fontSize: '1.5rem', 
+                        fontWeight: 'bold', 
+                        color: '#ff6b35' 
+                      }}>
+                        {(() => {
+                          try {
+                            return new Date(nextBooking.date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            });
+                          } catch (error) {
+                            console.error('Error formatting next booking date:', error);
+                            return 'Invalid date';
+                          }
+                        })()}
+                      </div>
+                      <div style={{ 
+                        fontSize: '0.75rem', 
+                        color: '#999', 
+                        marginTop: '0.5rem' 
+                      }}>
+                        Click to view details →
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ fontSize: '1rem', color: '#999' }}>
+                      No upcoming bookings
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
@@ -481,7 +780,7 @@ export default function DJDashboard() {
                 <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                   <div style={{ color: '#666', fontSize: '0.9rem', marginBottom: '0.5rem' }}>💰 Total Revenue</div>
                   <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1a1a1a' }}>
-                    {loadingBookings ? '...' : `$${totalRevenue.toFixed(2)}`}
+                    {loadingBookings ? '...' : `$${(Number(totalRevenue) || 0).toFixed(2)}`}
                   </div>
                 </div>
               </div>
@@ -560,8 +859,8 @@ export default function DJDashboard() {
                           </div>
                         )}
                         {blockedDate && (
-                          <div style={{ fontSize: '0.7rem', color: '#c62828', marginTop: '0.25rem' }}>
-                            Blocked
+                          <div style={{ fontSize: '0.7rem', color: '#c62828', marginTop: '0.25rem', fontWeight: 'bold' }}>
+                            {blockedDate.djUser} Not Available
                           </div>
                         )}
                       </div>
@@ -627,25 +926,71 @@ export default function DJDashboard() {
                         alignItems: 'center',
                         padding: '1rem',
                         background: '#f5f5f5',
-                        borderRadius: '6px'
+                        borderRadius: '6px',
+                        border: `2px solid ${
+                          bd.status === 'pending' ? '#FFA500' : 
+                          bd.status === 'approved' ? '#4CAF50' : '#DC3545'
+                        }`
                       }}>
-                        <div>
-                          <div style={{ fontWeight: 'bold' }}>{new Date(bd.date).toLocaleDateString()}</div>
-                          <div style={{ color: '#666', fontSize: '0.9rem' }}>{bd.reason}</div>
+                        <div style={{ flex: 1 }}>
+                          {/* Status Badge */}
+                          <div style={{
+                            display: 'inline-block',
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '20px',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            marginBottom: '0.5rem',
+                            background: bd.status === 'pending' ? '#FFF3CD' :
+                                       bd.status === 'approved' ? '#D4EDDA' : '#F8D7DA',
+                            color: bd.status === 'pending' ? '#856404' :
+                                   bd.status === 'approved' ? '#155724' : '#721C24'
+                          }}>
+                            {bd.status === 'pending' ? '⏳ PENDING' : 
+                             bd.status === 'approved' ? '✓ APPROVED' : '✗ REJECTED'}
+                          </div>
+                          
+                          <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                            {(() => {
+                              try {
+                                return bd.date ? new Date(bd.date).toLocaleDateString() : 'No date';
+                              } catch (error) {
+                                console.error('Error formatting blocked date:', error);
+                                return 'Invalid date';
+                              }
+                            })()}
+                          </div>
+                          {bd.reason && <div style={{ color: '#666', fontSize: '0.9rem', marginTop: '0.25rem' }}>{bd.reason}</div>}
+                          
+                          {bd.status === 'pending' && (
+                            <div style={{ color: '#856404', fontSize: '0.85rem', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                              Waiting for admin approval
+                            </div>
+                          )}
+                          {bd.status === 'rejected' && (
+                            <div style={{ color: '#721C24', fontSize: '0.85rem', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                              This request was rejected by admin
+                            </div>
+                          )}
                         </div>
-                        <button
-                          onClick={() => handleDeleteBlockedDate(bd.id)}
-                          style={{
-                            padding: '0.5rem 1rem',
-                            background: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Remove
-                        </button>
+                        
+                        {/* Only show remove button for pending requests */}
+                        {bd.status === 'pending' && (
+                          <button
+                            onClick={() => handleDeleteBlockedDate(bd.id)}
+                            style={{
+                              padding: '0.5rem 1rem',
+                              background: '#dc3545',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              marginLeft: '1rem'
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -708,60 +1053,243 @@ export default function DJDashboard() {
                 <div style={{ background: 'white', padding: '3rem', borderRadius: '12px', textAlign: 'center' }}>
                   <p style={{ color: '#666' }}>No bookings found</p>
                 </div>
-              ) : (
+                ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {getFilteredBookings().map(booking => (
-                    <div key={booking.id} style={{
-                      background: 'white',
-                      padding: '1.5rem',
-                      borderRadius: '12px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => setSelectedBooking(booking)}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
-                        <div>
-                          <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
-                            {booking.eventType}
-                          </h3>
-                          <p style={{ color: '#666' }}>{booking.clientName || 'No client name'}</p>
-                        </div>
-                        <div style={{
-                          padding: '0.5rem 1rem',
-                          background: new Date(booking.date) >= today ? '#e8f5e9' : '#f5f5f5',
-                          color: new Date(booking.date) >= today ? '#2e7d32' : '#666',
-                          borderRadius: '6px',
-                          fontSize: '0.9rem',
-                          fontWeight: '500'
+                  {getFilteredBookings().map(booking => {
+                    let isUpcoming = false;
+                    try {
+                      isUpcoming = !!(booking && booking.date && new Date(booking.date) >= today);
+                    } catch (error) {
+                      console.error('Error checking if booking is upcoming:', booking, error);
+                    }
+                    const isExpanded = expandedNoteId === booking.id;
+                    return (
+                      <div 
+                        key={booking.id}
+                        id={`booking-${booking.id}`}
+                        style={{
+                          background: 'white',
+                          border: '2px solid #e0e0e0',
+                          borderLeft: `4px solid ${isUpcoming ? '#28a745' : '#666'}`,
+                          borderRadius: '10px',
+                          padding: '1.5rem',
+                          transition: 'all 0.3s ease',
+                          opacity: isUpcoming ? 1 : 0.7
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.1)';
+                        }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}>
+                        {/* Booking Header */}
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'start', 
+                          marginBottom: '1rem' 
                         }}>
-                          {new Date(booking.date) >= today ? 'Upcoming' : 'Past'}
+                          <div>
+                            <div style={{ 
+                              fontSize: '1.2rem', 
+                              fontWeight: '600', 
+                              color: '#333',
+                              marginBottom: '0.25rem'
+                            }}>
+                              {booking.clientName || 'No client name'}
+                            </div>
+                            <div style={{ color: '#666', fontSize: '0.95rem' }}>
+                              {(() => {
+                                try {
+                                  return booking.date ? new Date(booking.date).toLocaleDateString() : 'No date';
+                                } catch (error) {
+                                  console.error('Error formatting booking date:', error);
+                                  return 'Invalid date';
+                                }
+                              })()}
+                            </div>
+                          </div>
                         </div>
+
+                        {/* Booking Details Grid */}
+                        <div style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: 'repeat(2, 1fr)', 
+                          gap: '0.75rem',
+                          marginBottom: '0.5rem'
+                        }}>
+                          <div>
+                            <span style={{ 
+                              display: 'block',
+                              color: '#888', 
+                              fontSize: '0.85rem',
+                              marginBottom: '0.25rem'
+                            }}>
+                              Event Type
+                            </span>
+                            <span style={{ 
+                              display: 'block',
+                              color: '#333', 
+                              fontSize: '0.95rem',
+                              fontWeight: '500'
+                            }}>
+                              {booking.eventType}
+                            </span>
+                          </div>
+                          <div>
+                            <span style={{ 
+                              display: 'block',
+                              color: '#888', 
+                              fontSize: '0.85rem',
+                              marginBottom: '0.25rem'
+                            }}>
+                              Time
+                            </span>
+                            <span style={{ 
+                              display: 'block',
+                              color: '#333', 
+                              fontSize: '0.95rem',
+                              fontWeight: '500'
+                            }}>
+                              {booking.time || 'Not specified'}
+                            </span>
+                          </div>
+                          <div>
+                            <span style={{ 
+                              display: 'block',
+                              color: '#888', 
+                              fontSize: '0.85rem',
+                              marginBottom: '0.25rem'
+                            }}>
+                              Location
+                            </span>
+                            <span style={{ 
+                              display: 'block',
+                              color: '#333', 
+                              fontSize: '0.95rem',
+                              fontWeight: '500'
+                            }}>
+                              {booking.location || 'Not specified'}
+                            </span>
+                          </div>
+                          {booking.payout && (
+                            <div>
+                              <span style={{ 
+                                display: 'block',
+                                color: '#888', 
+                                fontSize: '0.85rem',
+                                marginBottom: '0.25rem'
+                              }}>
+                                Payout
+                              </span>
+                              <span style={{ 
+                                display: 'block',
+                                color: '#28a745', 
+                                fontSize: '0.95rem',
+                                fontWeight: 'bold'
+                              }}>
+                                ${(Number(booking.payout) || 0).toFixed(2)}
+                              </span>
+                            </div>
+                          )}
+                          <div style={{ gridColumn: booking.payout ? 'auto' : '1 / -1' }}>
+                            <span style={{ 
+                              display: 'block',
+                              color: '#888', 
+                              fontSize: '0.85rem',
+                              marginBottom: '0.25rem'
+                            }}>
+                              Contact
+                            </span>
+                            <span style={{ 
+                              display: 'block',
+                              color: '#333', 
+                              fontSize: '0.95rem',
+                              fontWeight: '500'
+                            }}>
+                              {booking.contactEmail || 'No email'}
+                              <br />
+                              {booking.contactPhone || 'No phone'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Notes Section */}
+                        {booking.notes && (
+                          <div style={{ 
+                            marginTop: '1rem', 
+                            paddingTop: '1rem', 
+                            borderTop: '1px solid #e0e0e0' 
+                          }}>
+                            <div style={{ 
+                              display: 'flex', 
+                              gap: '1rem', 
+                              alignItems: 'center', 
+                              flexWrap: 'wrap' 
+                            }}>
+                              <button
+                                onClick={() => toggleBookingNotes(booking.id)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#ff6b35',
+                                  cursor: 'pointer',
+                                  fontWeight: '600',
+                                  fontSize: '1rem',
+                                  padding: 0,
+                                  textDecoration: 'underline',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem'
+                                }}
+                              >
+                                <span style={{ 
+                                  transition: 'transform 0.2s',
+                                  transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
+                                }}>
+                                  ▼
+                                </span>
+                                <span>View Event Details & Notes</span>
+                              </button>
+                              <button
+                                onClick={() => printBookingNotesAsPDF(booking)}
+                                style={{
+                                  background: '#17a2b8',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '5px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.85rem',
+                                  padding: '0.5rem 1rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  fontWeight: '500'
+                                }}
+                              >
+                                📄 PDF
+                              </button>
+                            </div>
+                            {isExpanded && (
+                              <div style={{ 
+                                marginTop: '0.75rem',
+                                whiteSpace: 'pre-wrap',
+                                fontFamily: "'Courier New', monospace",
+                                background: '#f8f8f8',
+                                padding: '1rem',
+                                borderRadius: '5px',
+                                lineHeight: '1.6',
+                                color: '#333',
+                                fontSize: '0.95rem'
+                              }}>
+                                {booking.notes}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', fontSize: '0.9rem' }}>
-                        <div>
-                          <div style={{ color: '#666', marginBottom: '0.25rem' }}>📅 Date</div>
-                          <div style={{ fontWeight: '500' }}>{new Date(booking.date).toLocaleDateString()}</div>
-                        </div>
-                        <div>
-                          <div style={{ color: '#666', marginBottom: '0.25rem' }}>🕐 Time</div>
-                          <div style={{ fontWeight: '500' }}>{booking.time || 'Not specified'}</div>
-                        </div>
-                        <div>
-                          <div style={{ color: '#666', marginBottom: '0.25rem' }}>📍 Location</div>
-                          <div style={{ fontWeight: '500' }}>{booking.location || 'Not specified'}</div>
-                        </div>
-                        <div>
-                          <div style={{ color: '#666', marginBottom: '0.25rem' }}>💰 Revenue</div>
-                          <div style={{ fontWeight: '500' }}>${booking.totalRevenue?.toFixed(2) || '0.00'}</div>
-                        </div>
-                        <div>
-                          <div style={{ color: '#666', marginBottom: '0.25rem' }}>💵 Your Payout</div>
-                          <div style={{ fontWeight: '500', color: '#2e7d32' }}>${booking.payout?.toFixed(2) || '0.00'}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -814,7 +1342,14 @@ export default function DJDashboard() {
                           </div>
                         </div>
                         <div style={{ color: '#666', fontSize: '0.9rem' }}>
-                          {new Date(review.created_at).toLocaleDateString()}
+                          {(() => {
+                            try {
+                              return review.created_at ? new Date(review.created_at).toLocaleDateString() : 'No date';
+                            } catch (error) {
+                              console.error('Error formatting review date:', error);
+                              return 'Invalid date';
+                            }
+                          })()}
                         </div>
                       </div>
                       <p style={{ color: '#333', lineHeight: '1.6', marginBottom: '1rem' }}>
@@ -823,7 +1358,14 @@ export default function DJDashboard() {
                       {review.event_name && (
                         <div style={{ color: '#666', fontSize: '0.9rem' }}>
                           Event: {review.event_name}
-                          {review.event_date && ` • ${new Date(review.event_date).toLocaleDateString()}`}
+                          {review.event_date && ` • ${(() => {
+                            try {
+                              return new Date(review.event_date).toLocaleDateString();
+                            } catch (error) {
+                              console.error('Error formatting event date:', error);
+                              return 'Invalid date';
+                            }
+                          })()}`}
                         </div>
                       )}
                     </div>
@@ -879,7 +1421,16 @@ export default function DJDashboard() {
                   
                   <div>
                     <div style={{ color: '#666', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Date</div>
-                    <div style={{ fontWeight: '500' }}>{new Date(selectedBooking.date).toLocaleDateString()}</div>
+                    <div style={{ fontWeight: '500' }}>
+                      {(() => {
+                        try {
+                          return selectedBooking.date ? new Date(selectedBooking.date).toLocaleDateString() : 'No date';
+                        } catch (error) {
+                          console.error('Error formatting modal date:', error);
+                          return 'Invalid date';
+                        }
+                      })()}
+                    </div>
                   </div>
                   
                   <div>
@@ -916,15 +1467,15 @@ export default function DJDashboard() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e0e0e0' }}>
                     <div>
                       <div style={{ color: '#666', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Total Revenue</div>
-                      <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>${selectedBooking.totalRevenue?.toFixed(2) || '0.00'}</div>
+                      <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>${(Number(selectedBooking.totalRevenue) || 0).toFixed(2)}</div>
                     </div>
                     <div>
                       <div style={{ color: '#666', fontSize: '0.9rem', marginBottom: '0.25rem' }}>CC Payment</div>
-                      <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>${selectedBooking.ccPayment?.toFixed(2) || '0.00'}</div>
+                      <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>${(Number(selectedBooking.ccPayment) || 0).toFixed(2)}</div>
                     </div>
                     <div>
                       <div style={{ color: '#666', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Your Payout</div>
-                      <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#2e7d32' }}>${selectedBooking.payout?.toFixed(2) || '0.00'}</div>
+                      <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#2e7d32' }}>${(Number(selectedBooking.payout) || 0).toFixed(2)}</div>
                     </div>
                   </div>
                 </div>

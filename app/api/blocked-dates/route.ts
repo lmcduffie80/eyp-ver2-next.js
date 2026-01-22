@@ -1,118 +1,113 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sql } from '@vercel/postgres';
 
+// GET /api/blocked-dates - Get all blocked dates or filter by DJ
 export async function GET(request: NextRequest) {
   try {
-    // Import the existing API handler
-    const handler = await import('../../../api/blocked-dates/index.js');
-    
-    // Extract query parameters
     const searchParams = request.nextUrl.searchParams;
     const dj_user = searchParams.get('dj_user');
+    const status = searchParams.get('status');
+
+    let result;
     
-    // Create a mock request object compatible with the existing handler
-    const req = {
-      method: 'GET',
-      query: dj_user ? { dj_user } : {},
-      headers: {
-        origin: request.headers.get('origin') || '',
-        host: request.headers.get('host') || ''
-      }
-    };
-    
-    // Create a mock response object to capture the response
-    let responseData: any = null;
-    let statusCode = 200;
-    
-    const res = {
-      status: (code: number) => {
-        statusCode = code;
-        return {
-          json: (data: any) => {
-            responseData = data;
-            return res;
-          },
-          end: () => res
-        };
-      },
-      setHeader: () => res,
-      end: () => res
-    };
-    
-    // Call the existing handler
-    await handler.default(req, res);
-    
-    // Return the response
-    if (responseData) {
-      // If the response has success and data structure, return just the data array
-      if (responseData.success && responseData.data) {
-        return NextResponse.json(responseData.data, { status: statusCode });
-      }
-      return NextResponse.json(responseData, { status: statusCode });
+    if (dj_user && status) {
+      result = await sql`
+        SELECT * FROM blocked_dates 
+        WHERE dj_user = ${dj_user} AND status = ${status}
+        ORDER BY date DESC
+      `;
+    } else if (dj_user) {
+      result = await sql`
+        SELECT * FROM blocked_dates 
+        WHERE dj_user = ${dj_user}
+        ORDER BY date DESC
+      `;
+    } else if (status) {
+      result = await sql`
+        SELECT * FROM blocked_dates 
+        WHERE status = ${status}
+        ORDER BY date DESC
+      `;
+    } else {
+      result = await sql`
+        SELECT * FROM blocked_dates 
+        ORDER BY date DESC
+      `;
     }
-    
-    return NextResponse.json({ error: 'No response from handler' }, { status: 500 });
-    
+
+    const mappedData = result.rows.map(row => ({
+      id: row.id,
+      djUser: row.dj_user,
+      date: row.date,
+      reason: row.reason,
+      blockedBy: row.blocked_by,
+      status: row.status || 'approved',
+      createdAt: row.created_at
+    }));
+
+    return NextResponse.json({
+      success: true,
+      data: mappedData
+    });
   } catch (error) {
     console.error('Error in blocked-dates GET API:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch blocked dates', details: error instanceof Error ? error.message : 'Unknown error' },
+      { success: false, error: 'Failed to fetch blocked dates' },
       { status: 500 }
     );
   }
 }
 
+// POST /api/blocked-dates - Create new blocked date
 export async function POST(request: NextRequest) {
   try {
-    // Import the existing API handler
-    const handler = await import('../../../api/blocked-dates/index.js');
-    
-    // Parse the request body
     const body = await request.json();
-    
-    // Create a mock request object compatible with the existing handler
-    const req = {
-      method: 'POST',
-      body: body,
-      query: {},
-      headers: {
-        origin: request.headers.get('origin') || '',
-        host: request.headers.get('host') || ''
-      }
-    };
-    
-    // Create a mock response object to capture the response
-    let responseData: any = null;
-    let statusCode = 200;
-    
-    const res = {
-      status: (code: number) => {
-        statusCode = code;
-        return {
-          json: (data: any) => {
-            responseData = data;
-            return res;
-          },
-          end: () => res
-        };
-      },
-      setHeader: () => res,
-      end: () => res
-    };
-    
-    // Call the existing handler
-    await handler.default(req, res);
-    
-    // Return the response
-    if (responseData) {
-      return NextResponse.json(responseData, { status: statusCode });
+    const { djUser, date, reason, blockedBy } = body;
+
+    // Validation
+    if (!djUser || !date) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields: djUser, date' },
+        { status: 400 }
+      );
     }
-    
-    return NextResponse.json({ error: 'No response from handler' }, { status: 500 });
-    
-  } catch (error) {
-    console.error('Error in blocked-dates POST API:', error);
+
+    // Insert blocked date with status 'pending' by default
+    const result = await sql`
+      INSERT INTO blocked_dates (dj_user, date, reason, blocked_by, status)
+      VALUES (${djUser}, ${date}, ${reason || null}, ${blockedBy || djUser}, 'pending')
+      RETURNING *
+    `;
+
+    const blockedDate = result.rows[0];
     return NextResponse.json(
-      { error: 'Failed to create blocked date', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        success: true,
+        data: {
+          id: blockedDate.id,
+          djUser: blockedDate.dj_user,
+          date: blockedDate.date,
+          reason: blockedDate.reason,
+          blockedBy: blockedDate.blocked_by,
+          status: blockedDate.status,
+          createdAt: blockedDate.created_at
+        }
+      },
+      { status: 201 }
+    );
+  } catch (error: any) {
+    console.error('Error in blocked-dates POST API:', error);
+    
+    // Handle duplicate entry error
+    if (error.code === '23505') {
+      return NextResponse.json(
+        { success: false, error: 'This date is already blocked for this DJ' },
+        { status: 409 }
+      );
+    }
+
+    return NextResponse.json(
+      { success: false, error: 'Failed to create blocked date' },
       { status: 500 }
     );
   }

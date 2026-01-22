@@ -10,6 +10,8 @@ export default function AdminDashboard() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [blockedDates, setBlockedDates] = useState<any[]>([]);
+  const [loadingBlockedDates, setLoadingBlockedDates] = useState(false);
+  const [blockedDateFilter, setBlockedDateFilter] = useState('pending');
   const [userTab, setUserTab] = useState('create');
   const [userSearch, setUserSearch] = useState('');
   const [userTypeFilter, setUserTypeFilter] = useState('');
@@ -26,6 +28,11 @@ export default function AdminDashboard() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarDJFilter, setCalendarDJFilter] = useState('');
   const [selectedDJFilter, setSelectedDJFilter] = useState<string>('');
+  
+  // All Projects Analytics filters
+  const [analyticsFilterDJ, setAnalyticsFilterDJ] = useState<string>('');
+  const [analyticsFilterTime, setAnalyticsFilterTime] = useState<string>('');
+  const [analyticsFilterYear, setAnalyticsFilterYear] = useState<string>('');
   
   // Photography state
   const [photoProjects, setPhotoProjects] = useState<any[]>([]);
@@ -73,7 +80,49 @@ export default function AdminDashboard() {
   const [currentEditingBooking, setCurrentEditingBooking] = useState<any | null>(null);
   const [modalNotes, setModalNotes] = useState('');
   
+  // Sort state for projects table
+  const [upcomingSortField, setUpcomingSortField] = useState<'date' | 'dj' | 'revenue'>('date');
+  const [upcomingSortDirection, setUpcomingSortDirection] = useState<'asc' | 'desc'>('asc');
+  
+  // Sort state for recent projects
+  const [recentSortDirection, setRecentSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Sort state for analytics table
+  const [analyticsSortField, setAnalyticsSortField] = useState<'date' | 'dj' | 'project'>('date');
+  const [analyticsSortDirection, setAnalyticsSortDirection] = useState<'asc' | 'desc'>('asc');
+  
   const { importing, status, importCSV} = useCSVImport();
+
+  // Sort handler functions
+  const handleUpcomingSort = (field: 'date' | 'dj' | 'revenue') => {
+    if (upcomingSortField === field) {
+      // Toggle direction if clicking same field
+      setUpcomingSortDirection(upcomingSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new field and default to ascending
+      setUpcomingSortField(field);
+      setUpcomingSortDirection('asc');
+    }
+  };
+
+  const toggleRecentSort = () => {
+    setRecentSortDirection(recentSortDirection === 'asc' ? 'desc' : 'asc');
+  };
+
+  const handleAnalyticsSort = (field: 'date' | 'dj' | 'project') => {
+    if (analyticsSortField === field) {
+      setAnalyticsSortDirection(analyticsSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setAnalyticsSortField(field);
+      setAnalyticsSortDirection('asc');
+    }
+  };
+
+  // Sort indicator component
+  const SortIndicator = ({ active, direction }: { active: boolean, direction: 'asc' | 'desc' }) => {
+    if (!active) return <span style={{ opacity: 0.3, marginLeft: '0.25rem' }}>⇅</span>;
+    return <span style={{ marginLeft: '0.25rem' }}>{direction === 'asc' ? '↑' : '↓'}</span>;
+  };
 
   useEffect(() => {
     // Prevent body scroll when dashboard is open
@@ -105,19 +154,19 @@ export default function AdminDashboard() {
       const futureBookings = bookings.filter(b => new Date(b.date) >= today).length;
       
       // Total Revenue
-      const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalRevenue || 0), 0);
+      const totalRevenue = bookings.reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0);
       
       // DJ Revenue (sum of DJ payouts)
-      const djRevenue = bookings.reduce((sum, b) => sum + (b.payout || 0), 0);
+      const djRevenue = bookings.reduce((sum, b) => sum + (Number(b.payout) || 0), 0);
       
       // Revenue by Year
       const revenue2025 = bookings
         .filter(b => new Date(b.date).getFullYear() === 2025)
-        .reduce((sum, b) => sum + (b.totalRevenue || 0), 0);
+        .reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0);
       
       const revenue2026 = bookings
         .filter(b => new Date(b.date).getFullYear() === 2026)
-        .reduce((sum, b) => sum + (b.totalRevenue || 0), 0);
+        .reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0);
       
       // Calculate percentages
       const completionRate = totalProjects > 0 ? ((completed / totalProjects) * 100) : 0;
@@ -143,17 +192,17 @@ export default function AdminDashboard() {
       if (totalProjectsEl) totalProjectsEl.textContent = totalProjects.toString();
       if (completedProjectsEl) completedProjectsEl.textContent = completed.toString();
       if (futureBookingsEl) futureBookingsEl.textContent = futureBookings.toString();
-      if (totalRevenueEl) totalRevenueEl.textContent = `$${totalRevenue.toFixed(2)}`;
-      if (djRevenueEl) djRevenueEl.textContent = `$${djRevenue.toFixed(2)}`;
-      if (revenue2025El) revenue2025El.textContent = `$${revenue2025.toFixed(2)}`;
-      if (revenue2026El) revenue2026El.textContent = `$${revenue2026.toFixed(2)}`;
+      if (totalRevenueEl) totalRevenueEl.textContent = `$${(Number(totalRevenue) || 0).toFixed(2)}`;
+      if (djRevenueEl) djRevenueEl.textContent = `$${(Number(djRevenue) || 0).toFixed(2)}`;
+      if (revenue2025El) revenue2025El.textContent = `$${(Number(revenue2025) || 0).toFixed(2)}`;
+      if (revenue2026El) revenue2026El.textContent = `$${(Number(revenue2026) || 0).toFixed(2)}`;
       
       // Update progress bar for completed projects
       if (completedProgressBar) completedProgressBar.style.width = `${completionRate}%`;
-      if (completedPercentage) completedPercentage.textContent = `${completionRate.toFixed(0)}% completion rate`;
+      if (completedPercentage) completedPercentage.textContent = `${(Number(completionRate) || 0).toFixed(0)}% completion rate`;
       
       // Update DJ revenue display and bar
-      if (djRevenueDisplay) djRevenueDisplay.textContent = `$${djRevenue.toFixed(2)} (${djRevenuePercentage.toFixed(0)}%)`;
+      if (djRevenueDisplay) djRevenueDisplay.textContent = `$${(Number(djRevenue) || 0).toFixed(2)} (${(Number(djRevenuePercentage) || 0).toFixed(0)}%)`;
       if (djRevenueBar) djRevenueBar.style.width = `${djRevenuePercentage}%`;
     }
   }, [bookings]);
@@ -286,28 +335,101 @@ export default function AdminDashboard() {
       const response = await fetch('/api/bookings');
       if (response.ok) {
         const data = await response.json();
-        setBookings(data);
+        setBookings(data.success ? data.data : []);
       } else {
         console.error('Failed to fetch bookings:', response.statusText);
+        setBookings([]);
       }
     } catch (error) {
       console.error('Failed to fetch bookings:', error);
+      setBookings([]);
     } finally {
       setLoadingBookings(false);
     }
   };
 
   const fetchBlockedDates = async () => {
+    setLoadingBlockedDates(true);
     try {
       const response = await fetch('/api/blocked-dates');
       if (response.ok) {
         const data = await response.json();
-        setBlockedDates(data);
+        setBlockedDates(data.success ? data.data : []);
       } else {
         console.error('Failed to fetch blocked dates:', response.statusText);
+        setBlockedDates([]);
       }
     } catch (error) {
       console.error('Failed to fetch blocked dates:', error);
+      setBlockedDates([]);
+    } finally {
+      setLoadingBlockedDates(false);
+    }
+  };
+
+  // Approve blocked date request
+  const approveBlockedDate = async (id: number) => {
+    try {
+      const response = await fetch(`/api/blocked-dates/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'approved' })
+      });
+
+      if (response.ok) {
+        alert('Blocked date approved successfully!');
+        fetchBlockedDates();
+      } else {
+        alert('Failed to approve blocked date');
+      }
+    } catch (error) {
+      console.error('Error approving blocked date:', error);
+      alert('Failed to approve blocked date');
+    }
+  };
+
+  // Reject blocked date request
+  const rejectBlockedDate = async (id: number) => {
+    const reason = prompt('Reason for rejection (optional):');
+    try {
+      const response = await fetch(`/api/blocked-dates/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'rejected', reason: reason || '' })
+      });
+
+      if (response.ok) {
+        alert('Blocked date rejected');
+        fetchBlockedDates();
+      } else {
+        alert('Failed to reject blocked date');
+      }
+    } catch (error) {
+      console.error('Error rejecting blocked date:', error);
+      alert('Failed to reject blocked date');
+    }
+  };
+
+  // Delete blocked date
+  const deleteBlockedDate = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this blocked date request?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/blocked-dates/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        alert('Blocked date deleted successfully');
+        fetchBlockedDates();
+      } else {
+        alert('Failed to delete blocked date');
+      }
+    } catch (error) {
+      console.error('Error deleting blocked date:', error);
+      alert('Failed to delete blocked date');
     }
   };
 
@@ -731,6 +853,12 @@ export default function AdminDashboard() {
       fetchReviews();
     }
   }, [reviewStatusFilter, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'blocked-dates') {
+      fetchBlockedDates();
+    }
+  }, [blockedDateFilter, activeTab]);
 
   // Videography Management Functions
   const fetchVideoProjects = async () => {
@@ -1439,12 +1567,19 @@ export default function AdminDashboard() {
             <span className="nav-icon">💰</span>
             <span>Pricing</span>
           </a>
-          <a 
+          <a
             className={`sidebar-nav-link ${activeTab === 'reviews' ? 'active' : ''}`}
             onClick={() => switchTab('reviews')}
           >
             <span className="nav-icon">⭐</span>
             <span>Reviews</span>
+          </a>
+          <a
+            className={`sidebar-nav-link ${activeTab === 'blocked-dates' ? 'active' : ''}`}
+            onClick={() => switchTab('blocked-dates')}
+          >
+            <span className="nav-icon">🚫</span>
+            <span>Blocked Dates</span>
           </a>
         </div>
 
@@ -1733,11 +1868,17 @@ export default function AdminDashboard() {
                 <table className="bookings-table" style={{ width: '100%', minWidth: '1100px' }}>
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th>DJ</th>
+                      <th onClick={() => handleUpcomingSort('date')} style={{ cursor: 'pointer' }}>
+                        Date <SortIndicator active={upcomingSortField === 'date'} direction={upcomingSortDirection} />
+                      </th>
+                      <th onClick={() => handleUpcomingSort('dj')} style={{ cursor: 'pointer' }}>
+                        DJ <SortIndicator active={upcomingSortField === 'dj'} direction={upcomingSortDirection} />
+                      </th>
                       <th>Project</th>
                       <th>Location</th>
-                      <th>Revenue</th>
+                      <th onClick={() => handleUpcomingSort('revenue')} style={{ cursor: 'pointer' }}>
+                        Revenue <SortIndicator active={upcomingSortField === 'revenue'} direction={upcomingSortDirection} />
+                      </th>
                       <th>DJ Payout</th>
                       <th>Status</th>
                       <th>Actions</th>
@@ -1761,7 +1902,17 @@ export default function AdminDashboard() {
                             return bookingDate >= today && isUpcoming;
                           })
                           .filter(b => !selectedDJFilter || b.djUser === selectedDJFilter)
-                          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                          .sort((a, b) => {
+                            let comparison = 0;
+                            if (upcomingSortField === 'date') {
+                              comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+                            } else if (upcomingSortField === 'dj') {
+                              comparison = (a.djUser || '').localeCompare(b.djUser || '');
+                            } else if (upcomingSortField === 'revenue') {
+                              comparison = (a.totalRevenue || 0) - (b.totalRevenue || 0);
+                            }
+                            return upcomingSortDirection === 'asc' ? comparison : -comparison;
+                          });
                         
                         return upcomingBookings.length === 0 ? (
                           <tr>
@@ -1778,8 +1929,8 @@ export default function AdminDashboard() {
                                 <td>{booking.djUser || 'N/A'}</td>
                                 <td>{booking.eventType || 'N/A'}</td>
                                 <td>{booking.location || 'N/A'}</td>
-                                <td>${booking.totalRevenue?.toFixed(2) || '0.00'}</td>
-                                <td>${booking.payout?.toFixed(2) || '0.00'}</td>
+                                <td>${(Number(booking.totalRevenue) || 0).toFixed(2)}</td>
+                                <td>${(Number(booking.payout) || 0).toFixed(2)}</td>
                                 <td>
                                   <span className={`status-badge ${bookingStatus}`}>
                                     {bookingStatus}
@@ -1818,9 +1969,25 @@ export default function AdminDashboard() {
             <div className="content-grid-modern">
               {/* Left Column - Recent Projects */}
               <div className="content-section">
-                <div className="section-header">
+                <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h2>Recent Projects</h2>
-                  <a href="#" onClick={(e) => { e.preventDefault(); switchTab('bookings'); }} className="view-all-link">View all</a>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <button
+                      onClick={toggleRecentSort}
+                      style={{
+                        padding: '0.5rem 0.75rem',
+                        background: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      {recentSortDirection === 'desc' ? '↓ Newest First' : '↑ Oldest First'}
+                    </button>
+                    <a href="#" onClick={(e) => { e.preventDefault(); switchTab('bookings'); }} className="view-all-link">View all</a>
+                  </div>
                 </div>
                 <div className="orders-list-modern">
                   {loadingBookings ? (
@@ -1829,10 +1996,13 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     (() => {
-                      // Get completed bookings, sorted by date (most recent first), limited to 10
+                      // Get completed bookings, sorted by date, limited to 10
                       const completedBookings = bookings
                         .filter(b => (b as any).status === 'completed')
-                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .sort((a, b) => {
+                          const comparison = new Date(b.date).getTime() - new Date(a.date).getTime();
+                          return recentSortDirection === 'desc' ? comparison : -comparison;
+                        })
                         .slice(0, 10);
                       
                       return completedBookings.length === 0 ? (
@@ -1853,7 +2023,7 @@ export default function AdminDashboard() {
                                 {booking.clientName || 'N/A'} • {booking.location || 'N/A'}
                               </div>
                             </div>
-                            <div className="order-price">${booking.totalRevenue?.toFixed(2) || '0.00'}</div>
+                            <div className="order-price">${(Number(booking.totalRevenue) || 0).toFixed(2)}</div>
                             <span className="status-badge completed">completed</span>
                           </div>
                         ))
@@ -2039,21 +2209,20 @@ export default function AdminDashboard() {
               </div>
               <div className="filter-controls" style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <select 
-                  id="booking-filter-dj" 
-                  onChange={() => {
-                    // Handle filter change functionality will be added here
-                    console.log('Booking filter DJ changed');
-                  }}
+                  id="booking-filter-dj"
+                  value={analyticsFilterDJ}
+                  onChange={(e) => setAnalyticsFilterDJ(e.target.value)}
                   style={{ padding: '0.5rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
                 >
                   <option value="">All DJs</option>
+                  {Array.from(new Set(bookings.map(b => b.djUser).filter(Boolean))).sort().map(dj => (
+                    <option key={dj} value={dj}>{dj}</option>
+                  ))}
                 </select>
                 <select 
-                  id="booking-filter-time" 
-                  onChange={() => {
-                    // Handle filter change functionality will be added here
-                    console.log('Booking filter time changed');
-                  }}
+                  id="booking-filter-time"
+                  value={analyticsFilterTime}
+                  onChange={(e) => setAnalyticsFilterTime(e.target.value)}
                   style={{ padding: '0.5rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
                 >
                   <option value="">All Time Periods</option>
@@ -2061,14 +2230,15 @@ export default function AdminDashboard() {
                   <option value="future">Looking Forward</option>
                 </select>
                 <select 
-                  id="booking-filter-year" 
-                  onChange={() => {
-                    // Handle filter change functionality will be added here
-                    console.log('Booking filter year changed');
-                  }}
+                  id="booking-filter-year"
+                  value={analyticsFilterYear}
+                  onChange={(e) => setAnalyticsFilterYear(e.target.value)}
                   style={{ padding: '0.5rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
                 >
                   <option value="">All Years</option>
+                  {Array.from(new Set(bookings.map(b => new Date(b.date).getFullYear()))).sort((a, b) => b - a).map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
                 </select>
               </div>
               
@@ -2077,14 +2247,10 @@ export default function AdminDashboard() {
                   <thead>
                     <tr>
                       <th 
-                        className="sortable" 
-                        data-column="date"
-                        onClick={() => {
-                          // Sort table functionality will be added here
-                          console.log('Sort by date');
-                        }}
+                        onClick={() => handleAnalyticsSort('date')}
+                        style={{ cursor: 'pointer' }}
                       >
-                        Date
+                        Date <SortIndicator active={analyticsSortField === 'date'} direction={analyticsSortDirection} />
                       </th>
                       <th 
                         className="sortable" 
@@ -2163,15 +2329,63 @@ export default function AdminDashboard() {
                         </td>
                       </tr>
                     ) : (
-                      bookings.map((booking) => (
+                      (() => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        
+                        // Filter bookings based on analytics filters
+                        let filteredBookings = bookings.filter(booking => {
+                          // DJ Filter
+                          if (analyticsFilterDJ && booking.djUser !== analyticsFilterDJ) {
+                            return false;
+                          }
+                          
+                          // Time Period Filter
+                          if (analyticsFilterTime) {
+                            const bookingDate = new Date(booking.date);
+                            bookingDate.setHours(0, 0, 0, 0);
+                            
+                            if (analyticsFilterTime === 'future' && bookingDate < today) {
+                              return false;
+                            }
+                            if (analyticsFilterTime === 'past' && bookingDate >= today) {
+                              return false;
+                            }
+                          }
+                          
+                          // Year Filter
+                          if (analyticsFilterYear) {
+                            const bookingYear = new Date(booking.date).getFullYear();
+                            if (bookingYear !== parseInt(analyticsFilterYear)) {
+                              return false;
+                            }
+                          }
+                          
+                          return true;
+                        });
+                        
+                        // Sort filtered bookings based on analytics sort state
+                        const sortedBookings = [...filteredBookings].sort((a, b) => {
+                          let comparison = 0;
+                          if (analyticsSortField === 'date') {
+                            comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+                          } else if (analyticsSortField === 'dj') {
+                            comparison = (a.djUser || '').localeCompare(b.djUser || '');
+                          } else if (analyticsSortField === 'project') {
+                            comparison = (a.eventType || '').localeCompare(b.eventType || '');
+                          }
+                          return analyticsSortDirection === 'asc' ? comparison : -comparison;
+                        });
+                        
+                        return sortedBookings.map((booking) => (
                         <tr key={booking.id}>
                           <td>{new Date(booking.date).toLocaleDateString()}</td>
                           <td>{booking.djUser || 'N/A'}</td>
                           <td>{booking.eventType || 'N/A'}</td>
                           <td>{booking.location || 'N/A'}</td>
-                          <td>${booking.totalRevenue?.toFixed(2) || '0.00'}</td>
-                          <td>${booking.ccPayment?.toFixed(2) || '0.00'}</td>
-                          <td>${booking.payout?.toFixed(2) || '0.00'}</td>
+                          <td>${(Number(booking.totalRevenue) || 0).toFixed(2)}</td>
+                          <td>${(Number(booking.ccPayment) || 0).toFixed(2)}</td>
+                          <td>${(Number(booking.payout) || 0).toFixed(2)}</td>
                           <td>
                             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                               <button
@@ -2215,7 +2429,8 @@ export default function AdminDashboard() {
                             </div>
                           </td>
                         </tr>
-                      ))
+                        ));
+                      })()
                     )}
                   </tbody>
                 </table>
@@ -3357,6 +3572,186 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Blocked Dates Tab */}
+          <div id="blocked-dates-tab" className={`tab-content ${activeTab === 'blocked-dates' ? 'active' : ''}`}>
+            <div className="section-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h2>Blocked Date Requests</h2>
+                <div className="filter-controls" style={{ margin: 0 }}>
+                  <select
+                    value={blockedDateFilter}
+                    onChange={(e) => setBlockedDateFilter(e.target.value)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      border: '2px solid var(--border-color)',
+                      borderRadius: '6px',
+                      fontSize: '0.9rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="all">All Requests</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="blocked-dates-container">
+                {loadingBlockedDates ? (
+                  <p>Loading blocked date requests...</p>
+                ) : blockedDates.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-light)' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📅</div>
+                    <h3>No blocked date requests</h3>
+                    <p>DJs can submit blocked dates from their portal</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ marginBottom: '1rem', color: 'var(--text-light)' }}>
+                      Showing {blockedDates.filter(bd => blockedDateFilter === 'all' || bd.status === blockedDateFilter).length} of {blockedDates.length} requests
+                    </div>
+                    <div style={{ display: 'grid', gap: '1rem' }}>
+                      {blockedDates
+                        .filter(bd => blockedDateFilter === 'all' || bd.status === blockedDateFilter)
+                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                        .map((blockedDate) => (
+                          <div
+                            key={blockedDate.id}
+                            style={{
+                              border: `2px solid ${
+                                blockedDate.status === 'pending' ? '#FFA500' : 
+                                blockedDate.status === 'approved' ? '#4CAF50' : '#DC3545'
+                              }`,
+                              borderRadius: '10px',
+                              padding: '1.5rem',
+                              background: 'white',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                              <div style={{ flex: 1 }}>
+                                {/* Status Badge */}
+                                <div style={{
+                                  display: 'inline-block',
+                                  padding: '0.25rem 0.75rem',
+                                  borderRadius: '20px',
+                                  fontSize: '0.85rem',
+                                  fontWeight: '600',
+                                  marginBottom: '0.75rem',
+                                  background: blockedDate.status === 'pending' ? '#FFF3CD' :
+                                             blockedDate.status === 'approved' ? '#D4EDDA' : '#F8D7DA',
+                                  color: blockedDate.status === 'pending' ? '#856404' :
+                                         blockedDate.status === 'approved' ? '#155724' : '#721C24'
+                                }}>
+                                  {blockedDate.status.toUpperCase()}
+                                </div>
+
+                                {/* DJ and Date Info */}
+                                <h3 style={{ marginBottom: '0.5rem', color: 'var(--primary-color)' }}>
+                                  {blockedDate.djUser}
+                                </h3>
+                                <div style={{ color: 'var(--text)', fontSize: '1.1rem', marginBottom: '0.5rem', fontWeight: '600' }}>
+                                  📅 {new Date(blockedDate.date).toLocaleDateString('en-US', { 
+                                    weekday: 'long', 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  })}
+                                </div>
+
+                                {/* Reason */}
+                                {blockedDate.reason && (
+                                  <div style={{ 
+                                    color: 'var(--text-light)', 
+                                    marginBottom: '0.75rem',
+                                    fontStyle: 'italic'
+                                  }}>
+                                    Reason: {blockedDate.reason}
+                                  </div>
+                                )}
+
+                                {/* Metadata */}
+                                <div style={{ 
+                                  color: 'var(--text-light)', 
+                                  fontSize: '0.85rem'
+                                }}>
+                                  Requested: {new Date(blockedDate.createdAt).toLocaleString()}
+                                  {blockedDate.blockedBy && ` by ${blockedDate.blockedBy}`}
+                                </div>
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column', minWidth: '150px' }}>
+                                {blockedDate.status === 'pending' && (
+                                  <>
+                                    <button
+                                      onClick={() => approveBlockedDate(blockedDate.id)}
+                                      style={{
+                                        padding: '0.75rem 1.25rem',
+                                        background: '#4CAF50',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontWeight: '600',
+                                        fontSize: '0.9rem',
+                                        transition: 'all 0.2s ease'
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                                      onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                                    >
+                                      ✓ Approve
+                                    </button>
+                                    <button
+                                      onClick={() => rejectBlockedDate(blockedDate.id)}
+                                      style={{
+                                        padding: '0.75rem 1.25rem',
+                                        background: '#DC3545',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontWeight: '600',
+                                        fontSize: '0.9rem',
+                                        transition: 'all 0.2s ease'
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                                      onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                                    >
+                                      ✗ Reject
+                                    </button>
+                                  </>
+                                )}
+                                <button
+                                  onClick={() => deleteBlockedDate(blockedDate.id)}
+                                  style={{
+                                    padding: '0.75rem 1.25rem',
+                                    background: '#6C757D',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem',
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                                >
+                                  🗑️ Delete
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                     </div>
                   </>
                 )}

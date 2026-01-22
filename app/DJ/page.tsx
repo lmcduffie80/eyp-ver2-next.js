@@ -55,8 +55,14 @@ export default function DJPortal() {
         const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
         const tokenExpiry = Date.now() + SESSION_TIMEOUT;
         
+        // Compute normalized display name
+        const displayName = (user.first_name && user.last_name)
+          ? `${user.first_name} ${user.last_name}`
+          : user.username;
+        
         localStorage.setItem('dj_token', 'dev_token_' + Date.now());
         localStorage.setItem('dj_user', user.username);
+        localStorage.setItem('dj_display_name', displayName);
         localStorage.setItem('dj_token_expiry', tokenExpiry.toString());
         localStorage.setItem('dj_last_activity', Date.now().toString());
         
@@ -83,6 +89,7 @@ export default function DJPortal() {
         
         localStorage.setItem('dj_token', data.token);
         localStorage.setItem('dj_user', data.user);
+        localStorage.setItem('dj_display_name', data.displayName || data.user);
         localStorage.setItem('dj_token_expiry', tokenExpiry.toString());
         localStorage.setItem('dj_last_activity', Date.now().toString());
         
