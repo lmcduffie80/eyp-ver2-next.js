@@ -179,7 +179,9 @@ PUT /api/dj-profile
 
 #### 5. Update Frontend Code
 
-**Update API calls in dj-login.html and dj-dashboard.html**:
+**Update API calls in /DJ (app/DJ/page.tsx) and dj-dashboard.html**:
+
+**Note:** DJ login is now a Next.js route at `/DJ` instead of `dj-login.html`.
 
 ```javascript
 // Replace localStorage calls with API calls
