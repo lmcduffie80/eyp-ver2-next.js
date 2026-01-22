@@ -1,7 +1,6 @@
 import Navigation from '@/components/Navigation';
 import Hero from '@/components/Hero';
 import Services from '@/components/Services';
-import Portfolio from '@/components/Portfolio';
 import Videography from '@/components/Videography';
 import Testimonials from '@/components/Testimonials';
 import ReviewForm from '@/components/ReviewForm';
@@ -15,7 +14,6 @@ export default function Home() {
       <Navigation />
       <Hero />
       <Services />
-      <Portfolio />
       <Videography />
       <Testimonials />
       <ReviewForm />
