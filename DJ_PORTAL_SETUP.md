@@ -9,7 +9,7 @@ The DJ Portal provides DJs with access to:
 
 ## Files Created
 
-1. **`dj-login.html`** - Login page for DJ authentication
+1. **`/DJ`** (app/DJ/page.tsx) - Next.js login page for DJ authentication
 2. **`dj-dashboard.html`** - Main dashboard with calendar and bookings
 
 ## Current Status
@@ -212,12 +212,12 @@ Currently, the dashboard works in development mode using localStorage. This allo
 - Review the booking interface
 
 To use in development:
-1. Open `dj-login.html`
+1. Navigate to `/DJ` in your browser
 2. Enter any username/password
 3. You'll be redirected to the dashboard
 4. Data is stored in browser localStorage
 
-**Note:** Remove the development fallback in `dj-login.html` before production deployment.
+**Note:** The DJ login page is now a Next.js route at `/DJ` (app/DJ/page.tsx). Old URLs like `/dj-portal/` and `/dj-login.html` redirect to `/DJ` for backward compatibility.
 
 ## Next Steps
 
