@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 
 interface Review {
   id: number;
@@ -315,22 +314,62 @@ export default function DJDashboard() {
     <div className="dashboard-wrapper">
       {/* Sidebar Navigation */}
       <nav className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
-        {/* DJ Panel Header */}
+        {/* DJ Portal Header */}
         <div style={{ 
           padding: '1rem', 
           background: '#1a1a1a', 
           borderBottom: '1px solid #2d2d2d',
-          textAlign: 'center'
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          position: 'relative'
         }}>
-          <Image
-            src="/EYP Logo_New.png"
-            alt="EYP Logo"
-            width={150}
-            height={45}
-            style={{ height: 'auto', width: 'auto', maxWidth: '150px', cursor: 'pointer' }}
-            onClick={() => setActiveSection('dashboard')}
-            priority
-          />
+          <div style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            flex: 1
+          }}>
+            {/* Avatar Circle with "D" */}
+            <div 
+              onClick={() => setActiveSection('dashboard')}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #ff6b35 0%, #f5436f 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.25rem',
+                fontWeight: 'bold',
+                color: '#ffffff',
+                flexShrink: 0,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 8px rgba(255, 107, 53, 0.3)'
+              }}
+              title="DJ Dashboard"
+            >
+              D
+            </div>
+            {/* DJ Portal Text */}
+            <div 
+              onClick={() => setActiveSection('dashboard')} 
+              style={{ 
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                whiteSpace: 'nowrap',
+                textDecoration: 'none',
+                color: '#ffffff',
+                cursor: 'pointer'
+              }}
+            >
+              DJ Portal
+            </div>
+          </div>
         </div>
         
         {/* Navigation Group */}
