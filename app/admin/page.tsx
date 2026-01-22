@@ -68,8 +68,10 @@ export default function AdminDashboard() {
   const [newFeature, setNewFeature] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   
-  // Notes state
-  const [editedNotes, setEditedNotes] = useState<{[key: number]: string}>({});
+  // Notes modal state
+  const [notesModalOpen, setNotesModalOpen] = useState(false);
+  const [currentEditingBooking, setCurrentEditingBooking] = useState<any | null>(null);
+  const [modalNotes, setModalNotes] = useState('');
   
   const { importing, status, importCSV} = useCSVImport();
 
@@ -309,30 +311,152 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleNotesChange = (bookingId: number, value: string) => {
-    setEditedNotes(prev => ({
-      ...prev,
-      [bookingId]: value
-    }));
+  // Open project notes modal
+  const openNotesModal = (booking: any) => {
+    setCurrentEditingBooking(booking);
+    setModalNotes(booking.notes || '');
+    setNotesModalOpen(true);
     
-    // Update local bookings state
-    setBookings(prev => prev.map(b => 
-      b.id === bookingId ? {...b, notes: value} : b
-    ));
+    // Focus on textarea after a brief delay
+    setTimeout(() => {
+      const textarea = document.getElementById('project-notes-textarea');
+      if (textarea) textarea.focus();
+    }, 100);
   };
 
-  const saveNotes = async (bookingId: number) => {
-    const notes = editedNotes[bookingId];
-    if (notes === undefined) return;
+  // Close project notes modal
+  const closeNotesModal = () => {
+    setNotesModalOpen(false);
+    setCurrentEditingBooking(null);
+    setModalNotes('');
+  };
+
+  // Save project notes from modal
+  const saveNotesFromModal = async () => {
+    if (!currentEditingBooking) return;
     
     try {
-      await fetch(`/api/bookings/${bookingId}`, {
+      const response = await fetch(`/api/bookings/${currentEditingBooking.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes })
+        body: JSON.stringify({ notes: modalNotes })
       });
+      
+      if (response.ok) {
+        // Update local bookings state
+        setBookings(prev => prev.map(b => 
+          b.id === currentEditingBooking.id ? {...b, notes: modalNotes} : b
+        ));
+        
+        closeNotesModal();
+        alert('Project notes saved successfully!');
+      } else {
+        alert('Failed to save notes. Please try again.');
+      }
     } catch (error) {
       console.error('Error saving notes:', error);
+      alert('Failed to save notes. Please try again.');
+    }
+  };
+
+  // Print/Save Project Notes as PDF
+  const printProjectNotesAsPDF = () => {
+    if (!currentEditingBooking) return;
+    
+    const projectName = currentEditingBooking.eventType || 'Project';
+    const date = new Date(currentEditingBooking.date).toLocaleDateString();
+    const dj = currentEditingBooking.djUser || 'Unassigned';
+    const notes = modalNotes || '';
+    
+    // Create HTML content for PDF
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project Notes - ${projectName}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            color: #ff6b35;
+            border-bottom: 3px solid #ff6b35;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        .info-section {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .info-item {
+            margin-bottom: 15px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #555;
+            display: inline-block;
+            width: 150px;
+        }
+        .notes-section {
+            margin-top: 30px;
+        }
+        .notes-label {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .notes-content {
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            background: #fff;
+            border: 2px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            line-height: 1.8;
+        }
+        @media print {
+            body { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>📋 Project Notes</h1>
+    <div class="info-section">
+        <div class="info-item">
+            <span class="info-label">Project Name:</span>
+            <span>${projectName}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Date:</span>
+            <span>${date}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">DJ:</span>
+            <span>${dj}</span>
+        </div>
+    </div>
+    <div class="notes-section">
+        <div class="notes-label">Event Details & Notes:</div>
+        <div class="notes-content">${notes || '(No notes added yet)'}</div>
+    </div>
+</body>
+</html>`;
+    
+    // Open in new window and trigger print
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
     }
   };
 
@@ -2022,20 +2146,19 @@ export default function AdminDashboard() {
                       >
                         DJ Payout
                       </th>
-                      <th>Notes</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody id="all-bookings-container">
                     {loadingBookings ? (
                       <tr>
-                        <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
                           Loading bookings...
                         </td>
                       </tr>
                     ) : bookings.length === 0 ? (
                       <tr>
-                        <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
                           No bookings found. Import a CSV file to add bookings.
                         </td>
                       </tr>
@@ -2049,58 +2172,47 @@ export default function AdminDashboard() {
                           <td>${booking.totalRevenue?.toFixed(2) || '0.00'}</td>
                           <td>${booking.ccPayment?.toFixed(2) || '0.00'}</td>
                           <td>${booking.payout?.toFixed(2) || '0.00'}</td>
-                          <td style={{ minWidth: '200px', maxWidth: '300px' }}>
-                            <textarea
-                              value={booking.notes || ''}
-                              onChange={(e) => handleNotesChange(booking.id, e.target.value)}
-                              onBlur={() => saveNotes(booking.id)}
-                              placeholder="Add notes..."
-                              style={{
-                                width: '100%',
-                                minHeight: '50px',
-                                padding: '0.5rem',
-                                border: '1px solid #e0e0e0',
-                                borderRadius: '4px',
-                                fontSize: '0.85rem',
-                                fontFamily: 'inherit',
-                                resize: 'vertical'
-                              }}
-                            />
-                          </td>
                           <td>
-                            <button
-                              onClick={() => console.log('Edit booking:', booking.id)}
-                              style={{
-                                padding: '0.25rem 0.5rem',
-                                fontSize: '0.8rem',
-                                background: 'var(--primary-color)',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '3px',
-                                cursor: 'pointer',
-                                marginRight: '0.5rem'
-                              }}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (confirm('Are you sure you want to delete this booking?')) {
-                                  console.log('Delete booking:', booking.id);
-                                }
-                              }}
-                              style={{
-                                padding: '0.25rem 0.5rem',
-                                fontSize: '0.8rem',
-                                background: 'var(--error-color)',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '3px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Delete
-                            </button>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                              <button
+                                onClick={() => openNotesModal(booking)}
+                                style={{
+                                  padding: '0.4rem 0.8rem',
+                                  background: 'var(--accent-color)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '5px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.85rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem'
+                                }}
+                                title="Add or edit project notes"
+                              >
+                                {booking.notes && <span>📝</span>}
+                                <span>{booking.notes ? 'Edit Notes' : 'Add Notes'}</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm('Are you sure you want to delete this booking?')) {
+                                    console.log('Delete booking:', booking.id);
+                                  }
+                                }}
+                                style={{
+                                  padding: '0.4rem 0.8rem',
+                                  fontSize: '0.85rem',
+                                  background: 'var(--error-color)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '5px',
+                                  cursor: 'pointer'
+                                }}
+                                title="Delete project"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -2110,6 +2222,193 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
+
+          {/* Project Notes Modal */}
+          {notesModalOpen && (
+            <div 
+              style={{ 
+                display: 'flex', 
+                position: 'fixed', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                bottom: 0, 
+                background: 'rgba(0, 0, 0, 0.5)', 
+                zIndex: 10000, 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                overflowY: 'auto' 
+              }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  closeNotesModal();
+                }
+              }}
+            >
+              <div 
+                style={{ 
+                  background: 'white', 
+                  borderRadius: '10px', 
+                  padding: '2rem', 
+                  maxWidth: '900px', 
+                  width: '90%', 
+                  maxHeight: '90vh', 
+                  margin: '2rem auto', 
+                  position: 'relative', 
+                  boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)', 
+                  overflowY: 'auto' 
+                }}
+              >
+                <button
+                  onClick={closeNotesModal}
+                  style={{
+                    position: 'absolute',
+                    top: '1rem',
+                    right: '1rem',
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '1.5rem',
+                    cursor: 'pointer',
+                    color: 'var(--text-light)',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '50%',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = '#f0f0f0'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                >
+                  &times;
+                </button>
+                
+                <h2 style={{ color: 'var(--primary-color)', marginBottom: '1rem', paddingRight: '3rem' }}>
+                  Project Notes
+                </h2>
+                
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--text-dark)', marginBottom: '0.5rem' }}>
+                      Project Name:
+                    </div>
+                    <div style={{ color: 'var(--primary-color)', fontSize: '1.1rem' }}>
+                      {currentEditingBooking?.eventType || 'N/A'}
+                    </div>
+                  </div>
+                  
+                  <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--text-dark)', marginBottom: '0.5rem' }}>
+                      Date:
+                    </div>
+                    <div>
+                      {currentEditingBooking?.date ? new Date(currentEditingBooking.date).toLocaleDateString() : 'N/A'}
+                    </div>
+                  </div>
+                  
+                  <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--text-dark)', marginBottom: '0.5rem' }}>
+                      DJ:
+                    </div>
+                    <div>
+                      {currentEditingBooking?.djUser || 'Unassigned'}
+                    </div>
+                  </div>
+                  
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label 
+                      htmlFor="project-notes-textarea" 
+                      style={{ 
+                        display: 'block', 
+                        fontWeight: 600, 
+                        color: 'var(--text-dark)', 
+                        marginBottom: '0.5rem' 
+                      }}
+                    >
+                      Event Details & Notes:
+                    </label>
+                    <textarea
+                      id="project-notes-textarea"
+                      rows={20}
+                      value={modalNotes}
+                      onChange={(e) => setModalNotes(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '1rem',
+                        border: '2px solid #e0e0e0',
+                        borderRadius: '5px',
+                        fontSize: '1rem',
+                        fontFamily: "'Courier New', monospace",
+                        resize: 'vertical',
+                        lineHeight: '1.6'
+                      }}
+                      placeholder="Enter detailed event notes, wedding details, ceremony information, reception plans, song requests, special instructions, etc."
+                    />
+                    <small style={{ display: 'block', color: 'var(--text-light)', marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                      These notes will be visible to the assigned DJ in their dashboard.
+                    </small>
+                  </div>
+                </div>
+                
+                <div 
+                  style={{ 
+                    display: 'flex', 
+                    gap: '1rem', 
+                    justifyContent: 'flex-end', 
+                    borderTop: '1px solid #e0e0e0', 
+                    paddingTop: '1.5rem' 
+                  }}
+                >
+                  <button
+                    onClick={closeNotesModal}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: 'var(--text-light)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={printProjectNotesAsPDF}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: 'var(--info-color)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    📄 Print/Save as PDF
+                  </button>
+                  <button
+                    onClick={saveNotesFromModal}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: 'var(--accent-color)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Save Notes
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Calendar Tab */}
           <div id="calendar-tab" className={`tab-content ${activeTab === 'calendar' ? 'active' : ''}`}>
