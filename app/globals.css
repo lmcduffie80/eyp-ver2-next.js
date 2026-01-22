@@ -401,6 +401,30 @@ section {
   margin: 0 auto;
 }
 
+/* Public calendar date styling */
+.dates-calendar .available-date {
+  background: #e8f5e9 !important;
+  border: 2px solid #4caf50 !important;
+  color: #2e7d32 !important;
+}
+
+.dates-calendar .booked-date {
+  background: #ffebee !important;
+  border: 2px solid #f44336 !important;
+  color: #c62828 !important;
+  cursor: not-allowed !important;
+  opacity: 0.85;
+}
+
+.dates-calendar .available-date:hover {
+  background: #c8e6c9 !important;
+  transform: scale(1.05);
+}
+
+.dates-calendar .booked-date:hover {
+  background: #ffcdd2 !important;
+}
+
 /* Packages Section */
 .packages-section {
   margin-top: 3rem;
@@ -1692,6 +1716,75 @@ body.dashboard-page {
   color: #000000;
 }
 
+.status-badge.upcoming {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-badge.completed {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* Status Action Buttons */
+.mark-complete-btn,
+.mark-cancelled-btn {
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.mark-complete-btn {
+  background: #4caf50;
+  color: white;
+}
+
+.mark-complete-btn:hover {
+  background: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+.mark-cancelled-btn {
+  background: #f44336;
+  color: white;
+}
+
+.mark-cancelled-btn:hover {
+  background: #da190b;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
+}
+
+.status-action-btn {
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #2196f3;
+  color: white;
+}
+
+.status-action-btn:hover {
+  background: #1976d2;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+}
+
+.status-action-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Activity Feed */
 .activity-feed {
   display: flex;
@@ -2117,6 +2210,15 @@ body.dashboard-page {
   background: #fffce0;
 }
 
+.calendar-day.has-events {
+  background: #ffebee !important;
+  border-color: #f44336 !important;
+}
+
+.calendar-day.has-events:hover {
+  background: #ffcdd2 !important;
+}
+
 .day-number {
   font-weight: 600;
   margin-bottom: 0.5rem;
@@ -2128,6 +2230,17 @@ body.dashboard-page {
   flex-wrap: wrap;
   gap: 0.25rem;
   align-items: center;
+}
+
+.booking-badge {
+  background: #f44336;
+  color: white;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: inline-block;
+  margin-top: 4px;
 }
 
 .event-indicator {
