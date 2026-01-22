@@ -323,8 +323,8 @@ export default function DJDashboard() {
       })[0]
     : null;
   
-  const totalRevenue = Array.isArray(bookings) 
-    ? bookings.reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0) 
+  const totalRevenue = Array.isArray(upcomingBookings) 
+    ? upcomingBookings.reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0) 
     : 0;
 
   // Filter bookings for projects section with defensive checks
@@ -773,7 +773,7 @@ export default function DJDashboard() {
                 <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                   <div style={{ color: '#666', fontSize: '0.9rem', marginBottom: '0.5rem' }}>📅 Total Bookings</div>
                   <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1a1a1a' }}>
-                    {loadingBookings ? '...' : bookings.length}
+                    {loadingBookings ? '...' : upcomingBookings.length}
                   </div>
                 </div>
 
