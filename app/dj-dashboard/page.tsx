@@ -487,7 +487,7 @@ export default function DJDashboard() {
               </div>
 
               {/* Calendar */}
-              <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', marginBottom: '2rem' }}>
+              <div style={{ background: 'white', padding: '1.21rem', borderRadius: '16.12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', maxWidth: '645px', margin: '0 auto 2rem auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                   <button onClick={previousMonth} style={{
                     padding: '0.5rem 1rem',
@@ -514,14 +514,14 @@ export default function DJDashboard() {
                   </button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.34rem' }}>
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                     <div key={day} style={{ 
                       textAlign: 'center', 
                       fontWeight: 'bold', 
-                      padding: '0.5rem',
+                      padding: '0.34rem',
                       color: '#666',
-                      fontSize: '0.9rem'
+                      fontSize: '0.89rem'
                     }}>
                       {day}
                     </div>
@@ -541,7 +541,7 @@ export default function DJDashboard() {
                           }
                         }}
                         style={{
-                          padding: '0.75rem',
+                          padding: '0.5rem',
                           textAlign: 'center',
                           border: '1px solid #e0e0e0',
                           borderRadius: '6px',
@@ -549,7 +549,8 @@ export default function DJDashboard() {
                           opacity: dayInfo.isCurrentMonth ? 1 : 0.4,
                           cursor: bookingsOnDate.length > 0 ? 'pointer' : 'default',
                           position: 'relative',
-                          minHeight: '60px'
+                          minHeight: '60px',
+                          fontSize: '0.89rem'
                         }}
                       >
                         <div style={{ fontWeight: today ? 'bold' : 'normal' }}>{dayInfo.day}</div>
