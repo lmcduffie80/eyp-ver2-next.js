@@ -1807,13 +1807,13 @@
             if (message) {
                 sessionStorage.setItem('logout_message', message);
             }
-            window.location.href = 'dj-login.html';
+            window.location.href = '/DJ';
         }
 
         // Enhanced authentication check with token validation
         // (Refresh check already happened above, so we can safely validate now)
         if (!validateToken()) {
-            window.location.href = 'dj-login.html';
+            window.location.href = '/DJ';
             throw new Error('Authentication failed');
         }
 
