@@ -9,9 +9,12 @@ import Link from 'next/link';
 export default function Videography() {
   const [videoProjects, setVideoProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pricingPackages, setPricingPackages] = useState<any[]>([]);
+  const [loadingPricing, setLoadingPricing] = useState(true);
 
   useEffect(() => {
     fetchVideos();
+    fetchPricingPackages();
   }, []);
 
   const fetchVideos = async () => {
@@ -43,6 +46,21 @@ export default function Videography() {
       console.error('Error fetching videography projects:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPricingPackages = async () => {
+    try {
+      setLoadingPricing(true);
+      const response = await fetch('/api/pricing/packages?service_type=videography');
+      if (response.ok) {
+        const result = await response.json();
+        setPricingPackages(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching pricing packages:', error);
+    } finally {
+      setLoadingPricing(false);
     }
   };
 
@@ -210,6 +228,43 @@ export default function Videography() {
           )}
         </div>
       </section>
+
+      {/* Pricing Section */}
+      {pricingPackages.length > 0 && (
+        <section id="packages" style={{ padding: '5rem 0', background: '#f9f9f9' }}>
+          <div className="container">
+            <h2 className="section-title">Videography Packages</h2>
+            <p style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 3rem', color: 'var(--text-light)' }}>
+              Choose the perfect videography package for your needs. All packages include professional equipment and expert editing.
+            </p>
+            {loadingPricing ? (
+              <div style={{ textAlign: 'center', padding: '2rem' }}>Loading packages...</div>
+            ) : (
+              <div className="packages-grid">
+                {pricingPackages.map((pkg) => (
+                  <div key={pkg.id} className="package-card">
+                    <h4>{pkg.package_name}</h4>
+                    <div className="package-price">${parseFloat(pkg.price).toLocaleString()}</div>
+                    {pkg.description && (
+                      <p style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginBottom: '1rem' }}>
+                        {pkg.description}
+                      </p>
+                    )}
+                    {pkg.features && Array.isArray(pkg.features) && pkg.features.length > 0 && (
+                      <ul className="package-features">
+                        {pkg.features.map((feature: string, index: number) => (
+                          <li key={index}>{feature}</li>
+                        ))}
+                      </ul>
+                    )}
+                    <Link href="#contact" className="package-button">Get Quote</Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       <Contact 
         title="Let's Create Your Video"
