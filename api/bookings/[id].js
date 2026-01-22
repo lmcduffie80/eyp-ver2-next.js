@@ -48,7 +48,8 @@ export default async function handler(req, res) {
                     notes: booking.notes,
                     totalRevenue: booking.total_revenue ? parseFloat(booking.total_revenue) : null,
                     ccPayment: booking.cc_payment ? parseFloat(booking.cc_payment) : null,
-                    payout: booking.payout ? parseFloat(booking.payout) : null
+                    payout: booking.payout ? parseFloat(booking.payout) : null,
+                    status: booking.status || 'upcoming'
                 }
             });
 
@@ -66,7 +67,8 @@ export default async function handler(req, res) {
                 notes,
                 totalRevenue,
                 ccPayment,
-                payout
+                payout,
+                status
             } = req.body;
 
             const result = await sql`
@@ -83,6 +85,7 @@ export default async function handler(req, res) {
                     total_revenue = ${totalRevenue || null},
                     cc_payment = ${ccPayment || null},
                     payout = ${payout || null},
+                    status = ${status || 'upcoming'},
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ${id}
                 RETURNING *
@@ -108,7 +111,8 @@ export default async function handler(req, res) {
                     notes: booking.notes,
                     totalRevenue: booking.total_revenue ? parseFloat(booking.total_revenue) : null,
                     ccPayment: booking.cc_payment ? parseFloat(booking.cc_payment) : null,
-                    payout: booking.payout ? parseFloat(booking.payout) : null
+                    payout: booking.payout ? parseFloat(booking.payout) : null,
+                    status: booking.status || 'upcoming'
                 }
             });
 
