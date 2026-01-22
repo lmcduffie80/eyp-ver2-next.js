@@ -96,9 +96,6 @@ export async function PUT(
       values.push(date);
     }
 
-    // Always update updated_at if column exists
-    updates.push('updated_at = CURRENT_TIMESTAMP');
-
     const query = `
       UPDATE blocked_dates 
       SET ${updates.join(', ')}
@@ -126,8 +123,7 @@ export async function PUT(
         reason: blockedDate.reason,
         blockedBy: blockedDate.blocked_by,
         status: blockedDate.status || 'approved',
-        createdAt: blockedDate.created_at,
-        updatedAt: blockedDate.updated_at
+        createdAt: blockedDate.created_at
       }
     });
   } catch (error) {
