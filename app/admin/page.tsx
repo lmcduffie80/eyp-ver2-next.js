@@ -13,6 +13,14 @@ export default function AdminDashboard() {
   const [userTab, setUserTab] = useState('create');
   const [userSearch, setUserSearch] = useState('');
   const [userTypeFilter, setUserTypeFilter] = useState('');
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+  
+  // Reviews state
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [reviewStatusFilter, setReviewStatusFilter] = useState('');
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -47,6 +55,7 @@ export default function AdminDashboard() {
   const [pricingServiceTab, setPricingServiceTab] = useState<'photography' | 'videography' | 'dj'>('photography');
   const [pricingPackages, setPricingPackages] = useState<any[]>([]);
   const [loadingPricing, setLoadingPricing] = useState(false);
+  const [savingPackage, setSavingPackage] = useState(false);
   const [editingPackage, setEditingPackage] = useState<any | null>(null);
   const [showPackageForm, setShowPackageForm] = useState(false);
   const [packageForm, setPackageForm] = useState({
@@ -57,6 +66,7 @@ export default function AdminDashboard() {
     display_order: 0
   });
   const [newFeature, setNewFeature] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
   
   const { importing, status, importCSV} = useCSVImport();
 
@@ -163,6 +173,10 @@ export default function AdminDashboard() {
     // Fetch data when switching to specific tabs
     if (tab === 'pricing') {
       fetchPricingPackages(pricingServiceTab);
+    } else if (tab === 'users') {
+      fetchUsers();
+    } else if (tab === 'reviews') {
+      fetchReviews();
     }
   };
 
@@ -296,8 +310,12 @@ export default function AdminDashboard() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Get future bookings
-    const futureBookings = bookings.filter(b => new Date(b.date) >= today);
+    // Get future bookings with 'upcoming' status
+    const futureBookings = bookings.filter(b => {
+      const bookingDate = new Date(b.date);
+      const isUpcoming = (b as any).status === 'upcoming' || !(b as any).status;
+      return bookingDate >= today && isUpcoming;
+    });
     
     // Group by DJ
     const djMap = new Map();
@@ -315,6 +333,40 @@ export default function AdminDashboard() {
       projectCount: dj.projects.length,
       dates: dj.dates.sort((a: Date, b: Date) => a.getTime() - b.getTime())
     }));
+  };
+
+  // Booking Status Management
+  const updateBookingStatus = async (bookingId: number, newStatus: string) => {
+    try {
+      // Get the current booking data first
+      const bookingResponse = await fetch(`/api/bookings/${bookingId}`);
+      if (!bookingResponse.ok) {
+        throw new Error('Failed to fetch booking');
+      }
+      const bookingData = await bookingResponse.json();
+      const booking = bookingData.data;
+
+      // Update the booking with new status
+      const response = await fetch(`/api/bookings/${bookingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...booking,
+          status: newStatus
+        })
+      });
+
+      if (response.ok) {
+        // Refresh bookings list
+        await fetchBookings();
+        alert(`Booking status updated to ${newStatus}!`);
+      } else {
+        throw new Error('Failed to update booking status');
+      }
+    } catch (error) {
+      console.error('Error updating booking status:', error);
+      alert('Failed to update booking status');
+    }
   };
 
   // Photography Management Functions
@@ -514,6 +566,18 @@ export default function AdminDashboard() {
     }
   }, [selectedVideoProject]);
 
+  useEffect(() => {
+    if (activeTab === 'users' && userTab === 'manage') {
+      fetchUsers();
+    }
+  }, [userSearch, userTypeFilter, activeTab, userTab]);
+
+  useEffect(() => {
+    if (activeTab === 'reviews') {
+      fetchReviews();
+    }
+  }, [reviewStatusFilter, activeTab]);
+
   // Videography Management Functions
   const fetchVideoProjects = async () => {
     try {
@@ -664,6 +728,9 @@ export default function AdminDashboard() {
       return;
     }
 
+    setSavingPackage(true);
+    setSaveSuccess(false);
+
     try {
       const payload = {
         ...packageForm,
@@ -679,7 +746,7 @@ export default function AdminDashboard() {
       });
 
       if (response.ok) {
-        alert(editingPackage ? 'Package updated!' : 'Package created!');
+        setSaveSuccess(true);
         setShowPackageForm(false);
         setEditingPackage(null);
         setPackageForm({
@@ -690,6 +757,9 @@ export default function AdminDashboard() {
           display_order: 0
         });
         await fetchPricingPackages(pricingServiceTab);
+        
+        // Show success message briefly
+        setTimeout(() => setSaveSuccess(false), 3000);
       } else {
         const error = await response.json();
         alert(`Failed: ${error.error}`);
@@ -697,6 +767,8 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error saving package:', error);
       alert('Failed to save package');
+    } finally {
+      setSavingPackage(false);
     }
   };
 
@@ -749,6 +821,291 @@ export default function AdminDashboard() {
       ...packageForm,
       features: packageForm.features.filter((_, i) => i !== index)
     });
+  };
+
+  // User Management Functions
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const params = new URLSearchParams();
+      if (userSearch) params.append('search', userSearch);
+      if (userTypeFilter) params.append('type', userTypeFilter);
+      
+      const response = await fetch(`/api/users?${params.toString()}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setUsers(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const createUser = async (formData: any) => {
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('User created successfully!');
+        await fetchUsers();
+        return true;
+      } else {
+        alert(`Failed to create user: ${data.error}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error creating user:', error);
+      alert('Failed to create user');
+      return false;
+    }
+  };
+
+  const updateUser = async (formData: any) => {
+    try {
+      const response = await fetch('/api/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('User updated successfully!');
+        await fetchUsers();
+        setEditingUser(null);
+        return true;
+      } else {
+        alert(`Failed to update user: ${data.error}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert('Failed to update user');
+      return false;
+    }
+  };
+
+  const deleteUser = async (userId: number) => {
+    if (!confirm('Are you sure you want to delete this user?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/users?id=${userId}`, {
+        method: 'DELETE'
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('User deleted successfully!');
+        await fetchUsers();
+      } else {
+        alert(`Failed to delete user: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Failed to delete user');
+    }
+  };
+
+  const handleUserSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    const form = e.currentTarget;
+    const formData = {
+      first_name: (form.querySelector('#new-firstname') as HTMLInputElement).value,
+      last_name: (form.querySelector('#new-lastname') as HTMLInputElement).value,
+      username: (form.querySelector('#new-username') as HTMLInputElement).value,
+      email: (form.querySelector('#new-email') as HTMLInputElement).value,
+      phone: (form.querySelector('#new-phone') as HTMLInputElement).value,
+      user_type: (form.querySelector('#new-user-type') as HTMLSelectElement).value,
+      password: (form.querySelector('#new-password') as HTMLInputElement).value
+    };
+
+    if (editingUser) {
+      // Update existing user
+      const success = await updateUser({
+        id: editingUser.id,
+        ...formData,
+        ...(formData.password ? {} : { password: undefined }) // Don't send password if empty
+      });
+      
+      if (success) {
+        form.reset();
+      }
+    } else {
+      // Create new user
+      if (!formData.password) {
+        alert('Password is required for new users');
+        return;
+      }
+      
+      const success = await createUser(formData);
+      if (success) {
+        form.reset();
+      }
+    }
+  };
+
+  const startEditUser = (user: any) => {
+    setEditingUser(user);
+    setUserTab('create');
+    
+    // Populate form
+    setTimeout(() => {
+      (document.querySelector('#new-firstname') as HTMLInputElement).value = user.first_name;
+      (document.querySelector('#new-lastname') as HTMLInputElement).value = user.last_name;
+      (document.querySelector('#new-username') as HTMLInputElement).value = user.username;
+      (document.querySelector('#new-email') as HTMLInputElement).value = user.email;
+      (document.querySelector('#new-phone') as HTMLInputElement).value = user.phone || '';
+      (document.querySelector('#new-user-type') as HTMLSelectElement).value = user.user_type;
+      (document.querySelector('#new-password') as HTMLInputElement).value = '';
+      
+      // Update form title
+      const titleEl = document.querySelector('#user-form-title');
+      if (titleEl) {
+        titleEl.textContent = 'Edit User';
+      }
+      
+      // Update button text
+      const buttonEl = document.querySelector('#submit-user-button');
+      if (buttonEl) {
+        buttonEl.textContent = '💾 Save Changes';
+      }
+      
+      // Show cancel button
+      const cancelBtn = document.querySelector('#cancel-edit-button') as HTMLElement;
+      if (cancelBtn) {
+        cancelBtn.style.display = 'block';
+      }
+    }, 100);
+  };
+
+  const cancelEditUser = () => {
+    setEditingUser(null);
+    
+    // Reset form
+    const form = document.querySelector('#create-user-form') as HTMLFormElement;
+    if (form) {
+      form.reset();
+    }
+    
+    // Update form title
+    const titleEl = document.querySelector('#user-form-title');
+    if (titleEl) {
+      titleEl.textContent = 'Create New User';
+    }
+    
+    // Update button text
+    const buttonEl = document.querySelector('#submit-user-button');
+    if (buttonEl) {
+      buttonEl.textContent = 'Create User';
+    }
+    
+    // Hide cancel button
+    const cancelBtn = document.querySelector('#cancel-edit-button') as HTMLElement;
+    if (cancelBtn) {
+      cancelBtn.style.display = 'none';
+    }
+  };
+
+  // Reviews Management Functions
+  const fetchReviews = async () => {
+    setLoadingReviews(true);
+    try {
+      const params = new URLSearchParams();
+      if (reviewStatusFilter) params.append('status', reviewStatusFilter);
+      
+      const response = await fetch(`/api/reviews?${params.toString()}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setReviews(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  const approveReview = async (reviewId: number) => {
+    try {
+      const response = await fetch('/api/reviews', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: reviewId, status: 'approved' })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Review approved successfully!');
+        await fetchReviews();
+      } else {
+        alert(`Failed to approve review: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error approving review:', error);
+      alert('Failed to approve review');
+    }
+  };
+
+  const rejectReview = async (reviewId: number) => {
+    try {
+      const response = await fetch('/api/reviews', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: reviewId, status: 'rejected' })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Review rejected successfully!');
+        await fetchReviews();
+      } else {
+        alert(`Failed to reject review: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error rejecting review:', error);
+      alert('Failed to reject review');
+    }
+  };
+
+  const deleteReview = async (reviewId: number) => {
+    if (!confirm('Are you sure you want to delete this review?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/reviews?id=${reviewId}`, {
+        method: 'DELETE'
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Review deleted successfully!');
+        await fetchReviews();
+      } else {
+        alert(`Failed to delete review: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      alert('Failed to delete review');
+    }
   };
 
   const handleLogout = async () => {
@@ -1219,7 +1576,7 @@ export default function AdminDashboard() {
                 )}
               </div>
               <div style={{ overflowX: 'auto' }}>
-                <table className="bookings-table" style={{ width: '100%', minWidth: '900px' }}>
+                <table className="bookings-table" style={{ width: '100%', minWidth: '1100px' }}>
                   <thead>
                     <tr>
                       <th>Date</th>
@@ -1228,12 +1585,14 @@ export default function AdminDashboard() {
                       <th>Location</th>
                       <th>Revenue</th>
                       <th>DJ Payout</th>
+                      <th>Status</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loadingBookings ? (
                       <tr>
-                        <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
                           Loading upcoming projects...
                         </td>
                       </tr>
@@ -1242,27 +1601,57 @@ export default function AdminDashboard() {
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
                         const upcomingBookings = bookings
-                          .filter(b => new Date(b.date) >= today)
+                          .filter(b => {
+                            const bookingDate = new Date(b.date);
+                            const isUpcoming = (b as any).status === 'upcoming' || !(b as any).status;
+                            return bookingDate >= today && isUpcoming;
+                          })
                           .filter(b => !selectedDJFilter || b.djUser === selectedDJFilter)
                           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                         
                         return upcomingBookings.length === 0 ? (
                           <tr>
-                            <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                            <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
                               No upcoming projects scheduled
                             </td>
                           </tr>
                         ) : (
-                          upcomingBookings.map(booking => (
-                            <tr key={booking.id}>
-                              <td>{new Date(booking.date).toLocaleDateString()}</td>
-                              <td>{booking.djUser || 'N/A'}</td>
-                              <td>{booking.eventType || 'N/A'}</td>
-                              <td>{booking.location || 'N/A'}</td>
-                              <td>${booking.totalRevenue?.toFixed(2) || '0.00'}</td>
-                              <td>${booking.payout?.toFixed(2) || '0.00'}</td>
-                            </tr>
-                          ))
+                          upcomingBookings.map(booking => {
+                            const bookingStatus = (booking as any).status || 'upcoming';
+                            return (
+                              <tr key={booking.id}>
+                                <td>{new Date(booking.date).toLocaleDateString()}</td>
+                                <td>{booking.djUser || 'N/A'}</td>
+                                <td>{booking.eventType || 'N/A'}</td>
+                                <td>{booking.location || 'N/A'}</td>
+                                <td>${booking.totalRevenue?.toFixed(2) || '0.00'}</td>
+                                <td>${booking.payout?.toFixed(2) || '0.00'}</td>
+                                <td>
+                                  <span className={`status-badge ${bookingStatus}`}>
+                                    {bookingStatus}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button
+                                      onClick={() => updateBookingStatus(booking.id, 'completed')}
+                                      className="mark-complete-btn"
+                                      title="Mark as complete"
+                                    >
+                                      ✓ Complete
+                                    </button>
+                                    <button
+                                      onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                                      className="mark-cancelled-btn"
+                                      title="Mark as cancelled"
+                                    >
+                                      ✕ Cancel
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
                         );
                       })()
                     )}
@@ -1273,53 +1662,50 @@ export default function AdminDashboard() {
 
             {/* Two-Column Content Layout */}
             <div className="content-grid-modern">
-              {/* Left Column - Recent Orders */}
+              {/* Left Column - Recent Projects */}
               <div className="content-section">
                 <div className="section-header">
                   <h2>Recent Projects</h2>
                   <a href="#" onClick={(e) => { e.preventDefault(); switchTab('bookings'); }} className="view-all-link">View all</a>
                 </div>
                 <div className="orders-list-modern">
-                  <div className="order-item">
-                    <div className="order-info">
-                      <div className="order-number">#PRJ-2026-001</div>
-                      <div className="order-email">client@example.com</div>
+                  {loadingBookings ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                      Loading recent projects...
                     </div>
-                    <div className="order-price">$2,500.00</div>
-                    <span className="status-badge delivered">completed</span>
-                  </div>
-                  <div className="order-item">
-                    <div className="order-info">
-                      <div className="order-number">#PRJ-2026-002</div>
-                      <div className="order-email">event@company.com</div>
-                    </div>
-                    <div className="order-price">$3,200.00</div>
-                    <span className="status-badge pending">pending</span>
-                  </div>
-                  <div className="order-item">
-                    <div className="order-info">
-                      <div className="order-number">#PRJ-2026-003</div>
-                      <div className="order-email">booking@venue.com</div>
-                    </div>
-                    <div className="order-price">$1,800.00</div>
-                    <span className="status-badge cancelled">cancelled</span>
-                  </div>
-                  <div className="order-item">
-                    <div className="order-info">
-                      <div className="order-number">#PRJ-2026-004</div>
-                      <div className="order-email">contact@business.com</div>
-                    </div>
-                    <div className="order-price">$4,500.00</div>
-                    <span className="status-badge delivered">completed</span>
-                  </div>
-                  <div className="order-item">
-                    <div className="order-info">
-                      <div className="order-number">#PRJ-2026-005</div>
-                      <div className="order-email">info@organization.com</div>
-                    </div>
-                    <div className="order-price">$2,100.00</div>
-                    <span className="status-badge pending">pending</span>
-                  </div>
+                  ) : (
+                    (() => {
+                      // Get completed bookings, sorted by date (most recent first), limited to 10
+                      const completedBookings = bookings
+                        .filter(b => (b as any).status === 'completed')
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .slice(0, 10);
+                      
+                      return completedBookings.length === 0 ? (
+                        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                          No completed projects yet
+                        </div>
+                      ) : (
+                        completedBookings.map(booking => (
+                          <div key={booking.id} className="order-item">
+                            <div className="order-info">
+                              <div className="order-number">
+                                #{booking.id} - {booking.djUser || 'N/A'}
+                              </div>
+                              <div className="order-email">
+                                {booking.eventType || 'N/A'} • {new Date(booking.date).toLocaleDateString()}
+                              </div>
+                              <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
+                                {booking.clientName || 'N/A'} • {booking.location || 'N/A'}
+                              </div>
+                            </div>
+                            <div className="order-price">${booking.totalRevenue?.toFixed(2) || '0.00'}</div>
+                            <span className="status-badge completed">completed</span>
+                          </div>
+                        ))
+                      );
+                    })()
+                  )}
                 </div>
               </div>
 
@@ -1780,42 +2166,40 @@ export default function AdminDashboard() {
                       const dayBlockedDates = getBlockedDatesForDate(day);
                       const isTodayDate = isToday(day);
                       const isCurrentMonthDate = isCurrentMonth(day);
+                      const hasEvents = dayBookings.length > 0 || dayBlockedDates.length > 0;
+                      const totalUnavailable = dayBookings.length + dayBlockedDates.length;
                       
                       return (
                         <div 
                           key={`${weekIndex}-${dayIndex}`}
-                          className={`calendar-day ${!isCurrentMonthDate ? 'other-month' : ''} ${isTodayDate ? 'today' : ''}`}
+                          className={`calendar-day ${!isCurrentMonthDate ? 'other-month' : ''} ${isTodayDate ? 'today' : ''} ${hasEvents ? 'has-events' : ''}`}
                           onClick={() => setSelectedDate(day)}
-                          title={dayBookings.length > 0 || dayBlockedDates.length > 0 
+                          style={{
+                            background: hasEvents ? '#ffebee' : 'white',
+                            borderColor: hasEvents ? '#f44336' : '#e0e0e0',
+                            cursor: 'pointer'
+                          }}
+                          title={hasEvents
                             ? `${dayBookings.length} booking(s), ${dayBlockedDates.length} blocked`
-                            : 'No events'}
+                            : 'Available'}
                         >
-                          <div className="day-number">{day.getDate()}</div>
-                          <div className="day-events">
-                            {dayBookings.slice(0, 3).map((booking, i) => (
-                              <div 
-                                key={i}
-                                className="event-indicator"
-                                style={{ 
-                                  background: '#10b981',
-                                  width: '8px',
-                                  height: '8px',
-                                  borderRadius: '50%'
-                                }}
-                                title={`${booking.djUser} - ${booking.eventType} @ ${booking.location}`}
-                              />
-                            ))}
-                            {dayBookings.length > 3 && (
-                              <span style={{ fontSize: '0.7rem', color: 'var(--text-light)', fontWeight: '600' }}>
-                                +{dayBookings.length - 3}
-                              </span>
-                            )}
-                            {dayBlockedDates.length > 0 && (
-                              <div className="blocked-indicator" title={`${dayBlockedDates.length} blocked date(s)`}>
-                                🚫
-                              </div>
-                            )}
+                          <div className="day-number" style={{ fontWeight: hasEvents ? '700' : '500' }}>
+                            {day.getDate()}
                           </div>
+                          {hasEvents && (
+                            <div style={{
+                              background: '#f44336',
+                              color: 'white',
+                              borderRadius: '12px',
+                              padding: '2px 8px',
+                              fontSize: '0.7rem',
+                              fontWeight: '600',
+                              marginTop: '4px',
+                              display: 'inline-block'
+                            }}>
+                              🔴 {totalUnavailable} Booked
+                            </div>
+                          )}
                         </div>
                       );
                     })
@@ -1843,7 +2227,7 @@ export default function AdminDashboard() {
                   <div style={{ marginTop: '1.5rem', padding: '1.5rem', background: '#f8f9fa', borderRadius: '12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                       <h4 style={{ margin: 0 }}>
-                        {selectedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        📅 {selectedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                       </h4>
                       <button 
                         onClick={() => setSelectedDate(null)}
@@ -1863,44 +2247,143 @@ export default function AdminDashboard() {
                       const dayBookings = getBookingsForDate(selectedDate);
                       const dayBlockedDates = getBlockedDatesForDate(selectedDate);
                       
+                      // Get all DJs from users and determine availability
+                      const allDJs = users.filter((u: any) => u.user_type === 'dj');
+                      const unavailableDJs = new Set<string>();
+                      
+                      dayBookings.forEach((b: any) => {
+                        if (b.djUser) unavailableDJs.add(b.djUser.toLowerCase());
+                      });
+                      dayBlockedDates.forEach((bd: any) => {
+                        if (bd.djUser) unavailableDJs.add(bd.djUser.toLowerCase());
+                      });
+                      
+                      const availableDJs = allDJs.filter((dj: any) => 
+                        !unavailableDJs.has(dj.username.toLowerCase())
+                      );
+                      
                       return (
                         <>
-                          {dayBookings.length > 0 && (
-                            <div style={{ marginBottom: '1rem' }}>
-                              <h5 style={{ marginBottom: '0.75rem' }}>Bookings ({dayBookings.length})</h5>
+                          {/* Unavailable DJs Section */}
+                          {(dayBookings.length > 0 || dayBlockedDates.length > 0) && (
+                            <div style={{ marginBottom: '1.5rem' }}>
+                              <h5 style={{ 
+                                marginBottom: '0.75rem', 
+                                padding: '0.5rem', 
+                                background: '#ffebee', 
+                                borderRadius: '6px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                              }}>
+                                ❌ UNAVAILABLE DJs ({dayBookings.length + dayBlockedDates.length})
+                              </h5>
+                              
                               {dayBookings.map((booking, i) => (
-                                <div key={i} style={{ padding: '0.75rem', background: 'white', borderRadius: '8px', marginBottom: '0.5rem', borderLeft: '4px solid #10b981' }}>
-                                  <div style={{ fontWeight: '600' }}>{booking.eventType}</div>
-                                  <div style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
-                                    DJ: {booking.djUser} • {booking.location}
+                                <div key={`booking-${i}`} style={{ 
+                                  padding: '1rem', 
+                                  background: 'white', 
+                                  borderRadius: '8px', 
+                                  marginBottom: '0.75rem', 
+                                  borderLeft: '4px solid #f44336',
+                                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <span style={{ fontSize: '1.25rem' }}>🎵</span>
+                                    <span style={{ fontWeight: '700', fontSize: '1.05rem' }}>DJ {booking.djUser}</span>
                                   </div>
-                                  <div style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
-                                    Revenue: ${booking.totalRevenue?.toFixed(2) || '0.00'}
+                                  <div style={{ fontSize: '0.95rem', marginLeft: '1.75rem' }}>
+                                    <div style={{ marginBottom: '0.25rem' }}>
+                                      <strong>Booked:</strong> {booking.eventType}
+                                    </div>
+                                    <div style={{ color: 'var(--text-light)', marginBottom: '0.25rem' }}>
+                                      <strong>Client:</strong> {booking.clientName || 'N/A'}
+                                    </div>
+                                    <div style={{ color: 'var(--text-light)' }}>
+                                      <strong>Location:</strong> {booking.location}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                              
+                              {dayBlockedDates.map((blocked, i) => (
+                                <div key={`blocked-${i}`} style={{ 
+                                  padding: '1rem', 
+                                  background: 'white', 
+                                  borderRadius: '8px', 
+                                  marginBottom: '0.75rem', 
+                                  borderLeft: '4px solid #ff9800',
+                                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <span style={{ fontSize: '1.25rem' }}>🎵</span>
+                                    <span style={{ fontWeight: '700', fontSize: '1.05rem' }}>DJ {blocked.djUser}</span>
+                                  </div>
+                                  <div style={{ fontSize: '0.95rem', marginLeft: '1.75rem' }}>
+                                    <div style={{ color: 'var(--text-light)' }}>
+                                      <strong>Blocked:</strong> {blocked.reason || 'Personal Time Off'}
+                                    </div>
                                   </div>
                                 </div>
                               ))}
                             </div>
                           )}
                           
-                          {dayBlockedDates.length > 0 && (
-                            <div>
-                              <h5 style={{ marginBottom: '0.75rem' }}>Blocked Dates ({dayBlockedDates.length})</h5>
-                              {dayBlockedDates.map((blocked, i) => (
-                                <div key={i} style={{ padding: '0.75rem', background: 'white', borderRadius: '8px', marginBottom: '0.5rem', borderLeft: '4px solid #ef4444' }}>
-                                  <div style={{ fontWeight: '600' }}>DJ: {blocked.djUser}</div>
-                                  {blocked.reason && (
-                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
-                                      Reason: {blocked.reason}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                          {/* Available DJs Section */}
+                          <div>
+                            <h5 style={{ 
+                              marginBottom: '0.75rem', 
+                              padding: '0.5rem', 
+                              background: '#e8f5e9', 
+                              borderRadius: '6px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem'
+                            }}>
+                              ✅ AVAILABLE DJs ({availableDJs.length})
+                            </h5>
+                            
+                            {availableDJs.length > 0 ? (
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                                {availableDJs.map((dj: any) => (
+                                  <div key={dj.id} style={{ 
+                                    padding: '0.75rem', 
+                                    background: 'white', 
+                                    borderRadius: '8px', 
+                                    borderLeft: '4px solid #4caf50',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                  }}>
+                                    <span style={{ fontSize: '1.25rem' }}>🎵</span>
+                                    <span style={{ fontWeight: '600' }}>DJ {dj.first_name} {dj.last_name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div style={{ 
+                                padding: '1rem', 
+                                background: 'white', 
+                                borderRadius: '8px', 
+                                textAlign: 'center',
+                                color: 'var(--text-light)'
+                              }}>
+                                All DJs are unavailable on this date
+                              </div>
+                            )}
+                          </div>
                           
                           {dayBookings.length === 0 && dayBlockedDates.length === 0 && (
-                            <p style={{ color: 'var(--text-light)', textAlign: 'center', padding: '1rem' }}>
-                              No bookings or blocked dates for this day
+                            <p style={{ 
+                              color: '#4caf50', 
+                              textAlign: 'center', 
+                              padding: '1rem',
+                              background: '#e8f5e9',
+                              borderRadius: '8px',
+                              fontWeight: '600'
+                            }}>
+                              ✅ All DJs available - No bookings or blocked dates for this day
                             </p>
                           )}
                         </>
@@ -1974,6 +2457,25 @@ export default function AdminDashboard() {
                   🎵 DJ Entertainment
                 </button>
               </div>
+
+              {/* Success Message */}
+              {saveSuccess && (
+                <div style={{
+                  padding: '1rem 1.5rem',
+                  marginBottom: '1.5rem',
+                  background: '#4caf50',
+                  color: 'white',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  boxShadow: '0 2px 8px rgba(76, 175, 80, 0.3)',
+                  animation: 'slideDown 0.3s ease-out'
+                }}>
+                  <span style={{ fontSize: '1.5rem' }}>✓</span>
+                  <span style={{ fontWeight: '500' }}>Package saved successfully!</span>
+                </div>
+              )}
 
               {/* Add New Package Button */}
               {!showPackageForm && (
@@ -2131,8 +2633,24 @@ export default function AdminDashboard() {
                   </div>
 
                   <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                    <button onClick={createOrUpdatePackage} className="cta-button">
-                      {editingPackage ? 'Update Package' : 'Create Package'}
+                    <button 
+                      onClick={createOrUpdatePackage} 
+                      className="cta-button"
+                      disabled={savingPackage || !packageForm.package_name || !packageForm.price}
+                      style={{
+                        opacity: (savingPackage || !packageForm.package_name || !packageForm.price) ? 0.6 : 1,
+                        cursor: (savingPackage || !packageForm.package_name || !packageForm.price) ? 'not-allowed' : 'pointer',
+                        position: 'relative',
+                        minWidth: '150px'
+                      }}
+                    >
+                      {savingPackage ? (
+                        <>
+                          <span style={{ opacity: 0.7 }}>Saving...</span>
+                        </>
+                      ) : (
+                        editingPackage ? '💾 Save Changes' : '💾 Save Package'
+                      )}
                     </button>
                     <button 
                       onClick={() => {
@@ -2147,10 +2665,27 @@ export default function AdminDashboard() {
                         });
                       }}
                       className="secondary-button"
+                      disabled={savingPackage}
+                      style={{
+                        opacity: savingPackage ? 0.6 : 1,
+                        cursor: savingPackage ? 'not-allowed' : 'pointer'
+                      }}
                     >
                       Cancel
                     </button>
                   </div>
+                  
+                  {/* Validation message */}
+                  {(!packageForm.package_name || !packageForm.price) && (
+                    <p style={{ 
+                      color: '#ff6b6b', 
+                      fontSize: '0.9rem', 
+                      marginTop: '0.5rem',
+                      fontStyle: 'italic'
+                    }}>
+                      * Package name and price are required
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -2265,11 +2800,9 @@ export default function AdminDashboard() {
                 <h2>Client Reviews</h2>
                 <div className="filter-controls" style={{ margin: 0 }}>
                   <select 
-                    id="review-filter-status" 
-                    onChange={() => {
-                      // Load reviews functionality will be added here
-                      console.log('Review filter changed');
-                    }}
+                    id="review-filter-status"
+                    value={reviewStatusFilter}
+                    onChange={(e) => setReviewStatusFilter(e.target.value)}
                     style={{ padding: '0.5rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
                   >
                     <option value="">All Reviews</option>
@@ -2279,8 +2812,206 @@ export default function AdminDashboard() {
                   </select>
                 </div>
               </div>
+              
               <div id="reviews-container">
-                {/* Reviews will be displayed here */}
+                {loadingReviews ? (
+                  <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+                    <p>Loading reviews...</p>
+                  </div>
+                ) : reviews.length === 0 ? (
+                  <div style={{ 
+                    padding: '3rem', 
+                    textAlign: 'center', 
+                    color: 'var(--text-light)',
+                    background: '#f5f5f5',
+                    borderRadius: '12px'
+                  }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⭐</div>
+                    <h3 style={{ marginBottom: '0.5rem' }}>No reviews found</h3>
+                    <p>Reviews from clients will appear here</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ 
+                      marginBottom: '1.5rem', 
+                      padding: '1rem', 
+                      background: '#fff3cd', 
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      <span style={{ fontSize: '1.5rem' }}>⭐</span>
+                      <span style={{ fontWeight: '600' }}>
+                        {reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}
+                        {reviews.filter((r: any) => r.status === 'pending').length > 0 && (
+                          <span style={{ 
+                            marginLeft: '1rem', 
+                            padding: '0.25rem 0.75rem', 
+                            background: '#ff6b6b', 
+                            color: 'white', 
+                            borderRadius: '20px',
+                            fontSize: '0.85rem'
+                          }}>
+                            {reviews.filter((r: any) => r.status === 'pending').length} Pending
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gap: '1rem' }}>
+                      {reviews.map((review: any) => (
+                        <div
+                          key={review.id}
+                          style={{
+                            padding: '1.5rem',
+                            background: 'white',
+                            border: `2px solid ${review.status === 'pending' ? '#ffc107' : review.status === 'approved' ? '#4CAF50' : '#ff4444'}`,
+                            borderRadius: '12px',
+                            position: 'relative'
+                          }}
+                        >
+                          {/* Status badge */}
+                          <div style={{
+                            position: 'absolute',
+                            top: '1rem',
+                            right: '1rem',
+                            padding: '0.25rem 0.75rem',
+                            background: review.status === 'pending' ? '#ffc107' : review.status === 'approved' ? '#4CAF50' : '#ff4444',
+                            color: 'white',
+                            borderRadius: '20px',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            textTransform: 'uppercase'
+                          }}>
+                            {review.status}
+                          </div>
+                          
+                          {/* Rating */}
+                          {review.rating && (
+                            <div style={{ marginBottom: '1rem' }}>
+                              {'⭐'.repeat(review.rating)}
+                            </div>
+                          )}
+                          
+                          {/* Client and Service Info */}
+                          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                            <strong>Client:</strong> {review.client_name}
+                            <span>|</span>
+                            <strong>Service:</strong> {review.service_type}
+                            {review.dj_username && (
+                              <>
+                                <span>|</span>
+                                <strong>DJ:</strong> @{review.dj_username}
+                              </>
+                            )}
+                          </div>
+                          
+                          {/* Comment */}
+                          <p style={{ 
+                            color: 'var(--text-color)', 
+                            marginBottom: '1rem',
+                            fontSize: '1rem',
+                            lineHeight: '1.6',
+                            fontStyle: 'italic'
+                          }}>
+                            &quot;{review.comment}&quot;
+                          </p>
+                          
+                          {/* Event details */}
+                          {(review.event_name || review.event_date) && (
+                            <div style={{ 
+                              color: 'var(--text-light)', 
+                              fontSize: '0.9rem',
+                              marginBottom: '1rem'
+                            }}>
+                              {review.event_name && <><strong>Event:</strong> {review.event_name}</>}
+                              {review.event_date && (
+                                <>
+                                  {review.event_name && ' | '}
+                                  <strong>Date:</strong> {new Date(review.event_date).toLocaleDateString()}
+                                </>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Submission date */}
+                          <div style={{ 
+                            color: 'var(--text-light)', 
+                            fontSize: '0.85rem',
+                            marginBottom: '1rem'
+                          }}>
+                            Submitted: {new Date(review.created_at).toLocaleString()}
+                          </div>
+                          
+                          {/* Action buttons */}
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            {review.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => approveReview(review.id)}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    background: '#4CAF50',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem',
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                                >
+                                  ✓ Approve
+                                </button>
+                                <button
+                                  onClick={() => rejectReview(review.id)}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    background: '#ff9800',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem',
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                                >
+                                  ✗ Reject
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => deleteReview(review.id)}
+                              style={{
+                                padding: '0.5rem 1rem',
+                                background: '#ff4444',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontWeight: '600',
+                                fontSize: '0.9rem',
+                                transition: 'all 0.2s ease',
+                                marginLeft: review.status === 'pending' ? '0' : 'auto'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -2954,7 +3685,7 @@ export default function AdminDashboard() {
               {userTab === 'create' && (
                 <div style={{ background: 'var(--bg-light)', padding: '2rem', borderRadius: '12px' }}>
                   <h3 id="user-form-title" style={{ marginBottom: '1.5rem', color: 'var(--primary-color)', fontSize: '1.25rem' }}>Create New User</h3>
-                  <form id="create-user-form" onSubmit={(e) => { e.preventDefault(); /* Form submission will be handled here */ }}>
+                  <form id="create-user-form" onSubmit={handleUserSubmit}>
                     <input type="hidden" id="edit-mode" value="false" />
                     <input type="hidden" id="edit-original-username" value="" />
                     <input type="hidden" id="edit-original-usertype" value="" />
@@ -3046,10 +3777,7 @@ export default function AdminDashboard() {
                       <button 
                         type="button"
                         id="cancel-edit-button"
-                        onClick={() => {
-                          // Cancel edit functionality will be added here
-                          console.log('Cancel edit');
-                        }}
+                        onClick={cancelEditUser}
                         style={{ 
                           display: 'none', 
                           padding: '0.875rem 1.5rem', 
@@ -3102,7 +3830,196 @@ export default function AdminDashboard() {
                   </div>
                   
                   <div id="users-list-container" className="user-list-modern">
-                    {/* Users table will be populated here by existing JS */}
+                    {loadingUsers ? (
+                      <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+                        <p>Loading users...</p>
+                      </div>
+                    ) : users.length === 0 ? (
+                      <div style={{ 
+                        padding: '3rem', 
+                        textAlign: 'center', 
+                        color: 'var(--text-light)',
+                        background: '#f5f5f5',
+                        borderRadius: '12px'
+                      }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👥</div>
+                        <h3 style={{ marginBottom: '0.5rem' }}>No users found</h3>
+                        <p>Try adjusting your search or filter criteria</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ 
+                          marginBottom: '1.5rem', 
+                          padding: '1rem', 
+                          background: '#f0f9ff', 
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          <span style={{ fontSize: '1.5rem' }}>👥</span>
+                          <span style={{ fontWeight: '600', color: 'var(--primary-color)' }}>
+                            {users.length} {users.length === 1 ? 'User' : 'Users'} Found
+                          </span>
+                        </div>
+                        
+                        <div style={{ display: 'grid', gap: '1rem' }}>
+                          {users.map((user: any) => (
+                            <div
+                              key={user.id}
+                              style={{
+                                padding: '1.5rem',
+                                background: 'white',
+                                border: '2px solid #e0e0e0',
+                                borderRadius: '12px',
+                                display: 'grid',
+                                gridTemplateColumns: 'auto 1fr auto',
+                                gap: '1.5rem',
+                                alignItems: 'center',
+                                transition: 'all 0.2s ease',
+                                cursor: 'pointer'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--primary-color)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = '#e0e0e0';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
+                            >
+                              {/* Avatar */}
+                              <div style={{
+                                width: '60px',
+                                height: '60px',
+                                borderRadius: '50%',
+                                background: user.profile_picture ? `url(${user.profile_picture})` : 'var(--primary-color)',
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                                fontSize: '1.5rem',
+                                fontWeight: 'bold'
+                              }}>
+                                {!user.profile_picture && `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`}
+                              </div>
+                              
+                              {/* User Info */}
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                                  <h3 style={{ margin: 0, fontSize: '1.25rem' }}>
+                                    {user.first_name} {user.last_name}
+                                  </h3>
+                                  <span style={{
+                                    padding: '0.25rem 0.75rem',
+                                    background: user.user_type === 'admin' ? '#ff6b6b' : 
+                                               user.user_type === 'dj' ? '#4CAF50' : 
+                                               user.user_type === 'photographer' ? '#2196F3' :
+                                               user.user_type === 'videographer' ? '#9C27B0' : '#FF9800',
+                                    color: 'white',
+                                    borderRadius: '20px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: '600',
+                                    textTransform: 'uppercase'
+                                  }}>
+                                    {user.user_type}
+                                  </span>
+                                  {user.is_super_user && (
+                                    <span style={{
+                                      padding: '0.25rem 0.75rem',
+                                      background: '#FFD700',
+                                      color: '#000',
+                                      borderRadius: '20px',
+                                      fontSize: '0.75rem',
+                                      fontWeight: '600'
+                                    }}>
+                                      ⭐ SUPER ADMIN
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', color: 'var(--text-light)', fontSize: '0.9rem' }}>
+                                  <div>
+                                    <strong>Username:</strong> @{user.username}
+                                  </div>
+                                  <div>
+                                    <strong>Email:</strong> {user.email}
+                                  </div>
+                                  {user.phone && (
+                                    <div>
+                                      <strong>Phone:</strong> {user.phone}
+                                    </div>
+                                  )}
+                                  <div>
+                                    <strong>Joined:</strong> {new Date(user.created_at).toLocaleDateString()}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Actions */}
+                              <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditUser(user);
+                                  }}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    background: 'var(--primary-color)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem',
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                                >
+                                  ✏️ Edit
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteUser(user.id);
+                                  }}
+                                  disabled={user.is_super_user}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    background: user.is_super_user ? '#ccc' : '#ff4444',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: user.is_super_user ? 'not-allowed' : 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem',
+                                    transition: 'all 0.2s ease',
+                                    opacity: user.is_super_user ? 0.5 : 1
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (!user.is_super_user) {
+                                      e.currentTarget.style.opacity = '0.8';
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (!user.is_super_user) {
+                                      e.currentTarget.style.opacity = '1';
+                                    }
+                                  }}
+                                  title={user.is_super_user ? 'Cannot delete super admin' : 'Delete user'}
+                                >
+                                  🗑️ Delete
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
