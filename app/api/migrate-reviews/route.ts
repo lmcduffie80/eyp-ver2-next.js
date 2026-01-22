@@ -1,124 +1,111 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getConnection } from '@/api-old/db/connection';
+import parseDJName from '@/api-old/utils/parse-dj-name';
 
-export async function POST() {
+/**
+ * Migration endpoint to assign existing reviews to DJs
+ * POST /api/migrate-reviews
+ * 
+ * Processes all reviews without a dj_username and attempts to auto-assign
+ * them based on DJ names mentioned in the comment text.
+ */
+export async function POST(request: NextRequest) {
   let client;
   
   try {
     client = await getConnection();
     
-    // Define the 6 reviews to migrate from homepage
-    const reviews = [
-      {
-        client_name: "Sarah M.",
-        service_type: "Photography Services",
-        dj_username: null,
-        rating: 5,
-        comment: "The photography team captured our wedding day perfectly! Every moment was beautifully documented, and we now have stunning photos that we'll treasure forever. Their attention to detail and creative eye made our special day even more memorable.",
-        event_name: "Wedding",
-        event_date: "2025-06-15",
-        status: "approved"
-      },
-      {
-        client_name: "Emily & James",
-        service_type: "Videography Services",
-        dj_username: null,
-        rating: 5,
-        comment: "Our wedding video exceeded all expectations! The team created a cinematic masterpiece that perfectly captured the emotion and joy of our celebration. Every time we watch it, we're transported back to that magical day. Absolutely incredible work!",
-        event_name: "Wedding Celebration",
-        event_date: "2025-08-20",
-        status: "approved"
-      },
-      {
-        client_name: "Jessica & Tom",
-        service_type: "DJ Entertainment",
-        dj_username: "lee",
-        rating: 5,
-        comment: "The DJ brought incredible energy to our wedding reception! The dance floor was packed all night, and the music selection was perfect. They kept the party going and made sure everyone had an amazing time. Highly professional and super fun!",
-        event_name: "Wedding Reception",
-        event_date: "2025-09-12",
-        status: "approved"
-      },
-      {
-        client_name: "Amanda K.",
-        service_type: "Photography Services",
-        dj_username: null,
-        rating: 5,
-        comment: "Professional, talented, and so easy to work with! The photographers made us feel comfortable throughout the entire session and delivered breathtaking photos. We couldn't be happier with the results and would definitely book them again.",
-        event_name: "Engagement Session",
-        event_date: "2024-05-10",
-        status: "approved"
-      },
-      {
-        client_name: "Rachel & David",
-        service_type: "Videography Services",
-        dj_username: null,
-        rating: 5,
-        comment: "The highlight film they created was absolutely stunning! It beautifully told our story and captured all the special moments. The quality is outstanding, and we love sharing it with family and friends. Worth every penny!",
-        event_name: "Wedding",
-        event_date: "2024-07-22",
-        status: "approved"
-      },
-      {
-        client_name: "Lisa & Mark",
-        service_type: "DJ Entertainment",
-        dj_username: null,
-        rating: 5,
-        comment: "Best DJ we've ever worked with! They understood exactly what we wanted and kept the energy high all night. The sound quality was perfect, the music selection was spot-on, and they made our event unforgettable. Our guests are still talking about how great the music was!",
-        event_name: "Wedding Reception",
-        event_date: "2024-10-05",
-        status: "approved"
-      }
-    ];
+    console.log('[Review Migration] Starting migration process...');
     
-    // Check if reviews already exist to prevent duplicates
-    const existingReviews = await client.query(`
-      SELECT COUNT(*) as count FROM reviews 
-      WHERE client_name IN ('Sarah M.', 'Emily & James', 'Jessica & Tom', 'Amanda K.', 'Rachel & David', 'Lisa & Mark')
+    // 1. Get all reviews without dj_username for DJ Entertainment service
+    const reviewsQuery = await client.query(`
+      SELECT id, comment, client_name, service_type, event_name, event_date 
+      FROM reviews 
+      WHERE (dj_username IS NULL OR dj_username = '') 
+      AND service_type = 'DJ Entertainment'
+      ORDER BY created_at DESC
     `);
     
-    if (parseInt(existingReviews.rows[0].count) > 0) {
-      return NextResponse.json({
-        success: false,
-        message: 'Reviews already migrated',
-        count: existingReviews.rows[0].count
-      }, { status: 400 });
+    const reviews = reviewsQuery.rows;
+    console.log(`[Review Migration] Found ${reviews.length} reviews to process`);
+    
+    // 2. Process each review
+    const results = {
+      total: reviews.length,
+      assigned: 0,
+      unassigned: 0,
+      assignedList: [] as any[],
+      unassignedList: [] as any[]
+    };
+    
+    for (const review of reviews) {
+      console.log(`\n[Review Migration] Processing review ID ${review.id} from ${review.client_name}`);
+      console.log(`[Review Migration] Comment: "${review.comment?.substring(0, 100)}..."`);
+      
+      try {
+        // Attempt to parse DJ name from comment
+        const djUsername = await parseDJName(review.comment);
+        
+        if (djUsername) {
+          // Update review with matched DJ
+          await client.query(`
+            UPDATE reviews 
+            SET dj_username = $1, updated_at = CURRENT_TIMESTAMP 
+            WHERE id = $2
+          `, [djUsername, review.id]);
+          
+          results.assigned++;
+          results.assignedList.push({
+            id: review.id,
+            client_name: review.client_name,
+            event_name: review.event_name,
+            assigned_to: djUsername,
+            comment_preview: review.comment?.substring(0, 100)
+          });
+          
+          console.log(`[Review Migration] ✅ Assigned to: ${djUsername}`);
+        } else {
+          // No DJ name found in comment
+          results.unassigned++;
+          results.unassignedList.push({
+            id: review.id,
+            client_name: review.client_name,
+            event_name: review.event_name,
+            event_date: review.event_date,
+            comment_preview: review.comment?.substring(0, 150)
+          });
+          
+          console.log(`[Review Migration] ❌ No DJ name found`);
+        }
+      } catch (parseError) {
+        console.error(`[Review Migration] Error processing review ${review.id}:`, parseError);
+        results.unassigned++;
+        results.unassignedList.push({
+          id: review.id,
+          client_name: review.client_name,
+          error: 'Processing error',
+          comment_preview: review.comment?.substring(0, 150)
+        });
+      }
     }
     
-    // Insert all reviews
-    const insertedReviews = [];
-    for (const review of reviews) {
-      const result = await client.query(`
-        INSERT INTO reviews (
-          client_name, service_type, dj_username, rating, 
-          comment, event_name, event_date, status, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
-        RETURNING id, client_name, service_type, dj_username, rating, status
-      `, [
-        review.client_name,
-        review.service_type,
-        review.dj_username,
-        review.rating,
-        review.comment,
-        review.event_name,
-        review.event_date,
-        review.status
-      ]);
-      
-      insertedReviews.push(result.rows[0]);
-    }
+    console.log('\n[Review Migration] ========== MIGRATION COMPLETE ==========');
+    console.log(`[Review Migration] Total processed: ${results.total}`);
+    console.log(`[Review Migration] Successfully assigned: ${results.assigned}`);
+    console.log(`[Review Migration] Unable to assign: ${results.unassigned}`);
+    console.log('[Review Migration] ========================================\n');
     
     return NextResponse.json({
       success: true,
-      message: `Successfully migrated ${insertedReviews.length} reviews from homepage`,
-      data: insertedReviews
+      message: 'Review migration completed',
+      results: results
     });
     
   } catch (error) {
-    console.error('Error migrating reviews:', error);
+    console.error('[Review Migration] Fatal error:', error);
     return NextResponse.json({
       success: false,
-      error: 'Failed to migrate reviews',
+      error: 'Migration failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   } finally {
@@ -128,33 +115,44 @@ export async function POST() {
   }
 }
 
-// GET endpoint to check migration status
-export async function GET() {
+/**
+ * GET endpoint to check migration status
+ * Returns count of reviews with/without dj_username
+ */
+export async function GET(request: NextRequest) {
   let client;
   
   try {
     client = await getConnection();
     
-    const result = await client.query(`
-      SELECT COUNT(*) as count FROM reviews 
-      WHERE client_name IN ('Sarah M.', 'Emily & James', 'Jessica & Tom', 'Amanda K.', 'Rachel & David', 'Lisa & Mark')
-      AND status = 'approved'
+    // Count reviews by assignment status
+    const statsQuery = await client.query(`
+      SELECT 
+        COUNT(*) FILTER (WHERE service_type = 'DJ Entertainment' AND (dj_username IS NULL OR dj_username = '')) as unassigned,
+        COUNT(*) FILTER (WHERE service_type = 'DJ Entertainment' AND dj_username IS NOT NULL AND dj_username != '') as assigned,
+        COUNT(*) FILTER (WHERE service_type = 'DJ Entertainment') as total_dj_reviews,
+        COUNT(*) as total_reviews
+      FROM reviews
     `);
     
-    const count = parseInt(result.rows[0].count);
+    const stats = statsQuery.rows[0];
     
     return NextResponse.json({
       success: true,
-      migrated: count === 6,
-      count: count,
-      message: count === 6 ? 'All reviews migrated' : `${count}/6 reviews found`
+      stats: {
+        total_reviews: parseInt(stats.total_reviews),
+        total_dj_reviews: parseInt(stats.total_dj_reviews),
+        assigned: parseInt(stats.assigned),
+        unassigned: parseInt(stats.unassigned)
+      }
     });
     
   } catch (error) {
-    console.error('Error checking migration status:', error);
+    console.error('[Review Migration] Error fetching stats:', error);
     return NextResponse.json({
       success: false,
-      error: 'Failed to check migration status'
+      error: 'Failed to fetch migration stats',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   } finally {
     if (client) {
