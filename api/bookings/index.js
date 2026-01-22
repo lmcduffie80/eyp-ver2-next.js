@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     try {
         if (req.method === 'GET') {
             // Get all bookings
-            const { dj_user } = req.query; // Optional filter by DJ
+            const { dj_user, status } = req.query; // Optional filters by DJ and status
             
             // First, get all DJ users to normalize DJ names in bookings
             const djUsersResult = await sql`SELECT id, username, first_name, last_name FROM users WHERE user_type = 'dj'`;
@@ -60,9 +60,16 @@ export default async function handler(req, res) {
                 djNameMap.set(normalizedName.toLowerCase(), normalizedName);
             });
             
-            let query = sql`SELECT * FROM bookings ORDER BY date DESC, id DESC`;
-            if (dj_user) {
+            // Build dynamic query based on filters
+            let query;
+            if (dj_user && status) {
+                query = sql`SELECT * FROM bookings WHERE dj_user = ${dj_user} AND status = ${status} ORDER BY date DESC, id DESC`;
+            } else if (dj_user) {
                 query = sql`SELECT * FROM bookings WHERE dj_user = ${dj_user} ORDER BY date DESC, id DESC`;
+            } else if (status) {
+                query = sql`SELECT * FROM bookings WHERE status = ${status} ORDER BY date DESC, id DESC`;
+            } else {
+                query = sql`SELECT * FROM bookings ORDER BY date DESC, id DESC`;
             }
             
             const result = await query;
@@ -101,7 +108,8 @@ export default async function handler(req, res) {
                         notes: row.notes,
                         totalRevenue: row.total_revenue ? parseFloat(row.total_revenue) : null,
                         ccPayment: row.cc_payment ? parseFloat(row.cc_payment) : null,
-                        payout: row.payout ? parseFloat(row.payout) : null
+                        payout: row.payout ? parseFloat(row.payout) : null,
+                        status: row.status || 'upcoming'
                     };
                 })
             });
@@ -120,7 +128,8 @@ export default async function handler(req, res) {
                 notes,
                 totalRevenue,
                 ccPayment,
-                payout
+                payout,
+                status
             } = req.body;
 
             // Validation
@@ -134,11 +143,11 @@ export default async function handler(req, res) {
             const result = await sql`
                 INSERT INTO bookings (
                     dj_user, client_name, event_type, date, time, location,
-                    contact_email, contact_phone, notes, total_revenue, cc_payment, payout
+                    contact_email, contact_phone, notes, total_revenue, cc_payment, payout, status
                 ) VALUES (
                     ${djUser}, ${clientName || null}, ${eventType}, ${date}, ${time || null},
                     ${location || null}, ${contactEmail || null}, ${contactPhone || null},
-                    ${notes || null}, ${totalRevenue || null}, ${ccPayment || null}, ${payout || null}
+                    ${notes || null}, ${totalRevenue || null}, ${ccPayment || null}, ${payout || null}, ${status || 'upcoming'}
                 ) RETURNING *
             `;
 
@@ -158,7 +167,8 @@ export default async function handler(req, res) {
                     notes: booking.notes,
                     totalRevenue: booking.total_revenue ? parseFloat(booking.total_revenue) : null,
                     ccPayment: booking.cc_payment ? parseFloat(booking.cc_payment) : null,
-                    payout: booking.payout ? parseFloat(booking.payout) : null
+                    payout: booking.payout ? parseFloat(booking.payout) : null,
+                    status: booking.status || 'upcoming'
                 }
             });
 
