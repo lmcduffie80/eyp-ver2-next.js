@@ -68,6 +68,9 @@ export default function AdminDashboard() {
   const [newFeature, setNewFeature] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   
+  // Notes state
+  const [editedNotes, setEditedNotes] = useState<{[key: number]: string}>({});
+  
   const { importing, status, importCSV} = useCSVImport();
 
   useEffect(() => {
@@ -303,6 +306,33 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Failed to fetch blocked dates:', error);
+    }
+  };
+
+  const handleNotesChange = (bookingId: number, value: string) => {
+    setEditedNotes(prev => ({
+      ...prev,
+      [bookingId]: value
+    }));
+    
+    // Update local bookings state
+    setBookings(prev => prev.map(b => 
+      b.id === bookingId ? {...b, notes: value} : b
+    ));
+  };
+
+  const saveNotes = async (bookingId: number) => {
+    const notes = editedNotes[bookingId];
+    if (notes === undefined) return;
+    
+    try {
+      await fetch(`/api/bookings/${bookingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes })
+      });
+    } catch (error) {
+      console.error('Error saving notes:', error);
     }
   };
 
@@ -1992,19 +2022,20 @@ export default function AdminDashboard() {
                       >
                         DJ Payout
                       </th>
+                      <th>Notes</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody id="all-bookings-container">
                     {loadingBookings ? (
                       <tr>
-                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                        <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
                           Loading bookings...
                         </td>
                       </tr>
                     ) : bookings.length === 0 ? (
                       <tr>
-                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                        <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
                           No bookings found. Import a CSV file to add bookings.
                         </td>
                       </tr>
@@ -2018,6 +2049,24 @@ export default function AdminDashboard() {
                           <td>${booking.totalRevenue?.toFixed(2) || '0.00'}</td>
                           <td>${booking.ccPayment?.toFixed(2) || '0.00'}</td>
                           <td>${booking.payout?.toFixed(2) || '0.00'}</td>
+                          <td style={{ minWidth: '200px', maxWidth: '300px' }}>
+                            <textarea
+                              value={booking.notes || ''}
+                              onChange={(e) => handleNotesChange(booking.id, e.target.value)}
+                              onBlur={() => saveNotes(booking.id)}
+                              placeholder="Add notes..."
+                              style={{
+                                width: '100%',
+                                minHeight: '50px',
+                                padding: '0.5rem',
+                                border: '1px solid #e0e0e0',
+                                borderRadius: '4px',
+                                fontSize: '0.85rem',
+                                fontFamily: 'inherit',
+                                resize: 'vertical'
+                              }}
+                            />
+                          </td>
                           <td>
                             <button
                               onClick={() => console.log('Edit booking:', booking.id)}
