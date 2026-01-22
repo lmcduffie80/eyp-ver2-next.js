@@ -17,6 +17,7 @@ export default function AdminDashboard() {
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarDJFilter, setCalendarDJFilter] = useState('');
+  const [selectedDJFilter, setSelectedDJFilter] = useState<string>('');
   
   // Photography state
   const [photoProjects, setPhotoProjects] = useState<any[]>([]);
@@ -257,6 +258,31 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Failed to fetch blocked dates:', error);
     }
+  };
+
+  const getDJSummary = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Get future bookings
+    const futureBookings = bookings.filter(b => new Date(b.date) >= today);
+    
+    // Group by DJ
+    const djMap = new Map();
+    futureBookings.forEach(booking => {
+      const dj = booking.djUser || 'Unknown';
+      if (!djMap.has(dj)) {
+        djMap.set(dj, { name: dj, projects: [], dates: [] });
+      }
+      djMap.get(dj).projects.push(booking);
+      djMap.get(dj).dates.push(new Date(booking.date));
+    });
+    
+    return Array.from(djMap.values()).map(dj => ({
+      ...dj,
+      projectCount: dj.projects.length,
+      dates: dj.dates.sort((a: Date, b: Date) => a.getTime() - b.getTime())
+    }));
   };
 
   // Photography Management Functions
@@ -787,17 +813,120 @@ export default function AdminDashboard() {
             </div>
             <div className="section-card">
               <h2>All DJs Overview</h2>
-              <div id="djs-container" className="dj-list">
-                {/* DJs will be populated here */}
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+                gap: '1rem',
+                marginTop: '1rem'
+              }}>
+                {getDJSummary().map(dj => (
+                  <div
+                    key={dj.name}
+                    onClick={() => setSelectedDJFilter(dj.name === selectedDJFilter ? '' : dj.name)}
+                    style={{
+                      padding: '1.25rem',
+                      background: selectedDJFilter === dj.name ? '#e8f4ff' : '#f8f9fa',
+                      border: selectedDJFilter === dj.name ? '2px solid #3b82f6' : '1px solid #e0e0e0',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      position: 'relative'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedDJFilter !== dj.name) {
+                        e.currentTarget.style.borderColor = '#3b82f6';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.15)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedDJFilter !== dj.name) {
+                        e.currentTarget.style.borderColor = '#e0e0e0';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.75rem' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-dark)' }}>{dj.name}</h3>
+                      <span style={{
+                        background: selectedDJFilter === dj.name ? '#3b82f6' : '#6b7280',
+                        color: 'white',
+                        padding: '0.25rem 0.65rem',
+                        borderRadius: '12px',
+                        fontSize: '0.85rem',
+                        fontWeight: 'bold'
+                      }}>
+                        {dj.projectCount} {dj.projectCount === 1 ? 'project' : 'projects'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.875rem', color: 'var(--text-light)' }}>
+                      <div style={{ fontWeight: '500', marginBottom: '0.5rem' }}>Upcoming Dates:</div>
+                      {dj.dates.slice(0, 4).map((date: Date, idx: number) => (
+                        <div key={idx} style={{ paddingLeft: '0.5rem', marginBottom: '0.25rem' }}>
+                          • {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                      ))}
+                      {dj.dates.length > 4 && (
+                        <div style={{ paddingLeft: '0.5rem', color: '#3b82f6', fontStyle: 'italic' }}>
+                          +{dj.dates.length - 4} more...
+                        </div>
+                      )}
+                    </div>
+                    {selectedDJFilter === dj.name && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '0.5rem',
+                        right: '0.5rem',
+                        color: '#3b82f6',
+                        fontSize: '1.25rem',
+                        fontWeight: 'bold'
+                      }}>
+                        ✓
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {getDJSummary().length === 0 && (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                    No upcoming DJ projects scheduled
+                  </div>
+                )}
               </div>
             </div>
 
             {/* All DJs Upcoming Projects Table */}
             <div className="section-card" style={{ marginTop: '2rem' }}>
-              <h2>All DJs Upcoming Projects</h2>
-              <p style={{ color: 'var(--text-light)', marginBottom: '1rem' }}>
-                Showing all future bookings across all DJs
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div>
+                  <h2 style={{ margin: 0 }}>All DJs Upcoming Projects</h2>
+                  <p style={{ color: 'var(--text-light)', margin: '0.5rem 0 0 0' }}>
+                    {selectedDJFilter 
+                      ? `Showing future bookings for ${selectedDJFilter}` 
+                      : 'Showing all future bookings across all DJs'}
+                  </p>
+                </div>
+                {selectedDJFilter && (
+                  <button
+                    onClick={() => setSelectedDJFilter('')}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: '#3b82f6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: '500',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#2563eb'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = '#3b82f6'}
+                  >
+                    Clear Filter
+                  </button>
+                )}
+              </div>
               <div style={{ overflowX: 'auto' }}>
                 <table className="bookings-table" style={{ width: '100%', minWidth: '900px' }}>
                   <thead>
@@ -823,6 +952,7 @@ export default function AdminDashboard() {
                         today.setHours(0, 0, 0, 0);
                         const upcomingBookings = bookings
                           .filter(b => new Date(b.date) >= today)
+                          .filter(b => !selectedDJFilter || b.djUser === selectedDJFilter)
                           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                         
                         return upcomingBookings.length === 0 ? (
