@@ -43,6 +43,21 @@ export default function AdminDashboard() {
   const [newVideoUrl, setNewVideoUrl] = useState('');
   const [newVideoTitle, setNewVideoTitle] = useState('');
   
+  // Pricing state
+  const [pricingServiceTab, setPricingServiceTab] = useState<'photography' | 'videography' | 'dj'>('photography');
+  const [pricingPackages, setPricingPackages] = useState<any[]>([]);
+  const [loadingPricing, setLoadingPricing] = useState(false);
+  const [editingPackage, setEditingPackage] = useState<any | null>(null);
+  const [showPackageForm, setShowPackageForm] = useState(false);
+  const [packageForm, setPackageForm] = useState({
+    package_name: '',
+    price: '',
+    description: '',
+    features: [] as string[],
+    display_order: 0
+  });
+  const [newFeature, setNewFeature] = useState('');
+  
   const { importing, status, importCSV} = useCSVImport();
 
   useEffect(() => {
@@ -144,6 +159,11 @@ export default function AdminDashboard() {
   const switchTab = (tab: string) => {
     setActiveTab(tab);
     setSidebarOpen(false);
+    
+    // Fetch data when switching to specific tabs
+    if (tab === 'pricing') {
+      fetchPricingPackages(pricingServiceTab);
+    }
   };
 
   const toggleSidebar = () => {
@@ -622,6 +642,115 @@ export default function AdminDashboard() {
     }
   };
 
+  // Pricing Management Functions
+  const fetchPricingPackages = async (serviceType: 'photography' | 'videography' | 'dj') => {
+    setLoadingPricing(true);
+    try {
+      const response = await fetch(`/api/pricing/packages?service_type=${serviceType}`);
+      const data = await response.json();
+      if (data.success) {
+        setPricingPackages(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching pricing packages:', error);
+    } finally {
+      setLoadingPricing(false);
+    }
+  };
+
+  const createOrUpdatePackage = async () => {
+    if (!packageForm.package_name || !packageForm.price) {
+      alert('Please fill in package name and price');
+      return;
+    }
+
+    try {
+      const payload = {
+        ...packageForm,
+        service_type: pricingServiceTab,
+        features: packageForm.features,
+        ...(editingPackage && { id: editingPackage.id })
+      };
+
+      const response = await fetch('/api/pricing/packages', {
+        method: editingPackage ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        alert(editingPackage ? 'Package updated!' : 'Package created!');
+        setShowPackageForm(false);
+        setEditingPackage(null);
+        setPackageForm({
+          package_name: '',
+          price: '',
+          description: '',
+          features: [],
+          display_order: 0
+        });
+        await fetchPricingPackages(pricingServiceTab);
+      } else {
+        const error = await response.json();
+        alert(`Failed: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error saving package:', error);
+      alert('Failed to save package');
+    }
+  };
+
+  const editPackage = (pkg: any) => {
+    setEditingPackage(pkg);
+    setPackageForm({
+      package_name: pkg.package_name,
+      price: pkg.price.toString(),
+      description: pkg.description || '',
+      features: Array.isArray(pkg.features) ? pkg.features : [],
+      display_order: pkg.display_order || 0
+    });
+    setShowPackageForm(true);
+  };
+
+  const deletePackage = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this package?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/pricing/packages?id=${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        alert('Package deleted!');
+        await fetchPricingPackages(pricingServiceTab);
+      } else {
+        alert('Failed to delete package');
+      }
+    } catch (error) {
+      console.error('Error deleting package:', error);
+      alert('Failed to delete package');
+    }
+  };
+
+  const addFeatureToForm = () => {
+    if (newFeature.trim()) {
+      setPackageForm({
+        ...packageForm,
+        features: [...packageForm.features, newFeature.trim()]
+      });
+      setNewFeature('');
+    }
+  };
+
+  const removeFeatureFromForm = (index: number) => {
+    setPackageForm({
+      ...packageForm,
+      features: packageForm.features.filter((_, i) => i !== index)
+    });
+  };
+
   const handleLogout = async () => {
     // Show confirmation
     if (!confirm('Are you sure you want to logout?')) {
@@ -791,6 +920,13 @@ export default function AdminDashboard() {
           >
             <span className="nav-icon">📹</span>
             <span>Videography</span>
+          </a>
+          <a 
+            className={`sidebar-nav-link ${activeTab === 'pricing' ? 'active' : ''}`}
+            onClick={() => switchTab('pricing')}
+          >
+            <span className="nav-icon">💰</span>
+            <span>Pricing</span>
           </a>
           <a 
             className={`sidebar-nav-link ${activeTab === 'reviews' ? 'active' : ''}`}
@@ -1770,6 +1906,352 @@ export default function AdminDashboard() {
                         </>
                       );
                     })()}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Pricing Tab */}
+          <div id="pricing-tab" className={`tab-content ${activeTab === 'pricing' ? 'active' : ''}`}>
+            <div className="section-card" style={{ marginBottom: '2rem' }}>
+              <h2 style={{ marginBottom: '1.5rem' }}>Pricing Package Manager</h2>
+              <p style={{ color: 'var(--text-light)', marginBottom: '2rem' }}>
+                Manage pricing packages for all your services. Update prices, features, and descriptions without editing code.
+              </p>
+
+              {/* Service Type Tabs */}
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '2px solid #e0e0e0' }}>
+                <button
+                  onClick={() => {
+                    setPricingServiceTab('photography');
+                    fetchPricingPackages('photography');
+                  }}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: pricingServiceTab === 'photography' ? 'var(--primary-color)' : 'transparent',
+                    color: pricingServiceTab === 'photography' ? 'white' : 'var(--text-color)',
+                    border: 'none',
+                    borderBottom: pricingServiceTab === 'photography' ? '3px solid var(--primary-color)' : 'none',
+                    cursor: 'pointer',
+                    fontWeight: pricingServiceTab === 'photography' ? 'bold' : 'normal'
+                  }}
+                >
+                  📸 Photography
+                </button>
+                <button
+                  onClick={() => {
+                    setPricingServiceTab('videography');
+                    fetchPricingPackages('videography');
+                  }}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: pricingServiceTab === 'videography' ? 'var(--primary-color)' : 'transparent',
+                    color: pricingServiceTab === 'videography' ? 'white' : 'var(--text-color)',
+                    border: 'none',
+                    borderBottom: pricingServiceTab === 'videography' ? '3px solid var(--primary-color)' : 'none',
+                    cursor: 'pointer',
+                    fontWeight: pricingServiceTab === 'videography' ? 'bold' : 'normal'
+                  }}
+                >
+                  📹 Videography
+                </button>
+                <button
+                  onClick={() => {
+                    setPricingServiceTab('dj');
+                    fetchPricingPackages('dj');
+                  }}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: pricingServiceTab === 'dj' ? 'var(--primary-color)' : 'transparent',
+                    color: pricingServiceTab === 'dj' ? 'white' : 'var(--text-color)',
+                    border: 'none',
+                    borderBottom: pricingServiceTab === 'dj' ? '3px solid var(--primary-color)' : 'none',
+                    cursor: 'pointer',
+                    fontWeight: pricingServiceTab === 'dj' ? 'bold' : 'normal'
+                  }}
+                >
+                  🎵 DJ Entertainment
+                </button>
+              </div>
+
+              {/* Add New Package Button */}
+              {!showPackageForm && (
+                <button 
+                  onClick={() => {
+                    setEditingPackage(null);
+                    setPackageForm({
+                      package_name: '',
+                      price: '',
+                      description: '',
+                      features: [],
+                      display_order: 0
+                    });
+                    setShowPackageForm(true);
+                  }}
+                  className="cta-button" 
+                  style={{ marginBottom: '2rem' }}
+                >
+                  + Add New Package
+                </button>
+              )}
+
+              {/* Package Form */}
+              {showPackageForm && (
+                <div style={{ 
+                  marginBottom: '2rem', 
+                  padding: '1.5rem', 
+                  border: '2px solid var(--primary-color)', 
+                  borderRadius: '8px', 
+                  background: '#f9f9f9' 
+                }}>
+                  <h3 style={{ marginBottom: '1rem' }}>
+                    {editingPackage ? 'Edit Package' : 'Create New Package'}
+                  </h3>
+                  
+                  <div style={{ display: 'grid', gap: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                        Package Name *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Ceremony Package, Premium Package"
+                        value={packageForm.package_name}
+                        onChange={(e) => setPackageForm({ ...packageForm, package_name: e.target.value })}
+                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                        Price (USD) *
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="e.g., 1800"
+                        value={packageForm.price}
+                        onChange={(e) => setPackageForm({ ...packageForm, price: e.target.value })}
+                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                        Description
+                      </label>
+                      <textarea
+                        placeholder="Brief description of the package"
+                        value={packageForm.description}
+                        onChange={(e) => setPackageForm({ ...packageForm, description: e.target.value })}
+                        rows={3}
+                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                        Features / What's Included
+                      </label>
+                      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                        <input
+                          type="text"
+                          placeholder="Add a feature"
+                          value={newFeature}
+                          onChange={(e) => setNewFeature(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addFeatureToForm();
+                            }
+                          }}
+                          style={{ flexGrow: 1, padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                        />
+                        <button 
+                          onClick={addFeatureToForm}
+                          className="cta-button"
+                          type="button"
+                        >
+                          Add
+                        </button>
+                      </div>
+                      
+                      {packageForm.features.length > 0 && (
+                        <ul style={{ 
+                          listStyle: 'none', 
+                          padding: 0, 
+                          background: 'white', 
+                          borderRadius: '5px', 
+                          border: '1px solid #e0e0e0' 
+                        }}>
+                          {packageForm.features.map((feature, index) => (
+                            <li 
+                              key={index}
+                              style={{ 
+                                padding: '0.75rem', 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                alignItems: 'center',
+                                borderBottom: index < packageForm.features.length - 1 ? '1px solid #e0e0e0' : 'none'
+                              }}
+                            >
+                              <span>✓ {feature}</span>
+                              <button
+                                onClick={() => removeFeatureFromForm(index)}
+                                style={{
+                                  background: '#ff4444',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '3px',
+                                  padding: '0.25rem 0.5rem',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Remove
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                        Display Order
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={packageForm.display_order}
+                        onChange={(e) => setPackageForm({ ...packageForm, display_order: parseInt(e.target.value) || 0 })}
+                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                      />
+                      <small style={{ color: 'var(--text-light)' }}>Lower numbers appear first</small>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                    <button onClick={createOrUpdatePackage} className="cta-button">
+                      {editingPackage ? 'Update Package' : 'Create Package'}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowPackageForm(false);
+                        setEditingPackage(null);
+                        setPackageForm({
+                          package_name: '',
+                          price: '',
+                          description: '',
+                          features: [],
+                          display_order: 0
+                        });
+                      }}
+                      className="secondary-button"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Existing Packages List */}
+              <div>
+                <h3 style={{ marginBottom: '1rem' }}>
+                  Existing Packages ({pricingPackages.length})
+                </h3>
+                
+                {loadingPricing ? (
+                  <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                    Loading packages...
+                  </div>
+                ) : pricingPackages.length === 0 ? (
+                  <div style={{ 
+                    padding: '2rem', 
+                    textAlign: 'center', 
+                    color: 'var(--text-light)',
+                    background: '#f5f5f5',
+                    borderRadius: '8px'
+                  }}>
+                    No packages yet. Create your first package above!
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gap: '1rem' }}>
+                    {pricingPackages.map((pkg) => (
+                      <div
+                        key={pkg.id}
+                        style={{
+                          padding: '1.5rem',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          background: 'white',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
+                          <div>
+                            <h4 style={{ margin: 0, marginBottom: '0.5rem' }}>{pkg.package_name}</h4>
+                            <p style={{ 
+                              fontSize: '1.5rem', 
+                              fontWeight: 'bold', 
+                              color: 'var(--primary-color)', 
+                              margin: 0 
+                            }}>
+                              ${parseFloat(pkg.price).toLocaleString()}
+                            </p>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                              onClick={() => editPackage(pkg)}
+                              className="cta-button"
+                              style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => deletePackage(pkg.id)}
+                              style={{
+                                padding: '0.5rem 1rem',
+                                fontSize: '0.9rem',
+                                background: '#ff4444',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '5px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {pkg.description && (
+                          <p style={{ color: 'var(--text-light)', marginBottom: '1rem' }}>
+                            {pkg.description}
+                          </p>
+                        )}
+                        
+                        {pkg.features && Array.isArray(pkg.features) && pkg.features.length > 0 && (
+                          <div>
+                            <strong style={{ display: 'block', marginBottom: '0.5rem' }}>Includes:</strong>
+                            <ul style={{ 
+                              margin: 0, 
+                              paddingLeft: '1.5rem',
+                              color: 'var(--text-color)'
+                            }}>
+                              {pkg.features.map((feature: string, index: number) => (
+                                <li key={index} style={{ marginBottom: '0.25rem' }}>
+                                  {feature}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-light)' }}>
+                          Display Order: {pkg.display_order}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
