@@ -15,9 +15,12 @@ export default function Photography() {
   const [lightboxTitle, setLightboxTitle] = useState('');
   const [dbProjects, setDbProjects] = useState<any[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
+  const [pricingPackages, setPricingPackages] = useState<any[]>([]);
+  const [loadingPricing, setLoadingPricing] = useState(true);
 
   useEffect(() => {
     fetchDatabaseProjects();
+    fetchPricingPackages();
   }, []);
 
   const fetchDatabaseProjects = async () => {
@@ -49,6 +52,21 @@ export default function Photography() {
       console.error('Error fetching database projects:', error);
     } finally {
       setLoadingProjects(false);
+    }
+  };
+
+  const fetchPricingPackages = async () => {
+    try {
+      setLoadingPricing(true);
+      const response = await fetch('/api/pricing/packages?service_type=photography');
+      if (response.ok) {
+        const result = await response.json();
+        setPricingPackages(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching pricing packages:', error);
+    } finally {
+      setLoadingPricing(false);
     }
   };
 
@@ -169,46 +187,36 @@ export default function Photography() {
               <h3>Portrait Photography</h3>
               <p>Professional portrait sessions for individuals, families, and groups. We create stunning portraits that capture personality and emotion.</p>
               
-              <div className="packages-section">
-                <h3 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Portrait Photography Packages</h3>
-                <div className="packages-grid">
-                  <div className="package-card">
-                    <h4>All Inclusive Session</h4>
-                    <div className="package-price">$150</div>
-                    <ul className="package-features">
-                      <li>$150 Session Fee (federal mileage rate more than 100 mile round trip)</li>
-                      <li>All images deemed editable will be available via Online Gallery (20 images)</li>
-                      <li>Digitals are in given in high-resolution Print ready versions</li>
-                      <li>Other packages are available for purchase in gallery</li>
-                    </ul>
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
-                  
-                  <div className="package-card">
-                    <h4>Couples and Engagements</h4>
-                    <div className="package-price">$150</div>
-                    <ul className="package-features">
-                      <li>$150 Session Fee (federal mileage rate more than 100 mile round trip)</li>
-                      <li>All images deemed editable will be available via Online Gallery (30 images)</li>
-                      <li>Digital will be given in High Resolution Print ready versions</li>
-                      <li>Other packages are available for purchase in gallery</li>
-                    </ul>
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
-                  
-                  <div className="package-card">
-                    <h4>Family Portraits</h4>
-                    <div className="package-price">$150</div>
-                    <ul className="package-features">
-                      <li>$150 Session Fee (federal mileage rate more than 100 mile round trip)</li>
-                      <li>All images deemed editable will be available via Online Gallery (30 images)</li>
-                      <li>Digital will be given in High Resolution Print ready versions</li>
-                      <li>Other packages are available for purchase in gallery</li>
-                    </ul>
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
+              {pricingPackages.length > 0 && (
+                <div className="packages-section">
+                  <h3 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Photography Packages</h3>
+                  {loadingPricing ? (
+                    <div style={{ textAlign: 'center', padding: '2rem' }}>Loading packages...</div>
+                  ) : (
+                    <div className="packages-grid">
+                      {pricingPackages.map((pkg) => (
+                        <div key={pkg.id} className="package-card">
+                          <h4>{pkg.package_name}</h4>
+                          <div className="package-price">${parseFloat(pkg.price).toLocaleString()}</div>
+                          {pkg.description && (
+                            <p style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginBottom: '1rem' }}>
+                              {pkg.description}
+                            </p>
+                          )}
+                          {pkg.features && Array.isArray(pkg.features) && pkg.features.length > 0 && (
+                            <ul className="package-features">
+                              {pkg.features.map((feature: string, index: number) => (
+                                <li key={index}>{feature}</li>
+                              ))}
+                            </ul>
+                          )}
+                          <Link href="#contact" className="package-button">Get Quote</Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
             
             <div className="service-card">
