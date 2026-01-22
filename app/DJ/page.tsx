@@ -62,7 +62,7 @@ export default function DJPortal() {
           marginBottom: '2rem'
         }}>
           <Link
-            href="/admin"
+            href="/dj-dashboard"
             style={{
               display: 'block',
               padding: '1rem 2rem',
@@ -77,6 +77,24 @@ export default function DJPortal() {
             }}
           >
             DJ Dashboard Login
+          </Link>
+          
+          <Link
+            href="/admin"
+            style={{
+              display: 'block',
+              padding: '1rem 2rem',
+              background: '#4CAF50',
+              color: 'white',
+              borderRadius: '8px',
+              textDecoration: 'none',
+              fontWeight: 'bold',
+              fontSize: '1.1rem',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 15px rgba(76, 175, 80, 0.3)'
+            }}
+          >
+            Admin Dashboard Login
           </Link>
 
           <Link
@@ -121,6 +139,7 @@ export default function DJPortal() {
             lineHeight: '2'
           }}>
             <li>📅 View Upcoming Events</li>
+            <li>⭐ View Client Reviews</li>
             <li>💰 Track Your Earnings</li>
             <li>🎵 Manage Music Library</li>
             <li>📊 Performance Analytics</li>
