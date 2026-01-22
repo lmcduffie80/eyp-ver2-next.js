@@ -210,3 +210,24 @@ export default async function sql(queryParts, ...values) {
     console.error('Database connection error:', errorMsg);
     throw new Error(errorMsg);
 }
+
+/**
+ * Get a database client connection
+ * Returns a client from the pool that can be used for queries
+ */
+export async function getConnection() {
+    if (useVercelPostgres) {
+        const pool = await getPgPool();
+        return pool.connect();
+    }
+    
+    if (useAWSSigner) {
+        const pool = await getAWSPool();
+        if (!pool) {
+            throw new Error("Failed to create AWS RDS connection pool");
+        }
+        return pool.connect();
+    }
+    
+    throw new Error("No database connection configured");
+}
