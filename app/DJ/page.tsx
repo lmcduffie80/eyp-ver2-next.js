@@ -1,167 +1,530 @@
 'use client';
 
+import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 export default function DJPortal() {
+  const router = useRouter();
+  const [isSignupMode, setIsSignupMode] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Login form state
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Signup form state
+  const [signupUsername, setSignupUsername] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const clearMessages = () => {
+    setErrorMessage('');
+    setSuccessMessage('');
+  };
+
+  const toggleMode = () => {
+    setIsSignupMode(!isSignupMode);
+    clearMessages();
+  };
+
+  const handleLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    clearMessages();
+
+    if (!loginUsername || !loginPassword) {
+      setErrorMessage('Please enter both username and password.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // First try localStorage for development
+      const existingUsers = JSON.parse(localStorage.getItem('dj_users') || '[]');
+      const user = existingUsers.find(
+        (u: any) => (u.username === loginUsername || u.email === loginUsername) && u.password === loginPassword
+      );
+
+      if (user) {
+        // Set authentication data (localStorage fallback for development)
+        const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+        const tokenExpiry = Date.now() + SESSION_TIMEOUT;
+        
+        localStorage.setItem('dj_token', 'dev_token_' + Date.now());
+        localStorage.setItem('dj_user', user.username);
+        localStorage.setItem('dj_token_expiry', tokenExpiry.toString());
+        localStorage.setItem('dj_last_activity', Date.now().toString());
+        
+        router.push('/dj-dashboard');
+        return;
+      }
+
+      // Try API call if localStorage fails
+      const response = await fetch('/api/dj-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          username: loginUsername, 
+          password: loginPassword 
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Set authentication data
+        const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+        const tokenExpiry = Date.now() + SESSION_TIMEOUT;
+        
+        localStorage.setItem('dj_token', data.token);
+        localStorage.setItem('dj_user', data.user);
+        localStorage.setItem('dj_token_expiry', tokenExpiry.toString());
+        localStorage.setItem('dj_last_activity', Date.now().toString());
+        
+        router.push('/dj-dashboard');
+      } else {
+        setErrorMessage(data.message || 'Invalid username or password.');
+      }
+    } catch {
+      setErrorMessage('Invalid username or password.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignup = async (e: FormEvent) => {
+    e.preventDefault();
+    clearMessages();
+
+    // Validation
+    if (!signupUsername || !signupEmail || !signupPassword || !confirmPassword) {
+      setErrorMessage('Please fill in all fields.');
+      return;
+    }
+
+    if (signupUsername.length < 3) {
+      setErrorMessage('Username must be at least 3 characters long.');
+      return;
+    }
+
+    if (signupPassword.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long.');
+      return;
+    }
+
+    if (signupPassword !== confirmPassword) {
+      setErrorMessage('Passwords do not match.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Check if username or email already exists
+      const existingUsers = JSON.parse(localStorage.getItem('dj_users') || '[]');
+      const userExists = existingUsers.find(
+        (u: any) => u.username === signupUsername || u.email === signupEmail
+      );
+
+      if (userExists) {
+        setErrorMessage('Username or email already exists.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Create new user (localStorage for development)
+      const newUser = {
+        username: signupUsername,
+        email: signupEmail,
+        password: signupPassword,
+        createdAt: new Date().toISOString()
+      };
+
+      existingUsers.push(newUser);
+      localStorage.setItem('dj_users', JSON.stringify(existingUsers));
+
+      // Show success message and switch to login
+      setSuccessMessage('Account created successfully! Please sign in.');
+      
+      // Clear signup form
+      setSignupUsername('');
+      setSignupEmail('');
+      setSignupPassword('');
+      setConfirmPassword('');
+
+      // Switch to login mode after 2 seconds
+      setTimeout(() => {
+        setIsSignupMode(false);
+        clearMessages();
+      }, 2000);
+    } catch {
+      setErrorMessage('Failed to create account. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '2rem'
     }}>
       <div style={{
-        maxWidth: '600px',
-        width: '100%',
         background: 'white',
-        borderRadius: '16px',
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+        borderRadius: '15px',
+        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
         padding: '3rem',
-        textAlign: 'center'
+        width: '100%',
+        maxWidth: '450px'
       }}>
-        {/* Logo */}
-        <div style={{ marginBottom: '2rem' }}>
-          <Image
-            src="/EYP Logo_New.png"
-            alt="EYP Logo"
-            width={150}
-            height={45}
-            style={{ height: 'auto', width: 'auto', maxWidth: '150px' }}
-            priority
-          />
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ marginBottom: '1rem' }}>
+            <Image
+              src="/EYP Logo_New.png"
+              alt="Externally Yours Productions, LLC"
+              width={300}
+              height={80}
+              style={{ height: 'auto', width: 'auto', maxWidth: '300px' }}
+              priority
+            />
+          </div>
+          <h1 style={{
+            color: '#1a1a1a',
+            fontSize: '2rem',
+            marginBottom: '0.5rem',
+            fontWeight: 'bold'
+          }}>
+            DJ Portal
+          </h1>
+          <p style={{ color: '#666', fontSize: '0.9rem' }}>
+            {isSignupMode ? 'Create your DJ portal account' : 'Sign in to access your calendar and bookings'}
+          </p>
         </div>
 
-        {/* Title */}
-        <h1 style={{
-          fontSize: '2.5rem',
-          fontWeight: 'bold',
-          color: '#1a1a1a',
-          marginBottom: '1rem'
-        }}>
-          DJ Portal
-        </h1>
+        {/* Error Message */}
+        {errorMessage && (
+          <div style={{
+            background: '#fee',
+            color: '#dc3545',
+            padding: '0.75rem',
+            borderRadius: '8px',
+            marginBottom: '1rem',
+            border: '1px solid #dc3545',
+            fontSize: '0.9rem'
+          }}>
+            {errorMessage}
+          </div>
+        )}
 
-        {/* Subtitle */}
-        <p style={{
-          fontSize: '1.1rem',
-          color: '#666',
-          marginBottom: '2.5rem',
-          lineHeight: '1.6'
-        }}>
-          Welcome to the Externally Yours Productions DJ Portal. Access your dashboard, manage bookings, and view your schedule.
-        </p>
+        {/* Success Message */}
+        {successMessage && (
+          <div style={{
+            background: '#efe',
+            color: '#28a745',
+            padding: '0.75rem',
+            borderRadius: '8px',
+            marginBottom: '1rem',
+            border: '1px solid #28a745',
+            fontSize: '0.9rem'
+          }}>
+            {successMessage}
+          </div>
+        )}
 
-        {/* Action Buttons */}
+        {/* Login Form */}
+        {!isSignupMode && (
+          <form onSubmit={handleLogin}>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                color: '#333',
+                fontWeight: '500'
+              }}>
+                Username or Email
+              </label>
+              <input
+                type="text"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                required
+                autoComplete="username"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #e0e0e0',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  transition: 'border-color 0.3s ease',
+                  outline: 'none'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
+                onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+              />
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                color: '#333',
+                fontWeight: '500'
+              }}>
+                Password
+              </label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #e0e0e0',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  transition: 'border-color 0.3s ease',
+                  outline: 'none'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
+                onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                background: isLoading ? '#ccc' : '#ff6b35',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '1.1rem',
+                fontWeight: 'bold',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {isLoading ? 'Signing In...' : 'Sign In'}
+            </button>
+
+            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+              <Link
+                href="/dj-request-reset"
+                style={{
+                  color: '#666',
+                  textDecoration: 'none',
+                  fontSize: '0.9rem'
+                }}
+              >
+                Forgot Password?
+              </Link>
+            </div>
+          </form>
+        )}
+
+        {/* Signup Form */}
+        {isSignupMode && (
+          <form onSubmit={handleSignup}>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                color: '#333',
+                fontWeight: '500'
+              }}>
+                Username
+              </label>
+              <input
+                type="text"
+                value={signupUsername}
+                onChange={(e) => setSignupUsername(e.target.value)}
+                required
+                minLength={3}
+                autoComplete="username"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #e0e0e0',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  transition: 'border-color 0.3s ease',
+                  outline: 'none'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
+                onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+              />
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                color: '#333',
+                fontWeight: '500'
+              }}>
+                Email
+              </label>
+              <input
+                type="email"
+                value={signupEmail}
+                onChange={(e) => setSignupEmail(e.target.value)}
+                required
+                autoComplete="email"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #e0e0e0',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  transition: 'border-color 0.3s ease',
+                  outline: 'none'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
+                onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+              />
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                color: '#333',
+                fontWeight: '500'
+              }}>
+                Password
+              </label>
+              <input
+                type="password"
+                value={signupPassword}
+                onChange={(e) => setSignupPassword(e.target.value)}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #e0e0e0',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  transition: 'border-color 0.3s ease',
+                  outline: 'none'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
+                onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+              />
+              <small style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.5rem', display: 'block' }}>
+                Password must be at least 8 characters long
+              </small>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                color: '#333',
+                fontWeight: '500'
+              }}>
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #e0e0e0',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  transition: 'border-color 0.3s ease',
+                  outline: 'none'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
+                onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                background: isLoading ? '#ccc' : '#ff6b35',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '1.1rem',
+                fontWeight: 'bold',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {isLoading ? 'Creating Account...' : 'Create Account'}
+            </button>
+          </form>
+        )}
+
+        {/* Toggle Mode */}
         <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-          marginBottom: '2rem'
+          textAlign: 'center',
+          marginTop: '1.5rem',
+          paddingTop: '1.5rem',
+          borderTop: '1px solid #e0e0e0'
         }}>
-          <Link
-            href="/dj-dashboard"
+          <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+            {isSignupMode ? 'Already have an account?' : "Don't have an account?"}
+          </p>
+          <button
+            onClick={toggleMode}
             style={{
-              display: 'block',
-              padding: '1rem 2rem',
-              background: '#ff6b35',
-              color: 'white',
-              borderRadius: '8px',
+              background: 'none',
+              border: 'none',
+              color: '#ff6b35',
               textDecoration: 'none',
               fontWeight: 'bold',
-              fontSize: '1.1rem',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 4px 15px rgba(255, 107, 53, 0.3)'
+              cursor: 'pointer',
+              fontSize: '0.9rem'
             }}
           >
-            DJ Dashboard Login
-          </Link>
-          
-          <Link
-            href="/admin"
-            style={{
-              display: 'block',
-              padding: '1rem 2rem',
-              background: '#4CAF50',
-              color: 'white',
-              borderRadius: '8px',
-              textDecoration: 'none',
-              fontWeight: 'bold',
-              fontSize: '1.1rem',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 4px 15px rgba(76, 175, 80, 0.3)'
-            }}
-          >
-            Admin Dashboard Login
-          </Link>
+            {isSignupMode ? 'Sign In' : 'Create Account'}
+          </button>
+        </div>
 
+        {/* Back Link */}
+        <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
           <Link
             href="/"
             style={{
-              display: 'block',
-              padding: '1rem 2rem',
-              background: 'transparent',
-              color: '#1a1a1a',
-              border: '2px solid #e0e0e0',
-              borderRadius: '8px',
+              color: '#666',
               textDecoration: 'none',
-              fontWeight: '500',
-              fontSize: '1rem',
-              transition: 'all 0.3s ease'
+              fontSize: '0.9rem'
             }}
           >
-            Back to Home
+            ← Back to Website
           </Link>
-        </div>
-
-        {/* Info Section */}
-        <div style={{
-          borderTop: '1px solid #e0e0e0',
-          paddingTop: '2rem',
-          marginTop: '2rem'
-        }}>
-          <h3 style={{
-            fontSize: '1.2rem',
-            fontWeight: '600',
-            color: '#1a1a1a',
-            marginBottom: '1rem'
-          }}>
-            DJ Resources
-          </h3>
-          <ul style={{
-            listStyle: 'none',
-            padding: 0,
-            margin: 0,
-            fontSize: '0.95rem',
-            color: '#666',
-            lineHeight: '2'
-          }}>
-            <li>📅 View Upcoming Events</li>
-            <li>⭐ View Client Reviews</li>
-            <li>💰 Track Your Earnings</li>
-            <li>🎵 Manage Music Library</li>
-            <li>📊 Performance Analytics</li>
-          </ul>
-        </div>
-
-        {/* Footer */}
-        <div style={{
-          marginTop: '2rem',
-          paddingTop: '1.5rem',
-          borderTop: '1px solid #e0e0e0',
-          fontSize: '0.85rem',
-          color: '#999'
-        }}>
-          <p>Need help? Contact us at{' '}
-            <a
-              href="mailto:lee@externallyyoursproductions.com"
-              style={{ color: '#ff6b35', textDecoration: 'none' }}
-            >
-              lee@externallyyoursproductions.com
-            </a>
-          </p>
         </div>
       </div>
     </div>
