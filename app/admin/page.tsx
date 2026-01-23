@@ -48,6 +48,14 @@ export default function AdminDashboard() {
   const [newProjectDescription, setNewProjectDescription] = useState('');
   const [showProjectForm, setShowProjectForm] = useState(false);
   
+  // Helper to format date as YYYY-MM-DD in local timezone (avoids UTC conversion issues)
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
   // Videography state
   const [videoProjects, setVideoProjects] = useState<any[]>([]);
   const [selectedVideoProject, setSelectedVideoProject] = useState<any | null>(null);
@@ -275,25 +283,27 @@ export default function AdminDashboard() {
   };
 
   const getBookingsForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateLocal(date);
     const filtered = calendarDJFilter 
       ? bookings.filter(b => b.djUser === calendarDJFilter)
       : bookings;
     
     return filtered.filter(b => {
-      const bookingDate = new Date(b.date).toISOString().split('T')[0];
-      return bookingDate === dateStr;
+      // Extract date portion from booking.date string (might be YYYY-MM-DD or ISO format)
+      const bookingDateStr = b.date.split('T')[0];
+      return bookingDateStr === dateStr;
     });
   };
 
   const getBlockedDatesForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateLocal(date);
     const filtered = calendarDJFilter
       ? blockedDates.filter(bd => bd.djUser === calendarDJFilter)
       : blockedDates;
     
     return filtered.filter(bd => {
-      const blockedDateStr = new Date(bd.date).toISOString().split('T')[0];
+      // Extract date portion from blocked date string
+      const blockedDateStr = bd.date.split('T')[0];
       return blockedDateStr === dateStr;
     });
   };
