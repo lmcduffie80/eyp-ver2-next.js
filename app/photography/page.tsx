@@ -266,10 +266,9 @@ export default function Photography() {
                       src={project.cover_photo_url || project.photos[0]?.photo_url}
                       alt={project.project_name}
                       fill
-                      quality={100}
-                      unoptimized={true}
+                      quality={85}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       loading="lazy"
-                      decoding="async"
                     />
                     <div className="portfolio-overlay">
                       <h3>{project.project_name}</h3>
