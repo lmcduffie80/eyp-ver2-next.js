@@ -1,11 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCSVImport } from '../hooks/useCSVImport';
 
 // Force fresh deployment - Updated: 2026-01-23T00:00:00Z
 
 export default function AdminDashboard() {
+  // Authentication state
+  const [adminUsername, setAdminUsername] = useState('');
+  const [adminDisplayName, setAdminDisplayName] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const router = useRouter();
+  
   const [activeTab, setActiveTab] = useState('djs');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -133,6 +141,39 @@ export default function AdminDashboard() {
     if (!active) return <span style={{ opacity: 0.3, marginLeft: '0.25rem' }}>⇅</span>;
     return <span style={{ marginLeft: '0.25rem' }}>{direction === 'asc' ? '↑' : '↓'}</span>;
   };
+
+  // Authentication check - must be logged in to access admin dashboard
+  useEffect(() => {
+    const verifyAuth = async () => {
+      try {
+        // Check for admin session via API
+        const response = await fetch('/api/admin-verify');
+        const data = await response.json();
+        
+        if (data.authenticated) {
+          setIsAuthenticated(true);
+          setAdminUsername(data.user || '');
+          setAdminDisplayName(data.displayName || data.user || '');
+          
+          // Also store in localStorage for display purposes
+          localStorage.setItem('admin_user', data.user);
+          localStorage.setItem('admin_display_name', data.displayName);
+        } else {
+          // Not authenticated, redirect to login
+          console.log('Not authenticated, redirecting to login');
+          router.push('/admin-login');
+        }
+      } catch (error) {
+        console.error('Authentication check failed:', error);
+        // On error, redirect to login
+        router.push('/admin-login');
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+    
+    verifyAuth();
+  }, [router]);
 
   useEffect(() => {
     // Prevent body scroll when dashboard is open
@@ -750,9 +791,55 @@ export default function AdminDashboard() {
     }
   };
 
+  // Helper function to check image dimensions
+  const checkImageDimensions = (file: File): Promise<{width: number, height: number}> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve({ width: img.width, height: img.height });
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load image'));
+      };
+      img.src = url;
+    });
+  };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0 || !selectedProject) return;
+
+    // Validate each file before uploading
+    try {
+      for (const file of Array.from(files)) {
+        // File size validation (10MB max)
+        if (file.size > 10 * 1024 * 1024) {
+          alert(`${file.name} is too large. Maximum file size is 10MB.`);
+          return;
+        }
+
+        // File type validation
+        if (!file.type.startsWith('image/')) {
+          alert(`${file.name} is not a valid image file.`);
+          return;
+        }
+
+        // Check image dimensions
+        const dimensions = await checkImageDimensions(file);
+        if (dimensions.width < 1200 || dimensions.height < 800) {
+          if (!confirm(`${file.name} is ${dimensions.width}x${dimensions.height}. Recommended minimum is 1200x800px. Upload anyway?`)) {
+            return;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error validating images:', error);
+      alert('Failed to validate images. Please try again.');
+      return;
+    }
 
     setUploadingPhotos(true);
     setUploadProgress(0);
@@ -761,18 +848,38 @@ export default function AdminDashboard() {
 
     try {
       for (const file of Array.from(files)) {
-        // Create FormData for server upload
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('project_id', selectedProject.id.toString());
+        // Step 1: Process the image (compress and create thumbnail)
+        const processFormData = new FormData();
+        processFormData.append('file', file);
 
-        // Upload to server (which uploads to S3)
+        const processResponse = await fetch('/api/photography/process', {
+          method: 'POST',
+          body: processFormData
+        });
+
+        const processResult = await processResponse.json();
+
+        if (!processResult.success) {
+          console.error('Failed to process:', processResult.error);
+          alert(`Failed to process ${file.name}: ${processResult.error}`);
+          continue;
+        }
+
+        const { fullImage, thumbnail, metadata } = processResult;
+
+        // Step 2: Upload both versions to S3
+        const uploadFormData = new FormData();
+        uploadFormData.append('fullImage', fullImage);
+        uploadFormData.append('thumbnail', thumbnail);
+        uploadFormData.append('project_id', selectedProject.id.toString());
+        uploadFormData.append('filename', file.name);
+
         const uploadResponse = await fetch('/api/photography/upload', {
           method: 'POST',
-          body: formData
+          body: uploadFormData
         });
         
-        const { photoURL, success, error } = await uploadResponse.json();
+        const { photoURL, thumbnailURL, success, error } = await uploadResponse.json();
 
         if (!success) {
           console.error('Failed to upload:', error);
@@ -780,13 +887,14 @@ export default function AdminDashboard() {
           continue;
         }
 
-        // Save photo metadata to database
+        // Step 3: Save photo metadata to database
         await fetch('/api/photography/photos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             project_id: selectedProject.id,
             photo_url: photoURL,
+            thumbnail_url: thumbnailURL,
             filename: file.name
           })
         });
@@ -1451,6 +1559,40 @@ export default function AdminDashboard() {
       }
     }
   };
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        background: '#f8f8f8'
+      }}>
+        <div style={{
+          textAlign: 'center',
+          padding: '2rem'
+        }}>
+          <div style={{
+            width: '50px',
+            height: '50px',
+            border: '4px solid #e0e0e0',
+            borderTop: '4px solid #ff6b35',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 1rem'
+          }} />
+          <p style={{ color: '#666', fontSize: '1.1rem' }}>Verifying authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className={`dashboard-wrapper ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
@@ -3966,8 +4108,14 @@ export default function AdminDashboard() {
                           <p style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
                             {uploadingPhotos ? `Uploading... ${uploadProgress}%` : 'Click to upload or drag photos here'}
                           </p>
-                          <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>
+                          <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
                             Supports: JPG, PNG, GIF, WEBP • Max 10MB per file
+                          </p>
+                          <p style={{ color: 'var(--text-light)', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+                            <strong>Recommended:</strong> Minimum 1200x800px for best quality
+                          </p>
+                          <p style={{ color: '#4CAF50', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                            Images will be automatically optimized for web display
                           </p>
                         </label>
                         {uploadingPhotos && (
