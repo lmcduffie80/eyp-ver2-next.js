@@ -743,6 +743,7 @@ body.dashboard-page {
   flex: 1;
   overflow: hidden;
   height: 100vh;
+  position: relative;
 }
 
 /* Sidebar Navigation */
@@ -755,8 +756,10 @@ body.dashboard-page {
   flex-direction: column;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
   overflow-y: auto;
-  z-index: 100;
+  z-index: 10;
   transition: transform 0.3s ease;
+  flex-shrink: 0;
+  position: relative;
 }
 
 .sidebar-overlay {
@@ -901,6 +904,8 @@ body.dashboard-page {
   flex-direction: column;
   overflow: hidden;
   background: var(--bg-light);
+  min-width: 0;
+  position: relative;
 }
 
 /* Dashboard Header */
