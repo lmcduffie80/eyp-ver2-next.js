@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import Contact from '@/components/Contact';
@@ -13,6 +13,62 @@ export default function Photography() {
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxTitle, setLightboxTitle] = useState('');
+  const [dbProjects, setDbProjects] = useState<any[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
+  const [pricingPackages, setPricingPackages] = useState<any[]>([]);
+  const [loadingPricing, setLoadingPricing] = useState(true);
+
+  useEffect(() => {
+    fetchDatabaseProjects();
+    fetchPricingPackages();
+  }, []);
+
+  const fetchDatabaseProjects = async () => {
+    try {
+      setLoadingProjects(true);
+      const response = await fetch('/api/photography/projects');
+      if (response.ok) {
+        const result = await response.json();
+        const projectsData = result.data || [];
+        
+        // Fetch photos for each project
+        const projectsWithPhotos = await Promise.all(
+          projectsData.map(async (project: any) => {
+            const photosResponse = await fetch(`/api/photography/photos?project_id=${project.id}`);
+            if (photosResponse.ok) {
+              const photosResult = await photosResponse.json();
+              return {
+                ...project,
+                photos: photosResult.data || []
+              };
+            }
+            return { ...project, photos: [] };
+          })
+        );
+        
+        setDbProjects(projectsWithPhotos.filter(p => p.photos.length > 0));
+      }
+    } catch (error) {
+      console.error('Error fetching database projects:', error);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  const fetchPricingPackages = async () => {
+    try {
+      setLoadingPricing(true);
+      const response = await fetch('/api/pricing/packages?service_type=photography');
+      if (response.ok) {
+        const result = await response.json();
+        setPricingPackages(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching pricing packages:', error);
+    } finally {
+      setLoadingPricing(false);
+    }
+  };
 
   const openLightbox = (images: string[], index: number, title: string) => {
     setLightboxImages(images);
@@ -20,101 +76,6 @@ export default function Photography() {
     setLightboxTitle(title);
     setLightboxOpen(true);
   };
-  const galleries = [
-    {
-      id: 'grace-dillon-gallery',
-      title: 'Grace and Dillon Wedding',
-      images: [
-        '/Grace and Dillon Wedding/7L8A5365.jpg',
-        '/Grace and Dillon Wedding/7L8A5634.jpg',
-        '/Grace and Dillon Wedding/7L8A5712.jpg',
-        '/Grace and Dillon Wedding/IMG_2274.jpg',
-        '/Grace and Dillon Wedding/IMG_2400.jpg',
-        '/Grace and Dillon Wedding/IMG_2497 (1).jpg',
-        '/Grace and Dillon Wedding/IMG_2543.jpg',
-      ]
-    },
-    {
-      id: 'yazmine-josh-gallery',
-      title: 'Yazmine and Josh Wedding',
-      images: [
-        '/Yazmine and Josh Wedding/IMG_3957.jpg',
-        '/Yazmine and Josh Wedding/IMG_4058.jpg',
-        '/Yazmine and Josh Wedding/IMG_4085.jpg',
-        '/Yazmine and Josh Wedding/IMG_4116.jpg',
-        '/Yazmine and Josh Wedding/IMG_4133.jpg',
-        '/Yazmine and Josh Wedding/IMG_4205.jpg',
-      ]
-    },
-    {
-      id: 'prom-2025-gallery',
-      title: 'Prom 2025',
-      images: [
-        '/Prom 2025/7L8A9552.jpg',
-        '/Prom 2025/7L8A9613.jpg',
-      ]
-    },
-    {
-      id: 'amy-cody-gallery',
-      title: 'Amy and Cody Hardy Wedding',
-      images: [
-        '/Amy and Cody Hardy Wedding/E72A0917.jpg',
-        '/Amy and Cody Hardy Wedding/E72A0956.jpg',
-        '/Amy and Cody Hardy Wedding/E72A0984.jpg',
-      ]
-    },
-    {
-      id: 'melissa-jeremy-gallery',
-      title: 'Melissa and Jeremy Engagement Session',
-      images: [
-        '/Melissa and Jeremy Engagement Session/7L8A0570.jpg',
-        '/Melissa and Jeremy Engagement Session/7L8A0593.jpg',
-        '/Melissa and Jeremy Engagement Session/7L8A0595.jpg',
-        '/Melissa and Jeremy Engagement Session/7L8A0635.jpg',
-        '/Melissa and Jeremy Engagement Session/7L8A0659.jpg',
-        '/Melissa and Jeremy Engagement Session/7L8A0700.jpg',
-        '/Melissa and Jeremy Engagement Session/7L8A0772.jpg',
-        '/Melissa and Jeremy Engagement Session/7L8A0776.jpg',
-        '/Melissa and Jeremy Engagement Session/7L8A0781.jpg',
-        '/Melissa and Jeremy Engagement Session/7L8A0815.jpg',
-        '/Melissa and Jeremy Engagement Session/7L8A0861.jpg',
-        '/Melissa and Jeremy Engagement Session/IMG_4618.jpg',
-        '/Melissa and Jeremy Engagement Session/IMG_4635.jpg',
-      ]
-    },
-    {
-      id: 'photography-work-gallery',
-      title: 'Photography Work',
-      images: [
-        '/PhotographyWork/7L8A0690.jpg',
-        '/PhotographyWork/7L8A0744.jpg',
-        '/PhotographyWork/7L8A0759.jpg',
-        '/PhotographyWork/7L8A0812.jpg',
-        '/PhotographyWork/7L8A4546.jpg',
-        '/PhotographyWork/7L8A4662.jpg',
-        '/PhotographyWork/7L8A4726.jpg',
-        '/PhotographyWork/7L8A4891.jpg',
-        '/PhotographyWork/7L8A5016.jpg',
-        '/PhotographyWork/7L8A5072.jpg',
-        '/PhotographyWork/7L8A5365.jpg',
-        '/PhotographyWork/7L8A5393.jpg',
-        '/PhotographyWork/E72A0908.jpg',
-        '/PhotographyWork/E72A0909.jpg',
-        '/PhotographyWork/E72A0960.jpg',
-        '/PhotographyWork/E72A0970.jpg',
-        '/PhotographyWork/E72A0985.jpg',
-        '/PhotographyWork/E72A1141.jpg',
-        '/PhotographyWork/IMG_3991.jpg',
-        '/PhotographyWork/IMG_3998.jpg',
-        '/PhotographyWork/IMG_4005.jpg',
-        '/PhotographyWork/IMG_4043.jpg',
-        '/PhotographyWork/IMG_4110.jpg',
-        '/PhotographyWork/IMG_4114.jpg',
-        '/PhotographyWork/IMG_4116.jpg',
-        '/PhotographyWork/IMG_4675.jpg',
-      ]
-    }
-  ];
 
   return (
     <main>
@@ -226,46 +187,36 @@ export default function Photography() {
               <h3>Portrait Photography</h3>
               <p>Professional portrait sessions for individuals, families, and groups. We create stunning portraits that capture personality and emotion.</p>
               
-              <div className="packages-section">
-                <h3 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Portrait Photography Packages</h3>
-                <div className="packages-grid">
-                  <div className="package-card">
-                    <h4>All Inclusive Session</h4>
-                    <div className="package-price">$150</div>
-                    <ul className="package-features">
-                      <li>$150 Session Fee (federal mileage rate more than 100 mile round trip)</li>
-                      <li>All images deemed editable will be available via Online Gallery (20 images)</li>
-                      <li>Digitals are in given in high-resolution Print ready versions</li>
-                      <li>Other packages are available for purchase in gallery</li>
-                    </ul>
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
-                  
-                  <div className="package-card">
-                    <h4>Couples and Engagements</h4>
-                    <div className="package-price">$150</div>
-                    <ul className="package-features">
-                      <li>$150 Session Fee (federal mileage rate more than 100 mile round trip)</li>
-                      <li>All images deemed editable will be available via Online Gallery (30 images)</li>
-                      <li>Digital will be given in High Resolution Print ready versions</li>
-                      <li>Other packages are available for purchase in gallery</li>
-                    </ul>
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
-                  
-                  <div className="package-card">
-                    <h4>Family Portraits</h4>
-                    <div className="package-price">$150</div>
-                    <ul className="package-features">
-                      <li>$150 Session Fee (federal mileage rate more than 100 mile round trip)</li>
-                      <li>All images deemed editable will be available via Online Gallery (30 images)</li>
-                      <li>Digital will be given in High Resolution Print ready versions</li>
-                      <li>Other packages are available for purchase in gallery</li>
-                    </ul>
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
+              {pricingPackages.length > 0 && (
+                <div className="packages-section">
+                  <h3 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Photography Packages</h3>
+                  {loadingPricing ? (
+                    <div style={{ textAlign: 'center', padding: '2rem' }}>Loading packages...</div>
+                  ) : (
+                    <div className="packages-grid">
+                      {pricingPackages.map((pkg) => (
+                        <div key={pkg.id} className="package-card">
+                          <h4>{pkg.package_name}</h4>
+                          <div className="package-price">${parseFloat(pkg.price).toLocaleString()}</div>
+                          {pkg.description && (
+                            <p style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginBottom: '1rem' }}>
+                              {pkg.description}
+                            </p>
+                          )}
+                          {pkg.features && Array.isArray(pkg.features) && pkg.features.length > 0 && (
+                            <ul className="package-features">
+                              {pkg.features.map((feature: string, index: number) => (
+                                <li key={index}>{feature}</li>
+                              ))}
+                            </ul>
+                          )}
+                          <Link href="#contact" className="package-button">Get Quote</Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
             
             <div className="service-card">
@@ -287,55 +238,52 @@ export default function Photography() {
       <section id="portfolio" className="portfolio">
         <div className="container">
           <h2 className="section-title">Our Photography Work</h2>
-          <div className="portfolio-grid">
-            {galleries.map((gallery, galleryIndex) => (
-              <div
-                key={gallery.id}
-                className="portfolio-item"
-                onClick={() => openLightbox(gallery.images, 0, gallery.title)}
-                style={{ cursor: 'pointer' }}
-              >
-                <Image
-                  src={gallery.images[0]}
-                  alt={gallery.title}
-                  fill
-                  loading={galleryIndex === 0 ? "eager" : "lazy"}
-                  decoding="async"
-                />
-                <div className="portfolio-overlay">
-                  <h3>{gallery.title}</h3>
-                </div>
+          
+          {/* Database Projects - Featured Section */}
+          {!loadingProjects && dbProjects.length > 0 && (
+            <div style={{ marginBottom: '4rem' }}>
+              <h3 style={{ 
+                fontSize: '1.5rem', 
+                color: 'var(--primary-color)', 
+                marginBottom: '2rem',
+                textAlign: 'center'
+              }}>
+                Recent Projects
+              </h3>
+              <div className="portfolio-grid">
+                {dbProjects.map((project) => (
+                  <div
+                    key={project.id}
+                    className="portfolio-item"
+                    onClick={() => openLightbox(
+                      project.photos.map((p: any) => p.photo_url),
+                      0,
+                      project.project_name
+                    )}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <Image
+                      src={project.cover_photo_url || project.photos[0]?.photo_url}
+                      alt={project.project_name}
+                      fill
+                      quality={100}
+                      unoptimized={true}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <div className="portfolio-overlay">
+                      <h3>{project.project_name}</h3>
+                      <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', opacity: 0.9 }}>
+                        {project.photos.length} photos
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       </section>
-
-      {/* Gallery Sections */}
-      {galleries.map((gallery) => (
-        <section key={gallery.id} id={gallery.id} className="py-20" style={{ scrollMarginTop: '90px' }}>
-          <div className="container">
-            <h2 className="section-title">{gallery.title}</h2>
-            <div className="portfolio-grid">
-              {gallery.images.map((img, idx) => (
-                <div 
-                  key={idx} 
-                  className="portfolio-item"
-                  onClick={() => openLightbox(gallery.images, idx, gallery.title)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <Image
-                    src={img}
-                    alt={`${gallery.title} - Image ${idx + 1}`}
-                    fill
-                    loading={img.includes('IMG_4110') ? "eager" : "lazy"}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      ))}
 
       {/* Image Lightbox */}
       <ImageLightbox
