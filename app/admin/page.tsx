@@ -1612,7 +1612,7 @@ export default function AdminDashboard() {
             ☰
           </button>
           <div>
-            <h1>Welcome back, Admin</h1>
+            <h1>Welcome back, Admin <span style={{fontSize: '0.7em', color: '#10b981'}}>v2.0</span></h1>
             <p className="subtitle">Here's what's happening today.</p>
           </div>
           <div className="header-actions">
@@ -4792,6 +4792,9 @@ export default function AdminDashboard() {
       >
         <div id="toast-message" style={{ fontSize: '0.95rem', fontWeight: 500 }}></div>
       </div>
+      
+      {/* Build verification - Jan 23, 2026 */}
+      <div style={{display: 'none'}} data-build="2026-01-23-v2"></div>
     </div>
   );
 }
