@@ -19,22 +19,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid image' }, { status: 400 });
     }
 
-    // Process full-size image (max 2400px width, 90% quality)
+    // Process full-size image (max 3840px width, 95% quality, with sharpening)
     const fullImage = await sharp(buffer)
-      .resize(2400, null, { 
+      .resize(3840, null, { 
         withoutEnlargement: true,
-        fit: 'inside'
+        fit: 'inside',
+        kernel: 'lanczos3'  // Higher quality resampling
       })
-      .webp({ quality: 90 })
+      .sharpen({
+        sigma: 0.5,          // Mild sharpening
+        m1: 1.0,             // Sharpen threshold
+        m2: 0.2              // Linear sharpening amount
+      })
+      .webp({ 
+        quality: 95,         // Higher quality
+        effort: 6,           // More compression effort (0-6, higher = better quality)
+        smartSubsample: false // Better color accuracy
+      })
       .toBuffer();
 
-    // Generate thumbnail (400px width, 85% quality)
+    // Generate thumbnail (400px width, 90% quality)
     const thumbnail = await sharp(buffer)
       .resize(400, 400, { 
         fit: 'cover',
-        position: 'center'
+        position: 'center',
+        kernel: 'lanczos3'  // Higher quality resampling
       })
-      .webp({ quality: 85 })
+      .sharpen({
+        sigma: 0.3,          // Light sharpening for thumbnails
+        m1: 1.0,
+        m2: 0.15
+      })
+      .webp({ 
+        quality: 90,         // Increased quality for thumbnails
+        effort: 6
+      })
       .toBuffer();
 
     return NextResponse.json({
