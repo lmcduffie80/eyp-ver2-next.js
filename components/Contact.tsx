@@ -82,7 +82,7 @@ export default function Contact({ title = "Let's Work Together", description = "
       script.onload = () => {
         if (!mounted || !containerRef.current) return;
         
-        // Simple initialization
+        // Simple initialization with multiple checks
         setTimeout(() => {
           if (window._HB_ && typeof (window._HB_ as any).scan === 'function') {
             window._HB_.scan();
@@ -97,6 +97,26 @@ export default function Contact({ title = "Let's Work Together", description = "
               }
             }
           }, 2000);
+          
+          // Check again at 4 seconds (in case widget loads slowly)
+          setTimeout(() => {
+            if (containerRef.current) {
+              const hasWidget = containerRef.current.querySelector('iframe, form');
+              if (hasWidget) {
+                setHoneyBookLoaded(true);
+              }
+            }
+          }, 4000);
+          
+          // Final check at 6 seconds
+          setTimeout(() => {
+            if (containerRef.current) {
+              const hasWidget = containerRef.current.querySelector('iframe, form');
+              if (hasWidget) {
+                setHoneyBookLoaded(true);
+              }
+            }
+          }, 6000);
         }, 500);
       };
       
@@ -122,7 +142,7 @@ export default function Contact({ title = "Let's Work Together", description = "
       if (!honeyBookLoaded) {
         setShowFallback(true);
       }
-    }, 5000);
+    }, 10000); // Give HoneyBook 10 seconds to load
     
     return () => clearTimeout(timer);
   }, [honeyBookLoaded]);
