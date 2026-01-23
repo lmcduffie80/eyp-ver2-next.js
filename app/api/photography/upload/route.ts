@@ -5,13 +5,15 @@ export async function POST(request: NextRequest) {
   try {
     // Parse form data
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const fullImageBase64 = formData.get('fullImage') as string;
+    const thumbnailBase64 = formData.get('thumbnail') as string;
     const project_id = formData.get('project_id') as string;
+    const filename = formData.get('filename') as string;
     
-    if (!file || !project_id) {
+    if (!fullImageBase64 || !thumbnailBase64 || !project_id || !filename) {
       return NextResponse.json({ 
         success: false, 
-        error: 'File and project_id are required' 
+        error: 'Full image, thumbnail, project_id, and filename are required' 
       }, { status: 400 });
     }
     
@@ -25,12 +27,11 @@ export async function POST(request: NextRequest) {
     
     // Generate unique filename
     const timestamp = Date.now();
-    const safeFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const key = `photography/${project_id}/${timestamp}-${safeFilename}`;
+    const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_').replace(/\.[^.]+$/, '.webp');
     
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Convert base64 to buffers
+    const fullImageBuffer = Buffer.from(fullImageBase64, 'base64');
+    const thumbnailBuffer = Buffer.from(thumbnailBase64, 'base64');
     
     // Initialize S3 client
     const s3Client = new S3Client({
@@ -41,24 +42,39 @@ export async function POST(request: NextRequest) {
       }
     });
     
-    // Upload to S3
-    const command = new PutObjectCommand({
-      Bucket: process.env.AWS_S3_BUCKET,
-      Key: key,
-      Body: buffer,
-      ContentType: file.type,
-    });
-    
-    await s3Client.send(command);
-    
-    // Construct public URL
     const region = process.env.AWS_REGION || 'us-east-1';
-    const photoURL = `https://${process.env.AWS_S3_BUCKET}.s3.${region}.amazonaws.com/${key}`;
+    const bucket = process.env.AWS_S3_BUCKET;
+    
+    // Upload full-size image
+    const fullKey = `photography/${project_id}/${timestamp}-${safeFilename}`;
+    await s3Client.send(new PutObjectCommand({
+      Bucket: bucket,
+      Key: fullKey,
+      Body: fullImageBuffer,
+      ContentType: 'image/webp',
+      CacheControl: 'public, max-age=31536000, immutable'
+    }));
+    
+    // Upload thumbnail
+    const thumbKey = `photography/${project_id}/thumbs/${timestamp}-${safeFilename}`;
+    await s3Client.send(new PutObjectCommand({
+      Bucket: bucket,
+      Key: thumbKey,
+      Body: thumbnailBuffer,
+      ContentType: 'image/webp',
+      CacheControl: 'public, max-age=31536000, immutable'
+    }));
+    
+    // Construct public URLs
+    const photoURL = `https://${bucket}.s3.${region}.amazonaws.com/${fullKey}`;
+    const thumbnailURL = `https://${bucket}.s3.${region}.amazonaws.com/${thumbKey}`;
     
     return NextResponse.json({ 
       success: true,
       photoURL,
-      key
+      thumbnailURL,
+      fullKey,
+      thumbKey
     }, { status: 200 });
     
   } catch (error) {
