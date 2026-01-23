@@ -77,6 +77,14 @@ export default function DJDashboard() {
   // Selected booking for modal
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   
+  // Helper to format date as YYYY-MM-DD in local timezone (avoids UTC conversion issues)
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
   // Expanded notes tracking
   const [expandedNoteId, setExpandedNoteId] = useState<number | null>(null);
 
@@ -470,7 +478,7 @@ export default function DJDashboard() {
 
   const getBookingsForDate = (date: Date) => {
     try {
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDateLocal(date);
       return bookings.filter(b => b && b.date && b.date.startsWith(dateStr));
     } catch (error) {
       console.error('Error getting bookings for date:', date, error);
@@ -480,7 +488,7 @@ export default function DJDashboard() {
 
   const getBlockedDateForDate = (date: Date) => {
     try {
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDateLocal(date);
       // Only show approved blocked dates on calendar
       return blockedDates.find(bd => bd && bd.date && bd.date.startsWith(dateStr) && bd.status === 'approved');
     } catch (error) {
