@@ -4435,7 +4435,7 @@ export default function AdminDashboard() {
                     <input type="hidden" id="edit-original-username" value="" />
                     <input type="hidden" id="edit-original-usertype" value="" />
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
                       <div className="form-field">
                         <label>First Name *</label>
                         <input 
