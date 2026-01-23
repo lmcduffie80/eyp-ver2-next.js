@@ -748,6 +748,7 @@ body.dashboard-page {
 /* Sidebar Navigation */
 .sidebar {
   width: 260px;
+  height: 100vh;
   background: var(--primary-color);
   color: white;
   display: flex;
