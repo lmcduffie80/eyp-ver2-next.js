@@ -5,6 +5,8 @@ import HoneybookErrorHandler from "./HoneybookErrorHandler";
 import HoneybookLoader from "@/components/HoneybookLoader";
 import "./globals.css";
 
+// Force fresh build - Jan 23, 2026 02:00
+
 export const metadata: Metadata = {
   title: "Externally Yours Productions, LLC",
   description: "Professional video and film production services",
