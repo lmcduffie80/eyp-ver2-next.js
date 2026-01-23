@@ -1367,6 +1367,45 @@ body.dashboard-page {
   font-size: 0.9rem;
 }
 
+/* Action Buttons for Projects */
+.mark-complete-btn {
+  padding: 0.5rem 0.75rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.mark-complete-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.mark-cancelled-btn {
+  padding: 0.5rem 0.75rem;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.mark-cancelled-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
 .empty-state {
   text-align: center;
   padding: 3rem;
@@ -1473,6 +1512,13 @@ body.dashboard-page {
   .bookings-table th,
   .bookings-table td {
     padding: 0.5rem;
+  }
+
+  /* Mobile button styles */
+  .mark-complete-btn,
+  .mark-cancelled-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
   }
 
   /* Show hamburger menu on mobile */
