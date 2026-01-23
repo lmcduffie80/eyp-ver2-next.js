@@ -9,7 +9,8 @@ import parseDJName from '@/api-old/utils/parse-dj-name';
  * Processes all reviews without a dj_username and attempts to auto-assign
  * them based on DJ names mentioned in the comment text.
  */
-export async function POST(request: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+export async function POST(_request: NextRequest) {
   let client;
   
   try {
@@ -119,7 +120,8 @@ export async function POST(request: NextRequest) {
  * GET endpoint to check migration status
  * Returns count of reviews with/without dj_username
  */
-export async function GET(request: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+export async function GET(_request: NextRequest) {
   let client;
   
   try {
