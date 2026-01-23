@@ -1202,6 +1202,117 @@ body.dashboard-page {
   margin-bottom: 0; /* Override when inside flex container */
 }
 
+/* User Management Tabs */
+.user-management-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 0;
+}
+
+.user-management-tabs .tab {
+  padding: 0.875rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--text-light);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-management-tabs .tab:hover {
+  color: var(--primary-color);
+  background: #f8f8f8;
+}
+
+.user-management-tabs .tab.active {
+  color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
+  background: transparent;
+}
+
+/* Form Fields */
+.form-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 0.95rem;
+}
+
+.form-field input,
+.form-field select {
+  width: 100%;
+  padding: 0.875rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.form-field small {
+  margin-top: 0.375rem;
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+/* Table Controls */
+.table-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 300px;
+  padding: 0.875rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.filter-select {
+  padding: 0.875rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  min-width: 150px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
 /* DJ List */
 .dj-list {
   display: grid;
@@ -1858,6 +1969,25 @@ body.dashboard-page {
 
   .day-number {
     font-size: 0.9rem;
+  }
+
+  /* User Management mobile responsive styles */
+  .user-management-tabs {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .user-management-tabs .tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .table-controls {
+    flex-direction: column;
+  }
+
+  .search-input {
+    min-width: 100%;
   }
 }
 
