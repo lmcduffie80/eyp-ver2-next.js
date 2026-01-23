@@ -1,10 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import sgMail from '@sendgrid/mail';
-
-// Initialize SendGrid with API key
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,39 +8,43 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!name || !email || !message || !service) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Name, email, service, and message are required'
-        },
+        { success: false, error: 'Name, email, service, and message are required' },
         { status: 400 }
-      );
-    }
-
-    // Check if SendGrid is configured
-    if (!process.env.SENDGRID_API_KEY) {
-      console.error('SendGrid API key not configured');
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Email service not configured'
-        },
-        { status: 500 }
       );
     }
 
     // Prepare email content
     const emailHtml = `
-      <h2>New Contact Form Submission</h2>
-      <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
-      <p><strong>Service Type:</strong> ${service}</p>
-      <p><strong>Message:</strong></p>
-      <p>${message.replace(/\n/g, '<br>')}</p>
-      <hr>
-      <p style="font-size: 0.9em; color: #666;">
-        This message was sent from the Externally Yours Productions contact form.
-      </p>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #ff6b35; color: white; padding: 20px; text-align: center; }
+          .content { padding: 30px; background-color: #f9f9f9; }
+          .field { margin: 15px 0; }
+          .label { font-weight: bold; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>New Contact Form Submission</h1>
+          </div>
+          <div class="content">
+            <div class="field"><span class="label">Name:</span> ${name}</div>
+            <div class="field"><span class="label">Email:</span> ${email}</div>
+            <div class="field"><span class="label">Phone:</span> ${phone || 'Not provided'}</div>
+            <div class="field"><span class="label">Service Type:</span> ${service}</div>
+            <div class="field">
+              <span class="label">Message:</span>
+              <p>${message.replace(/\n/g, '<br>')}</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
     `;
 
     const emailText = `
@@ -59,29 +57,64 @@ Service Type: ${service}
 
 Message:
 ${message}
-
----
-This message was sent from the Externally Yours Productions contact form.
     `;
 
-    // Send email using SendGrid
-    const msg = {
-      to: 'lee@externallyyoursproductions.com',
-      from: 'noreply@externallyyoursproductions.com', // Must be a verified sender in SendGrid
-      replyTo: email,
-      subject: `Contact Form: ${service} - ${name}`,
-      text: emailText,
-      html: emailHtml,
-    };
+    // Try Gmail SMTP first (using existing configuration)
+    if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+      const nodemailer = (await import('nodemailer')).default;
+      
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_APP_PASSWORD
+        }
+      });
 
-    await sgMail.send(msg);
+      const mailOptions = {
+        from: process.env.EMAIL_FROM || process.env.GMAIL_USER,
+        to: 'lee@externallyyoursproductions.com',
+        replyTo: email,
+        subject: `Contact Form: ${service} - ${name}`,
+        text: emailText,
+        html: emailHtml
+      };
 
+      await transporter.sendMail(mailOptions);
+      
+      return NextResponse.json(
+        { success: true, message: 'Message sent successfully' },
+        { status: 200 }
+      );
+    }
+
+    // Fallback to SendGrid if configured
+    if (process.env.SENDGRID_API_KEY) {
+      const sgMail = (await import('@sendgrid/mail')).default;
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+      const msg = {
+        to: 'lee@externallyyoursproductions.com',
+        from: process.env.EMAIL_FROM || 'noreply@externallyyoursproductions.com',
+        replyTo: email,
+        subject: `Contact Form: ${service} - ${name}`,
+        text: emailText,
+        html: emailHtml,
+      };
+
+      await sgMail.send(msg);
+      
+      return NextResponse.json(
+        { success: true, message: 'Message sent successfully' },
+        { status: 200 }
+      );
+    }
+
+    // No email service configured
+    console.error('No email service configured');
     return NextResponse.json(
-      {
-        success: true,
-        message: 'Message sent successfully'
-      },
-      { status: 200 }
+      { success: false, error: 'Email service not configured' },
+      { status: 500 }
     );
 
   } catch (error) {
