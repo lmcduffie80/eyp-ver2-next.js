@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import Contact from '@/components/Contact';
@@ -5,6 +8,28 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 export default function DJEntertainment() {
+  const [pricingPackages, setPricingPackages] = useState<any[]>([]);
+  const [loadingPricing, setLoadingPricing] = useState(true);
+
+  useEffect(() => {
+    fetchPricingPackages();
+  }, []);
+
+  const fetchPricingPackages = async () => {
+    try {
+      setLoadingPricing(true);
+      const response = await fetch('/api/pricing/packages?service_type=dj');
+      if (response.ok) {
+        const result = await response.json();
+        setPricingPackages(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching pricing packages:', error);
+    } finally {
+      setLoadingPricing(false);
+    }
+  };
+
   return (
     <main>
       <Navigation />
@@ -55,84 +80,6 @@ export default function DJEntertainment() {
               <div className="service-icon">💍</div>
               <h3>Wedding DJ Services</h3>
               <p>Professional wedding DJ services that keep your reception celebration going with the perfect mix of music for all ages and tastes.</p>
-              <div className="packages-section">
-                <h3 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Wedding DJ Packages</h3>
-                <div className="packages-grid">
-                  <div className="package-card">
-                    <h4>Ceremony Package (Only)</h4>
-                    <div className="package-price">$750.00</div>
-                    <ul className="package-features">
-                      <li>2 hours of coverage</li>
-                      <li>Two speakers</li>
-                      <li>Sound board</li>
-                      <li>Wedding ceremony playlist</li>
-                      <li>Sound system and microphone for officiant/minister</li>
-                      <li>DJ setup and pack-out services</li>
-                    </ul>
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
-                  
-                  <div className="package-card">
-                    <h4>Ceremony and Reception Package</h4>
-                    <div className="package-price">$1,200.00</div>
-                    <ul className="package-features">
-                      <li>8 hours of coverage</li>
-                      <li>DJ setup and breakdown</li>
-                      <li>Ceremony top boxes</li>
-                      <li>Two subs</li>
-                      <li>Two top boxes for main DJ setup</li>
-                      <li>Sound and microphone for officiant/minister</li>
-                      <li>Announcements for Bridal Party Entrance</li>
-                      <li>First Dances announcements</li>
-                    </ul>
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
-                  
-                  <div className="package-card">
-                    <h4>Ceremony, Reception, and Lights Package</h4>
-                    <div className="package-price">$1,400.00</div>
-                    <ul className="package-features">
-                      <li>8 hours of coverage</li>
-                      <li>DJ setup and breakdown</li>
-                      <li>Ceremony top boxes</li>
-                      <li>Two subs</li>
-                      <li>Two top boxes for main DJ setup</li>
-                      <li>Sound and microphone for officiant/minister</li>
-                      <li>Announcements for Bridal Party Entrance</li>
-                      <li>First Dances announcements</li>
-                      <li>Full production lighting for dance floor</li>
-                    </ul>
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
-                  
-                  <div className="package-card">
-                    <h4>Reception Package (without lights)</h4>
-                    <div className="package-price">$900.00</div>
-                    <ul className="package-features">
-                      <li>MC for all formalities</li>
-                      <li>Exceptional Reception Dinner playlist</li>
-                      <li>Selection of more than 2,000 songs</li>
-                      <li>Keep the dance floor full of energy</li>
-                    </ul>
-                    <p className="package-note">Plus $150 fuel surcharge beyond 100 miles round trip of Tifton, GA</p>
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
-                  
-                  <div className="package-card">
-                    <h4>Reception Package (with lights)</h4>
-                    <div className="package-price">$1,050.00</div>
-                    <ul className="package-features">
-                      <li>MC for all formalities</li>
-                      <li>Exceptional Reception Dinner playlist</li>
-                      <li>Selection of more than 2,000 songs</li>
-                      <li>Keep the dance floor full of energy</li>
-                      <li>Full production lighting</li>
-                    </ul>
-                    <p className="package-note">Plus $150 fuel surcharge beyond 100 miles round trip of Tifton, GA</p>
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
-                </div>
-              </div>
             </div>
             
             <div className="service-card">
@@ -145,53 +92,41 @@ export default function DJEntertainment() {
               <div className="service-icon">🏢</div>
               <h3>Corporate Events</h3>
               <p>Professional DJ services for corporate events, company parties, and business celebrations that need polished entertainment.</p>
-              <div className="packages-section">
-                <h3 style={{ marginTop: 0, color: 'var(--primary-color)' }}>Business Parties Package</h3>
-                <p style={{ color: 'var(--text-light)', marginBottom: '2rem' }}>When it&apos;s time to let loose and entertain your guests at corporate events, choose our Business Parties Package. This comprehensive package offers dynamic lights, a skilled DJ, and engaging entertainment for your entire audience.</p>
-                <div className="packages-grid">
-                  <div className="package-card">
-                    <h4>Business Parties Package - Weeknight</h4>
-                    <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '1rem', fontStyle: 'italic' }}>Sunday - Wednesday (Without Lights)</p>
-                    <div className="package-price">$850.00</div>
-                    <ul className="package-features">
-                      <li>Skilled DJ</li>
-                      <li>Engaging entertainment for your entire audience</li>
-                      <li>Professional sound system</li>
-                    </ul>
-                    <p className="package-note">A fuel surcharge of $100-$300 will be applied if beyond 100 miles from Tifton, GA (pending if overnight stay is required)</p>
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
-                  
-                  <div className="package-card">
-                    <h4>Business Parties Package - Weeknight</h4>
-                    <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '1rem', fontStyle: 'italic' }}>Sunday - Wednesday (With Lights)</p>
-                    <div className="package-price">$1,000.00</div>
-                    <ul className="package-features">
-                      <li>Skilled DJ</li>
-                      <li>Engaging entertainment for your entire audience</li>
-                      <li>Professional sound system</li>
-                      <li>Dynamic lighting</li>
-                    </ul>
-                    <p className="package-note">A fuel surcharge of $100-$300 will be applied if beyond 100 miles from Tifton, GA (pending if overnight stay is required)</p>
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
-                  
-                  <div className="package-card">
-                    <h4>Business Parties Package - Weekend</h4>
-                    <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '1rem', fontStyle: 'italic' }}>Thursday - Saturday</p>
-                    <div className="package-price">$1,400.00</div>
-                    <ul className="package-features">
-                      <li>Skilled DJ</li>
-                      <li>Engaging entertainment for your entire audience</li>
-                      <li>Professional sound system</li>
-                      <li>Full dance floor lighting included</li>
-                    </ul>
-                    <p className="package-note">A fuel surcharge of $100-$300 will be applied if beyond 100 miles from Tifton, GA (pending if overnight stay is required)</p>
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
+            </div>
+            
+            {/* Dynamic Pricing Packages Section */}
+            {pricingPackages.length > 0 && (
+              <div className="service-card" style={{ gridColumn: '1 / -1' }}>
+                <div className="packages-section">
+                  <h3 style={{ marginTop: 0, color: 'var(--primary-color)' }}>DJ Entertainment Packages</h3>
+                  {loadingPricing ? (
+                    <div style={{ textAlign: 'center', padding: '2rem' }}>Loading packages...</div>
+                  ) : (
+                    <div className="packages-grid">
+                      {pricingPackages.map((pkg) => (
+                        <div key={pkg.id} className="package-card">
+                          <h4>{pkg.package_name}</h4>
+                          <div className="package-price">${parseFloat(pkg.price).toLocaleString()}</div>
+                          {pkg.description && (
+                            <p style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginBottom: '1rem' }}>
+                              {pkg.description}
+                            </p>
+                          )}
+                          {pkg.features && Array.isArray(pkg.features) && pkg.features.length > 0 && (
+                            <ul className="package-features">
+                              {pkg.features.map((feature: string, index: number) => (
+                                <li key={index}>{feature}</li>
+                              ))}
+                            </ul>
+                          )}
+                          <Link href="#contact" className="package-button">Get Quote</Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            )}
             
             <div className="service-card">
               <div className="service-icon">🎵</div>

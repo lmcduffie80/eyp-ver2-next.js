@@ -85,7 +85,7 @@ function getReferrerSource(referrer) {
         }
         
         return 'Other';
-    } catch (e) {
+    } catch {
         return 'Other';
     }
 }

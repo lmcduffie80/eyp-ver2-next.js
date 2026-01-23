@@ -849,6 +849,19 @@ body.dashboard-page {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex: 1;
+  min-width: 0; /* Allow flex item to shrink */
+  overflow: hidden; /* Prevent text overflow */
+}
+
+.dashboard-header h1 span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-header h1 span:first-child {
+  flex-shrink: 0; /* Don't shrink "Admin Dashboard" */
 }
 
 .header-actions {
@@ -870,6 +883,97 @@ body.dashboard-page {
 
 .logout-btn:hover {
   background: #f0f0f0;
+}
+
+/* Mobile Hamburger Menu - hidden on desktop by default */
+.mobile-hamburger-menu {
+  position: relative;
+  display: none;
+}
+
+.hamburger-btn {
+  background: transparent;
+  border: none;
+  color: var(--secondary-color);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 5px;
+  transition: background 0.3s ease;
+}
+
+.hamburger-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hamburger-btn.active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.hamburger-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: var(--primary-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  min-width: 200px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.hamburger-menu-dropdown.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.hamburger-menu-item {
+  display: block;
+  padding: 1rem 1.5rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.hamburger-menu-item:last-child {
+  border-bottom: none;
+}
+
+.hamburger-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding-left: 2rem;
+}
+
+.hamburger-menu-item.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-weight: 500;
+  border-left: 3px solid white;
+}
+
+.hamburger-menu-item span {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.hamburger-menu-icon {
+  font-size: 1.2rem;
+  width: 20px;
+  text-align: center;
 }
 
 /* Main Container */
@@ -970,6 +1074,13 @@ body.dashboard-page {
 .section-card h2 {
   color: var(--primary-color);
   margin-bottom: 1.5rem;
+  margin-top: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.section-card > div > h2 {
+  margin-bottom: 0; /* Override when inside flex container */
 }
 
 /* DJ List */
@@ -1142,6 +1253,12 @@ body.dashboard-page {
   font-size: 0.9rem;
 }
 
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-light);
+}
+
 /* Badges */
 .badge {
   padding: 0.25rem 0.75rem;
@@ -1190,29 +1307,30 @@ body.dashboard-page {
 
 /* Dashboard Responsive */
 @media (max-width: 768px) {
-  .sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    transform: translateX(-100%);
-    z-index: 1000;
+  /* Hide sidebar completely on mobile - we use hamburger menu dropdown instead */
+  .dashboard-wrapper .sidebar {
+    display: none !important;
+  }
+  
+  /* Ensure main content takes full width on mobile */
+  .dashboard-wrapper .main-content {
+    width: 100% !important;
+    margin-left: 0 !important;
   }
 
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  .mobile-menu-btn {
-    display: block;
+  .sidebar-nav-link {
+    padding: 0.875rem 1rem;
+    font-size: 0.9rem;
   }
 
   .dashboard-container {
     padding: 1rem;
   }
 
-  .stats-grid {
-    grid-template-columns: 1fr;
+  .dashboard-header {
+    flex-direction: row;
+    gap: 1rem;
+    padding: 1rem;
   }
 
   .bookings-table {
@@ -1223,11 +1341,88 @@ body.dashboard-page {
   .bookings-table td {
     padding: 0.5rem;
   }
+
+  /* Show hamburger menu on mobile */
+  .mobile-hamburger-menu {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  /* Make sure hamburger button is visible and styled correctly */
+  .mobile-hamburger-menu .hamburger-btn {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: transparent !important;
+    border: none !important;
+    color: var(--secondary-color) !important;
+    font-size: 1.5rem !important;
+    width: 40px !important;
+    height: 40px !important;
+    padding: 0.5rem !important;
+    cursor: pointer !important;
+  }
+  
+  /* Hide old mobile menu button since we have the new hamburger menu dropdown */
+  .mobile-menu-btn {
+    display: none;
+  }
+
+  /* Adjust header actions for mobile */
+  .header-actions {
+    gap: 0.5rem;
+  }
+
+  .header-actions > div:first-child {
+    display: none; /* Hide admin name text on very small screens */
+  }
+
+  .logout-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-header h1 {
+    font-size: 1.2rem;
+  }
+
+  .dashboard-header h1 span:last-child {
+    display: none; /* Hide welcome message on very small screens */
+  }
 }
 
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
   }
 }
 

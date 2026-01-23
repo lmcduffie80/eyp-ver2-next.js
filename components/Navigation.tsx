@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [navBackground, setNavBackground] = useState('rgba(26, 26, 26, 0.95)');
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,6 +23,14 @@ export default function Navigation() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // If already on home page, scroll to top instead of navigating
+    if (pathname === '/') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <nav 
       style={{ 
@@ -28,20 +38,20 @@ export default function Navigation() {
       }}
     >
       <div className="container">
-        <Link href="/" className="logo">
+        <Link href="/" className="logo" onClick={handleHomeClick}>
           <Image
             src="/EYP Logo_New.png"
             alt="Externally Yours Productions, LLC"
             width={400}
             height={80}
-            style={{ height: '80px', width: 'auto', maxWidth: '400px' }}
+            style={{ height: '80px', width: 'auto', maxWidth: '400px', aspectRatio: 'auto' }}
             priority
             loading="eager"
             decoding="async"
           />
         </Link>
         <ul className={`hidden md:flex list-none gap-8 ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-          <li><Link href="/" className="text-white no-underline font-medium transition-colors hover:text-accent">Home</Link></li>
+          <li><Link href="/" className="text-white no-underline font-medium transition-colors hover:text-accent" onClick={handleHomeClick}>Home</Link></li>
           <li><Link href="/about" className="text-white no-underline font-medium transition-colors hover:text-accent">About</Link></li>
           <li><Link href="/photography" className="text-white no-underline font-medium transition-colors hover:text-accent">Photography</Link></li>
           <li><Link href="/videography" className="text-white no-underline font-medium transition-colors hover:text-accent">Videography</Link></li>
@@ -58,7 +68,16 @@ export default function Navigation() {
         {mobileMenuOpen && (
           <ul className="md:hidden flex flex-col fixed top-[70px] left-0 right-0 w-full bg-[rgba(26,26,26,0.98)] backdrop-blur-[10px] p-4 gap-0 shadow-[0_5px_15px_rgba(0,0,0,0.3)] z-[1001] max-h-[calc(100vh-70px)] overflow-y-auto animate-[slideDown_0.3s_ease]">
             <li className="w-full border-b border-[rgba(255,255,255,0.1)]">
-              <Link href="/" className="block p-4 w-full text-white" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+              <Link 
+                href="/" 
+                className="block p-4 w-full text-white" 
+                onClick={(e) => {
+                  setMobileMenuOpen(false);
+                  handleHomeClick(e);
+                }}
+              >
+                Home
+              </Link>
             </li>
             <li className="w-full border-b border-[rgba(255,255,255,0.1)]">
               <Link href="/about" className="block p-4 w-full text-white" onClick={() => setMobileMenuOpen(false)}>About</Link>

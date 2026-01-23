@@ -11,8 +11,35 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
+      {
+        protocol: 'https',
+        hostname: '*.s3.*.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.s3.amazonaws.com',
+      },
     ],
     unoptimized: true,
+  },
+  async redirects() {
+    return [
+      {
+        source: '/dj-portal',
+        destination: '/DJ',
+        permanent: true,
+      },
+      {
+        source: '/dj-portal/',
+        destination: '/DJ',
+        permanent: true,
+      },
+      {
+        source: '/dj-portal/index.html',
+        destination: '/DJ',
+        permanent: true,
+      },
+    ];
   },
 }
 

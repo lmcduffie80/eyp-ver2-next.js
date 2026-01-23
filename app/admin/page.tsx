@@ -3,16 +3,36 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import Contact from '@/components/Contact';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('djs');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [adminName, setAdminName] = useState('Admin');
+  const [welcomeMessage, setWelcomeMessage] = useState('Welcome');
 
   useEffect(() => {
-    // Prevent body scroll when dashboard is open
+    // Prevent body scroll when dashboard is open and set height
+    document.documentElement.style.height = '100%';
+    document.body.style.height = '100%';
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('dashboard-page');
+    document.documentElement.classList.add('dashboard-page');
+    
+    // Load admin name and display welcome message
+    if (typeof window !== 'undefined') {
+      const adminUser = localStorage.getItem('admin_user') || 'Admin';
+      setAdminName(adminUser);
+      const firstName = adminUser.split(' ')[0];
+      setWelcomeMessage(`Welcome, ${firstName}`);
+    }
+    
     return () => {
-      document.body.style.overflow = 'unset';
+      document.documentElement.style.height = '';
+      document.body.style.height = '';
+      document.body.style.overflow = '';
+      document.body.classList.remove('dashboard-page');
+      document.documentElement.classList.remove('dashboard-page');
     };
   }, []);
 
@@ -119,12 +139,12 @@ export default function AdminDashboard() {
           </button>
           <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <span>Admin Dashboard</span>
-            <span id="welcome-message" style={{ fontSize: '1rem', fontWeight: 400 }}>Welcome</span>
+            <span id="welcome-message" style={{ fontSize: '1rem', fontWeight: 400 }}>{welcomeMessage}</span>
           </h1>
           <div className="header-actions">
             <div style={{ textAlign: 'right', marginRight: '1rem' }}>
               <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Administrator</div>
-              <div id="admin-name" style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Admin</div>
+              <div id="admin-name" style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{adminName}</div>
             </div>
             {/* Mobile Hamburger Menu */}
             <div className="mobile-hamburger-menu">
@@ -275,7 +295,16 @@ export default function AdminDashboard() {
           {/* DJs Tab */}
           <div id="djs-tab" className={`tab-content ${activeTab === 'djs' ? 'active' : ''}`}>
             <div className="stats-grid">
-              <div className="stat-card">
+              <div 
+                className="stat-card" 
+                id="stat-card-all"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  // Filter by stat functionality will be added here
+                  console.log('Filter by all');
+                }}
+                title="Click to view all projects"
+              >
                 <div className="stat-card-header">
                   <h3>
                     <span className="stat-icon">📅</span>
@@ -285,7 +314,16 @@ export default function AdminDashboard() {
                 </div>
                 <div className="stat-value" id="total-projects">0</div>
               </div>
-              <div className="stat-card">
+              <div 
+                className="stat-card" 
+                id="stat-card-completed"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  // Filter by stat functionality will be added here
+                  console.log('Filter by completed');
+                }}
+                title="Click to filter completed projects"
+              >
                 <div className="stat-card-header">
                   <h3>
                     <span className="stat-icon">✅</span>
@@ -295,7 +333,16 @@ export default function AdminDashboard() {
                 </div>
                 <div className="stat-value" id="completed-projects">0</div>
               </div>
-              <div className="stat-card">
+              <div 
+                className="stat-card" 
+                id="stat-card-future-bookings"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  // Filter by stat functionality will be added here
+                  console.log('Filter by future bookings');
+                }}
+                title="Click to filter future bookings"
+              >
                 <div className="stat-card-header">
                   <h3>
                     <span className="stat-icon">⏳</span>
@@ -305,7 +352,16 @@ export default function AdminDashboard() {
                 </div>
                 <div className="stat-value" id="future-bookings-projects">0</div>
               </div>
-              <div className="stat-card">
+              <div 
+                className="stat-card" 
+                id="stat-card-revenue"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  // Filter by stat functionality will be added here
+                  console.log('Filter by revenue');
+                }}
+                title="Click to view revenue details"
+              >
                 <div className="stat-card-header">
                   <h3>
                     <span className="stat-icon">💰</span>
@@ -315,7 +371,16 @@ export default function AdminDashboard() {
                 </div>
                 <div className="stat-value" id="dj-revenue">$0.00</div>
               </div>
-              <div className="stat-card">
+              <div 
+                className="stat-card" 
+                id="stat-card-total-revenue"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  // Filter by stat functionality will be added here
+                  console.log('Filter by total revenue');
+                }}
+                title="Click to view total revenue details"
+              >
                 <div className="stat-card-header">
                   <h3>
                     <span className="stat-icon">💵</span>
@@ -325,7 +390,16 @@ export default function AdminDashboard() {
                 </div>
                 <div className="stat-value" id="total-revenue">$0.00</div>
               </div>
-              <div className="stat-card">
+              <div 
+                className="stat-card" 
+                id="stat-card-blocked-dates"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  // Filter by stat functionality will be added here
+                  console.log('Filter by blocked dates');
+                }}
+                title="Click to view all blocked dates"
+              >
                 <div className="stat-card-header">
                   <h3>
                     <span className="stat-icon">🚫</span>
@@ -335,7 +409,16 @@ export default function AdminDashboard() {
                 </div>
                 <div className="stat-value" id="blocked-dates-count">0</div>
               </div>
-              <div className="stat-card">
+              <div 
+                className="stat-card" 
+                id="stat-card-revenue-2025"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  // Filter by stat functionality will be added here
+                  console.log('Filter by revenue 2025');
+                }}
+                title="Click to view 2025 revenue details"
+              >
                 <div className="stat-card-header">
                   <h3>
                     <span className="stat-icon">💰</span>
@@ -345,7 +428,16 @@ export default function AdminDashboard() {
                 </div>
                 <div className="stat-value" id="revenue-2025">$0.00</div>
               </div>
-              <div className="stat-card">
+              <div 
+                className="stat-card" 
+                id="stat-card-revenue-2026"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  // Filter by stat functionality will be added here
+                  console.log('Filter by revenue 2026');
+                }}
+                title="Click to view 2026 revenue details"
+              >
                 <div className="stat-card-header">
                   <h3>
                     <span className="stat-icon">💰</span>
@@ -814,6 +906,14 @@ export default function AdminDashboard() {
               
             </div>
           </div>
+        </div>
+
+        {/* Contact Form Section */}
+        <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+          <Contact 
+            title="Contact Us"
+            description="Have questions or need support? Reach out to us."
+          />
         </div>
       </div>
 
