@@ -2,7 +2,6 @@ import React from 'react';
 import type { Metadata } from "next";
 import Providers from "./providers";
 import HoneybookErrorHandler from "./HoneybookErrorHandler";
-import HoneybookLoader from "@/components/HoneybookLoader";
 import "./globals.css";
 
 // Force fresh build - Jan 23, 2026 02:00

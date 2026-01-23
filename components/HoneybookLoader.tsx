@@ -42,7 +42,7 @@ export default function HoneybookLoader() {
           try {
             (window._HB_ as any).scan();
           } catch (e) {
-            // Ignore
+            /* Ignore scan errors */
           }
         }
         
@@ -51,7 +51,7 @@ export default function HoneybookLoader() {
           try {
             (window._HB_ as any).loadWidgets();
           } catch (e) {
-            // Ignore
+            /* Ignore widget load errors */
           }
         }
       }, 200);
@@ -91,10 +91,10 @@ export default function HoneybookLoader() {
           setTimeout(() => {
             window.dispatchEvent(new Event('resize'));
             if (typeof (window._HB_ as any).loadWidgets === 'function') {
-              try { (window._HB_ as any).loadWidgets(); } catch(e) {}
+              try { (window._HB_ as any).loadWidgets(); } catch(e) { /* Ignore widget load errors */ }
             }
             if (typeof (window._HB_ as any).scan === 'function') {
-              try { (window._HB_ as any).scan(); } catch(e) {}
+              try { (window._HB_ as any).scan(); } catch(e) { /* Ignore scan errors */ }
             }
           }, 100);
         }
