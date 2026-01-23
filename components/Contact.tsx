@@ -85,7 +85,7 @@ export default function Contact({ title = "Let's Work Together", description = "
                   try {
                     // Call method silently
                     (window._HB_ as any)[method]();
-                  } catch (e) {
+                  } catch {
                     // Ignore
                   }
                 }
@@ -187,7 +187,7 @@ export default function Contact({ title = "Let's Work Together", description = "
         const container = containerRef.current;
         
         // Watch for widget injection with MutationObserver
-        const observer = new MutationObserver((mutations) => {
+        const observer = new MutationObserver(() => {
           const hasWidget = container.querySelector('iframe, form, [id*="hb-widget"]');
           if (hasWidget) {
             observer.disconnect();
@@ -214,7 +214,7 @@ export default function Contact({ title = "Let's Work Together", description = "
                 if (typeof (window._HB_ as any)[method] === 'function') {
                   try {
                     (window._HB_ as any)[method]();
-                  } catch (e) {
+                  } catch {
                     // Ignore
                   }
                 }
@@ -310,7 +310,7 @@ export default function Contact({ title = "Let's Work Together", description = "
           if (typeof (window._HB_ as any).scan === 'function') {
             try {
               (window._HB_ as any).scan();
-            } catch (e) {
+            } catch {
               // Ignore
             }
           }
@@ -319,7 +319,7 @@ export default function Contact({ title = "Let's Work Together", description = "
           if (typeof (window._HB_ as any).loadWidgets === 'function') {
             try {
               (window._HB_ as any).loadWidgets();
-            } catch (e) {
+            } catch {
               // Ignore
             }
           }
@@ -330,7 +330,7 @@ export default function Contact({ title = "Let's Work Together", description = "
             if (typeof (window._HB_ as any)[method] === 'function') {
               try {
                 (window._HB_ as any)[method]();
-              } catch (e) {
+              } catch {
                 // Ignore
               }
             }
