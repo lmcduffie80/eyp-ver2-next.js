@@ -24,38 +24,50 @@ export default function AvailableDates() {
 
       if (blockedRes?.ok) {
         const data = await blockedRes.json();
-        if (data.success && data.data) {
-          data.data.forEach((bd: any) => {
-            if (bd.status === 'approved' && bd.date) {
-              const djUser = (bd.djUser || '').trim().toLowerCase();
-              const normalized = djUser.replace(/[:]+/g, '-').replace(/\s+/g, '-').replace(/-+/g, '-');
-              if (normalized === 'dj-admin' || normalized === 'admin') {
-                let dateStr = bd.date;
-                if (dateStr.includes('T')) {
-                  dateStr = dateStr.split('T')[0];
-                }
-                if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-                  blockedSet.add(dateStr);
-                }
+        // Handle both {success, data} format and direct array format
+        const blockedArray = Array.isArray(data) ? data : (data.success && data.data ? data.data : []);
+        
+        blockedArray.forEach((bd: any) => {
+          if (bd.status === 'approved' && bd.date) {
+            const djUser = (bd.djUser || '').trim().toLowerCase();
+            const normalized = djUser.replace(/[:]+/g, '-').replace(/\s+/g, '-').replace(/-+/g, '-');
+            if (normalized === 'dj-admin' || normalized === 'admin') {
+              let dateStr = bd.date;
+              if (dateStr.includes('T')) {
+                dateStr = dateStr.split('T')[0];
+              }
+              if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                blockedSet.add(dateStr);
+                console.log(`[AvailableDates] Added blocked date: ${dateStr}`);
               }
             }
-          });
-        }
+          }
+        });
+        
+        console.log(`[AvailableDates] Total blocked dates loaded: ${blockedSet.size}`);
       }
 
       if (bookingsRes?.ok) {
         const data = await bookingsRes.json();
-        if (data.success && data.data) {
-          data.data.forEach((booking: any) => {
-            if (booking.date) {
-              let dateStr = booking.date;
-              if (dateStr.includes('T')) {
-                dateStr = dateStr.split('T')[0];
-              }
-              bookingsSet.add(dateStr);
+        // Handle both {success, data} format and direct array format
+        const bookingsArray = Array.isArray(data) ? data : (data.success && data.data ? data.data : []);
+        
+        bookingsArray.forEach((booking: any) => {
+          if (booking.date) {
+            // Normalize date string
+            let dateStr = booking.date;
+            if (dateStr.includes('T')) {
+              dateStr = dateStr.split('T')[0];
             }
-          });
-        }
+            // Ensure YYYY-MM-DD format before adding
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+              bookingsSet.add(dateStr);
+              console.log(`[AvailableDates] Added booking date: ${dateStr}`);
+            }
+          }
+        });
+        
+        console.log(`[AvailableDates] Total booking dates loaded: ${bookingsSet.size}`);
       }
 
       setBlockedDates(blockedSet);
@@ -88,27 +100,80 @@ export default function AvailableDates() {
           Check our availability for upcoming bookings. Dates with scheduled events are shown as unavailable.
         </p>
         <div id="dates-calendar-container" className="dates-calendar-wrapper">
-          <div className="flex justify-between items-center mb-6 flex-wrap gap-2">
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            marginBottom: '1.5rem',
+            flexWrap: 'wrap',
+            gap: '1rem'
+          }}>
             <button
               onClick={() => generateCalendar(-1)}
-              className="px-4 py-2 bg-accent text-white border-none rounded-md cursor-pointer font-bold text-base transition-colors hover:bg-primary"
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: '#ff6b35',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '1rem',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#e55a2b'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#ff6b35'}
             >
               ← Previous
             </button>
-            <h3 className="m-0 text-2xl text-primary">{monthNames[calendarMonth]} {calendarYear}</h3>
+            <h3 style={{ 
+              margin: 0, 
+              fontSize: '1.75rem', 
+              fontWeight: 'bold',
+              color: '#1a1a1a'
+            }}>
+              {monthNames[calendarMonth]} {calendarYear}
+            </h3>
             <button
               onClick={() => generateCalendar(1)}
-              className="px-4 py-2 bg-accent text-white border-none rounded-md cursor-pointer font-bold text-base transition-colors hover:bg-primary"
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: '#ff6b35',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '1rem',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#e55a2b'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#ff6b35'}
             >
               Next →
             </button>
           </div>
-          <div className="text-center mb-4">
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
             <button
               onClick={() => generateCalendar(0)}
-              className="px-4 py-2 bg-text-light text-white border-none rounded-md cursor-pointer text-sm"
+              style={{
+                padding: '0.5rem 1.25rem',
+                background: '#2d2d2d',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.95rem',
+                fontWeight: '500',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#1a1a1a'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#2d2d2d'}
             >
-              Today
+              📅 Today
             </button>
           </div>
           <div className="grid grid-cols-7 gap-2 mb-4 text-sm">
@@ -130,18 +195,35 @@ export default function AvailableDates() {
               const isBlocked = blockedDates.has(dateStr);
               const hasBooking = bookingDates.has(dateStr);
               const isUnavailable = isBlocked || hasBooking;
-
-              let dayClass = 'p-2 border border-[#e0e0e0] rounded-md text-center min-h-[50px] flex flex-col items-center justify-center transition-all';
+              const isPast = dateObj < today;
               
-              if (isToday) {
-                dayClass += ' bg-accent text-white font-bold';
-              } else if (isUnavailable) {
-                dayClass += ' bg-primary border-black text-white font-bold opacity-70';
+              // Log unavailable dates for debugging
+              if (isUnavailable && !isPast) {
+                console.log(`[AvailableDates] Date ${dateStr} is unavailable - Blocked: ${isBlocked}, Booking: ${hasBooking}`);
               }
 
               return (
-                <div key={day} className={dayClass}>
+                <div 
+                  key={day} 
+                  className="p-2 rounded-md text-center min-h-[50px] flex flex-col items-center justify-center transition-all font-semibold"
+                  style={{
+                    background: isUnavailable ? '#ffebee' : '#e8f5e9',
+                    border: isUnavailable ? '2px solid #f44336' : '2px solid #4caf50',
+                    color: isUnavailable ? '#c62828' : '#2e7d32',
+                    opacity: isPast ? 0.5 : 1,
+                    cursor: isUnavailable ? 'not-allowed' : 'default',
+                    fontWeight: isToday ? 'bold' : 'semibold',
+                    boxShadow: isToday ? '0 0 0 3px rgba(255,107,53,0.4)' : 'none'
+                  }}
+                  title={isUnavailable ? 'Unavailable' : 'Available'}
+                >
                   {day}
+                  {isUnavailable && (
+                    <span style={{ fontSize: '0.65rem', marginTop: '2px' }}>🔴</span>
+                  )}
+                  {!isUnavailable && !isPast && (
+                    <span style={{ fontSize: '0.65rem', marginTop: '2px' }}>✅</span>
+                  )}
                 </div>
               );
             })}
@@ -151,12 +233,12 @@ export default function AvailableDates() {
           </div>
           <div className="flex justify-center gap-8 mt-8 text-sm flex-wrap">
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded border border-[#ccc] bg-primary border-black"></div>
-              <span>Unavailable (Events/Blocked Dates)</span>
+              <div className="w-5 h-5 rounded" style={{ background: '#e8f5e9', border: '2px solid #4caf50' }}></div>
+              <span>✅ Available</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded border border-[#ccc] bg-accent"></div>
-              <span>Today</span>
+              <div className="w-5 h-5 rounded" style={{ background: '#ffebee', border: '2px solid #f44336' }}></div>
+              <span>🔴 Unavailable (Booked/Blocked)</span>
             </div>
           </div>
         </div>

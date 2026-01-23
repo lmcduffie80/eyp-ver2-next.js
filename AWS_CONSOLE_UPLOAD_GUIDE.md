@@ -46,7 +46,7 @@ Click **"Add files"** or **"Add folder"** and select:
 - `photography.html`
 - `videography.html`
 - `dj-entertainment.html`
-- `dj-login.html`
+- `dj-login.html` (legacy - redirects to /DJ)
 - `dj-dashboard.html`
 - `admin-login.html`
 - `admin-dashboard.html`
@@ -67,7 +67,9 @@ Click **"Add files"** or **"Add folder"** and select:
 - `Tray and Kelly Stapleton Wedding/`
 - `Yazmine and Josh Wedding/`
 - `DJ Entertainment/`
-- `dj-portal/` (this folder contains `index.html`)
+- `dj-portal/` (legacy folder - redirects to /DJ)
+
+**Note:** DJ login is now handled by Next.js route at `/DJ` (app/DJ/page.tsx). Old URLs redirect for backward compatibility.
 
 **❌ DO NOT Upload:**
 - `.git/` folder
@@ -95,7 +97,7 @@ After upload completes:
    - ✅ All HTML files are present
    - ✅ All image folders are present
    - ✅ `EYP Logo_New.png` is present
-   - ✅ `dj-portal/index.html` is in the `dj-portal/` folder
+   - ✅ `dj-portal/index.html` is in the `dj-portal/` folder (legacy - now using /DJ route)
 
 ---
 

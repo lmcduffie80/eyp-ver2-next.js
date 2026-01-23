@@ -108,6 +108,8 @@ export default function ImageLightbox({ images, currentIndex, isOpen, onClose, g
             fill
             className="lightbox-image"
             priority
+            quality={100}
+            unoptimized={true}
             sizes="90vw"
           />
         </div>

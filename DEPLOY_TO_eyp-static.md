@@ -115,12 +115,14 @@ Click on **eyp-static**
 - ✅ photography.html
 - ✅ videography.html
 - ✅ dj-entertainment.html
-- ✅ dj-login.html
+- ✅ dj-login.html (legacy - redirects to /DJ)
 - ✅ dj-dashboard.html
 - ✅ admin-login.html
 - ✅ admin-dashboard.html
 - ✅ EYP Logo_New.png
-- ✅ dj-portal/index.html
+- ✅ dj-portal/index.html (legacy - redirects to /DJ)
+
+**Note:** DJ login is now handled by Next.js route at `/DJ` (app/DJ/page.tsx). Old URLs redirect for backward compatibility.
 
 **Folders to upload:**
 - ✅ AboutUs/

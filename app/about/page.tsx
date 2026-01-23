@@ -1,7 +1,6 @@
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import Contact from '@/components/Contact';
-import Link from 'next/link';
 import Image from 'next/image';
 
 export default function About() {

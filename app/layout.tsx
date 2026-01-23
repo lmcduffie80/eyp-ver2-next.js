@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Metadata } from "next";
 import Providers from "./providers";
 import HoneybookErrorHandler from "./HoneybookErrorHandler";
@@ -10,6 +11,13 @@ export const metadata: Metadata = {
   icons: {
     icon: "/EYP Logo_New.png",
   },
+};
+
+// Viewport configuration (Next.js 14+ API)
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
