@@ -2188,17 +2188,3 @@ body.dashboard-page {
   margin-right: auto;
 }
 
-/* Tablet: 2 columns */
-@media (max-width: 899px) {
-  .video-grid-fixed {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Mobile: 1 column */
-@media (max-width: 639px) {
-  .video-grid-fixed {
-    grid-template-columns: 1fr;
-  }
-}
-
