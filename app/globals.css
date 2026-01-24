@@ -2180,6 +2180,7 @@ body.dashboard-page {
 /* Video Grid - Fixed Columns */
 .video-grid-fixed {
   display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
   margin-top: 2rem;
   max-width: 1400px;
@@ -2187,15 +2188,8 @@ body.dashboard-page {
   margin-right: auto;
 }
 
-/* Desktop: 3 columns - lower threshold to 900px */
-@media (min-width: 900px) {
-  .video-grid-fixed {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
 /* Tablet: 2 columns */
-@media (min-width: 640px) and (max-width: 899px) {
+@media (max-width: 899px) {
   .video-grid-fixed {
     grid-template-columns: repeat(2, 1fr);
   }
