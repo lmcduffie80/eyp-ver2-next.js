@@ -74,7 +74,7 @@ export default function Videography() {
         className="hero"
         style={{
           height: '80vh',
-          background: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/PhotographyPagePhotos/IMG_4205.jpg') center/cover"
+          background: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/fahrad-norouzi-Dm_XEb4a-Bw-unsplash.jpg') center/cover"
         }}
       >
         <div className="hero-content">
