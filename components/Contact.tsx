@@ -23,6 +23,9 @@ export default function Contact({ title = "Let's Work Together", description = "
   useEffect(() => {
     let mounted = true;
     
+    // Reset loading state when pathname changes
+    setHoneyBookLoaded(false);
+    
     const loadScript = () => {
       if (!mounted || !containerRef.current) {
         return false;
