@@ -130,6 +130,43 @@ export default function Videography() {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      {pricingPackages.length > 0 && (
+        <section id="packages" style={{ padding: '5rem 0', background: '#f9f9f9' }}>
+          <div className="container">
+            <h2 className="section-title">Videography Packages</h2>
+            <p style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 3rem', color: 'var(--text-light)' }}>
+              Choose the perfect videography package for your needs. All packages include professional equipment and expert editing.
+            </p>
+            {loadingPricing ? (
+              <div style={{ textAlign: 'center', padding: '2rem' }}>Loading packages...</div>
+            ) : (
+              <div className="packages-grid">
+                {pricingPackages.map((pkg) => (
+                  <div key={pkg.id} className="package-card">
+                    <h4>{pkg.package_name}</h4>
+                    <div className="package-price">${parseFloat(pkg.price).toLocaleString()}</div>
+                    {pkg.description && (
+                      <p style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginBottom: '1rem' }}>
+                        {pkg.description}
+                      </p>
+                    )}
+                    {pkg.features && Array.isArray(pkg.features) && pkg.features.length > 0 && (
+                      <ul className="package-features">
+                        {pkg.features.map((feature: string, index: number) => (
+                          <li key={index}>{feature}</li>
+                        ))}
+                      </ul>
+                    )}
+                    <Link href="#contact" className="package-button">Get Quote</Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* My Work Section */}
       <section id="portfolio" className="portfolio">
         <div className="container">
@@ -198,69 +235,11 @@ export default function Videography() {
                     </div>
                   ))}
                 </div>
-                
-                <h3 style={{ 
-                  fontSize: '1.75rem', 
-                  marginTop: '2rem',
-                  marginBottom: '1rem',
-                  color: 'var(--text-dark)',
-                  textAlign: 'center'
-                }}>
-                  {project.project_name}
-                </h3>
-                
-                {project.description && (
-                  <p style={{ 
-                    textAlign: 'center', 
-                    maxWidth: '600px', 
-                    margin: '0 auto 1rem', 
-                    color: 'var(--text-light)' 
-                  }}>
-                    {project.description}
-                  </p>
-                )}
               </div>
             ))
           )}
         </div>
       </section>
-
-      {/* Pricing Section */}
-      {pricingPackages.length > 0 && (
-        <section id="packages" style={{ padding: '5rem 0', background: '#f9f9f9' }}>
-          <div className="container">
-            <h2 className="section-title">Videography Packages</h2>
-            <p style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 3rem', color: 'var(--text-light)' }}>
-              Choose the perfect videography package for your needs. All packages include professional equipment and expert editing.
-            </p>
-            {loadingPricing ? (
-              <div style={{ textAlign: 'center', padding: '2rem' }}>Loading packages...</div>
-            ) : (
-              <div className="packages-grid">
-                {pricingPackages.map((pkg) => (
-                  <div key={pkg.id} className="package-card">
-                    <h4>{pkg.package_name}</h4>
-                    <div className="package-price">${parseFloat(pkg.price).toLocaleString()}</div>
-                    {pkg.description && (
-                      <p style={{ fontSize: '0.9rem', color: 'var(--text-light)', marginBottom: '1rem' }}>
-                        {pkg.description}
-                      </p>
-                    )}
-                    {pkg.features && Array.isArray(pkg.features) && pkg.features.length > 0 && (
-                      <ul className="package-features">
-                        {pkg.features.map((feature: string, index: number) => (
-                          <li key={index}>{feature}</li>
-                        ))}
-                      </ul>
-                    )}
-                    <Link href="#contact" className="package-button">Get Quote</Link>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
 
       <Contact 
         title="Let's Create Your Video"
