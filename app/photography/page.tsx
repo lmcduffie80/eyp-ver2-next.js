@@ -269,6 +269,7 @@ export default function Photography() {
                       quality={85}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       loading="lazy"
+                      style={{ objectFit: 'cover' }}
                     />
                     <div className="portfolio-overlay">
                       <h3>{project.project_name}</h3>
