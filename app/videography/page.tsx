@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import Contact from '@/components/Contact';
+import Contact from '@/components/ContactWrapper';
 import Link from 'next/link';
 
 export default function Videography() {
