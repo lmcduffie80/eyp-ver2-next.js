@@ -38,51 +38,6 @@ export default function Contact({ title = "Let's Work Together", description = "
         return false;
       }
 
-      // Check if widget already loaded
-      if (container.querySelector('iframe, form')) {
-        setHoneyBookLoaded(true);
-        return true;
-      }
-      
-      // Check if script already loaded
-      const existingScript = document.querySelector('script[src*="placement-controller.min.js"]');
-      if (existingScript) {
-        // Script already loaded from previous page navigation
-        // Force HoneyBook to scan this NEW container multiple times
-        window._HB_ = window._HB_ || {};
-        window._HB_.pid = '64f2adb3998a8300079826c0';
-        
-        if (!container) {
-          console.warn('Container ref not available');
-          return true;
-        }
-        
-        // Aggressive multi-attempt scanning for client-side navigation
-        const scanAttempts = [0, 500, 1000, 2000, 3000, 4000, 6000];
-        
-        scanAttempts.forEach(delay => {
-          setTimeout(() => {
-            if (!mounted || !containerRef.current) return;
-            
-            const currentContainer = containerRef.current;
-            
-            // Check if widget already loaded
-            const hasWidget = currentContainer.querySelector('iframe, form');
-            if (hasWidget) {
-              setHoneyBookLoaded(true);
-              return;
-            }
-            
-            // Force scan
-            if (window._HB_ && typeof (window._HB_ as any).scan === 'function') {
-              window._HB_.scan();
-            }
-          }, delay);
-        });
-        
-        return true;
-      }
-
       // Initialize _HB_ before script loads
       window._HB_ = window._HB_ || {};
       window._HB_.pid = '64f2adb3998a8300079826c0';
@@ -153,6 +108,15 @@ export default function Contact({ title = "Let's Work Together", description = "
         if (oldWidget) {
           oldWidget.remove();
         }
+      }
+      // Remove the HoneyBook script entirely to force fresh reload
+      const honeyBookScript = document.querySelector('script[src*="placement-controller.min.js"]');
+      if (honeyBookScript) {
+        honeyBookScript.remove();
+      }
+      // Clear HoneyBook global state
+      if (window._HB_) {
+        delete window._HB_;
       }
     };
   }, [pathname]);
