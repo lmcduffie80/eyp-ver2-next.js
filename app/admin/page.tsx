@@ -883,7 +883,8 @@ export default function AdminDashboard() {
 
         if (!success) {
           console.error('Failed to upload:', error);
-          alert(`Failed to upload ${file.name}: ${error}`);
+          const errorMsg = error || 'Unknown error occurred';
+          alert(`Failed to upload ${file.name}:\n\n${errorMsg}\n\nPlease check:\n1. AWS credentials are set in Vercel\n2. S3 bucket exists\n3. IAM permissions are correct`);
           continue;
         }
 
