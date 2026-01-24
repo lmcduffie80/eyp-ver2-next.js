@@ -17,9 +17,11 @@ const Contact = dynamic(() => import('./Contact'), {
             <p><strong>Phone:</strong> 229-326-5408</p>
             <p><strong>Address:</strong> Tifton, Georgia 31794</p>
           </div>
-          <div className="loading-indicator">
-            <div className="spinner"></div>
-            <p>Loading contact form...</p>
+          <div className="contact-form-wrapper">
+            <div className="loading-indicator">
+              <div className="spinner"></div>
+              <p>Loading contact form...</p>
+            </div>
           </div>
         </div>
       </div>
