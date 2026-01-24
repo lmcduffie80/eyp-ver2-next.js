@@ -20,7 +20,6 @@
     "@vercel/oidc-aws-credentials-provider": "^3.0.5",
     "@vercel/postgres": "^0.10.0",
     "bcryptjs": "^3.0.3",
-    "browser-image-compression": "^2.0.2",
     "next": "^14.2.35",
     "nodemailer": "^7.0.12",
     "pg": "^8.11.3",
