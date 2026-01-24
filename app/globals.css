@@ -2177,3 +2177,34 @@ body.dashboard-page {
   }
 }
 
+/* Video Grid - Fixed Columns */
+.video-grid-fixed {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Desktop: 3 columns */
+@media (min-width: 1024px) {
+  .video-grid-fixed {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Tablet: 2 columns */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .video-grid-fixed {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile: 1 column */
+@media (max-width: 639px) {
+  .video-grid-fixed {
+    grid-template-columns: 1fr;
+  }
+}
+
