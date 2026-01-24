@@ -2187,15 +2187,15 @@ body.dashboard-page {
   margin-right: auto;
 }
 
-/* Desktop: 3 columns */
-@media (min-width: 1024px) {
+/* Desktop: 3 columns - lower threshold to 900px */
+@media (min-width: 900px) {
   .video-grid-fixed {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 /* Tablet: 2 columns */
-@media (min-width: 640px) and (max-width: 1023px) {
+@media (min-width: 640px) and (max-width: 899px) {
   .video-grid-fixed {
     grid-template-columns: repeat(2, 1fr);
   }
