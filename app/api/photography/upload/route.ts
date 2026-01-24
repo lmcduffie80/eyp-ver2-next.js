@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
+// Configure route to accept larger payloads
+export const runtime = 'nodejs';
+export const maxDuration = 60; // 60 seconds max execution time
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // Parse form data

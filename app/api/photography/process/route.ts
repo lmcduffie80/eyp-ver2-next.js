@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 
+// Configure route to accept larger payloads
+export const runtime = 'nodejs';
+export const maxDuration = 60; // 60 seconds max execution time
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
