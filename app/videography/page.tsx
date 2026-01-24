@@ -88,11 +88,23 @@ export default function Videography() {
       <section id="about" className="about">
         <div className="container">
           <h2 className="section-title">Our Videography Services</h2>
-          <div className="about-content">
-            <div className="about-text">
+          <div className="about-content" style={{ display: 'flex', gap: '3rem', alignItems: 'center' }}>
+            <div className="about-text" style={{ flex: 1 }}>
               <p>At Externally Yours Productions, LLC, we specialize in cinematic videography that tells your story. From weddings to corporate events, we create high-quality videos that you'll treasure forever.</p>
               <p>Our videography services include wedding films, event coverage, promotional videos, music videos, and commercial productions. We use professional equipment and editing techniques to deliver stunning results.</p>
               <p>Every project is unique, and we work closely with you to understand your vision and bring it to life through compelling video content.</p>
+            </div>
+            <div style={{ flex: 1 }}>
+              <img 
+                src="/IMG_3957.jpg" 
+                alt="Videography Services" 
+                style={{ 
+                  width: '100%', 
+                  height: 'auto', 
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                }} 
+              />
             </div>
           </div>
         </div>
@@ -219,18 +231,6 @@ export default function Videography() {
                         }}
                       />
                     </div>
-                    {video.title && (
-                      <div style={{ padding: '1.25rem', textAlign: 'center' }}>
-                        <h4 style={{ 
-                          margin: 0, 
-                          fontSize: '1.1rem', 
-                          color: 'var(--text-dark)',
-                          fontWeight: '500'
-                        }}>
-                          {video.title}
-                        </h4>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
