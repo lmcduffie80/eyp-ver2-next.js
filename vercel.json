@@ -1,11 +1,12 @@
 {
-  "version": 2,
-  "framework": "nextjs",
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
+  "functions": {
+    "app/api/photography/process/route.ts": {
+      "maxDuration": 60,
+      "memory": 3008
+    },
+    "app/api/photography/upload/route.ts": {
+      "maxDuration": 60,
+      "memory": 3008
     }
-  ]
+  }
 }
-
