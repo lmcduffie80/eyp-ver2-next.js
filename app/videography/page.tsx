@@ -149,26 +149,6 @@ export default function Videography() {
           ) : (
             videoProjects.map((project) => (
               <div key={project.id} style={{ marginBottom: '4rem' }}>
-                <h3 style={{ 
-                  fontSize: '1.75rem', 
-                  marginBottom: '1rem',
-                  color: 'var(--text-dark)',
-                  textAlign: 'center'
-                }}>
-                  {project.project_name}
-                </h3>
-                
-                {project.description && (
-                  <p style={{ 
-                    textAlign: 'center', 
-                    maxWidth: '600px', 
-                    margin: '0 auto 2rem', 
-                    color: 'var(--text-light)' 
-                  }}>
-                    {project.description}
-                  </p>
-                )}
-                
                 <div className="video-grid-fixed">
                   {project.videos.map((video: any) => (
                     <div key={video.id} style={{
@@ -218,6 +198,27 @@ export default function Videography() {
                     </div>
                   ))}
                 </div>
+                
+                <h3 style={{ 
+                  fontSize: '1.75rem', 
+                  marginTop: '2rem',
+                  marginBottom: '1rem',
+                  color: 'var(--text-dark)',
+                  textAlign: 'center'
+                }}>
+                  {project.project_name}
+                </h3>
+                
+                {project.description && (
+                  <p style={{ 
+                    textAlign: 'center', 
+                    maxWidth: '600px', 
+                    margin: '0 auto 1rem', 
+                    color: 'var(--text-light)' 
+                  }}>
+                    {project.description}
+                  </p>
+                )}
               </div>
             ))
           )}
