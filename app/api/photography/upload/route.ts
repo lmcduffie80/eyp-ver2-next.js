@@ -79,10 +79,11 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('Error uploading to S3:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to upload file',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: `S3 upload failed: ${errorMessage}`,
+      details: error instanceof Error ? error.stack : 'Unknown error'
     }, { status: 500 });
   }
 }
