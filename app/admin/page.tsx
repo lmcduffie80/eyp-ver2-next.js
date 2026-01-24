@@ -845,70 +845,98 @@ export default function AdminDashboard() {
     setUploadingPhotos(true);
     setUploadProgress(0);
     const totalFiles = files.length;
-    let uploadedCount = 0;
+    let successCount = 0;
+    let failCount = 0;
+    const filesArray = Array.from(files);
 
     try {
-      for (const file of Array.from(files)) {
-        // Step 1: Process the image (compress and create thumbnail)
-        const processFormData = new FormData();
-        processFormData.append('file', file);
-
-        const processResponse = await fetch('/api/photography/process', {
-          method: 'POST',
-          body: processFormData
-        });
-
-        const processResult = await processResponse.json();
-
-        if (!processResult.success) {
-          console.error('Failed to process:', processResult.error);
-          alert(`Failed to process ${file.name}: ${processResult.error}`);
-          continue;
-        }
-
-        const { fullImage, thumbnail, metadata } = processResult;
-
-        // Step 2: Upload both versions to S3
-        const uploadFormData = new FormData();
-        uploadFormData.append('fullImage', fullImage);
-        uploadFormData.append('thumbnail', thumbnail);
-        uploadFormData.append('project_id', selectedProject.id.toString());
-        uploadFormData.append('filename', file.name);
-
-        const uploadResponse = await fetch('/api/photography/upload', {
-          method: 'POST',
-          body: uploadFormData
-        });
+      for (let i = 0; i < filesArray.length; i++) {
+        const file = filesArray[i];
         
-        const { photoURL, thumbnailURL, success, error } = await uploadResponse.json();
+        try {
+          console.log(`Uploading ${i + 1} of ${totalFiles}: ${file.name}`);
+          
+          // Step 1: Process the image (compress and create thumbnail)
+          const processFormData = new FormData();
+          processFormData.append('file', file);
 
-        if (!success) {
-          console.error('Failed to upload:', error);
-          const errorMsg = error || 'Unknown error occurred';
-          alert(`Failed to upload ${file.name}:\n\n${errorMsg}\n\nPlease check:\n1. AWS credentials are set in Vercel\n2. S3 bucket exists\n3. IAM permissions are correct`);
+          const processResponse = await fetch('/api/photography/process', {
+            method: 'POST',
+            body: processFormData
+          });
+
+          const processResult = await processResponse.json();
+
+          if (!processResult.success) {
+            console.error('Failed to process:', processResult.error);
+            alert(`Failed to process ${file.name}: ${processResult.error}`);
+            failCount++;
+            continue;
+          }
+
+          const { fullImage, thumbnail, metadata } = processResult;
+
+          // Step 2: Upload both versions to S3
+          const uploadFormData = new FormData();
+          uploadFormData.append('fullImage', fullImage);
+          uploadFormData.append('thumbnail', thumbnail);
+          uploadFormData.append('project_id', selectedProject.id.toString());
+          uploadFormData.append('filename', file.name);
+
+          const uploadResponse = await fetch('/api/photography/upload', {
+            method: 'POST',
+            body: uploadFormData
+          });
+          
+          const { photoURL, thumbnailURL, success, error } = await uploadResponse.json();
+
+          if (!success) {
+            console.error('Failed to upload:', error);
+            const errorMsg = error || 'Unknown error occurred';
+            alert(`Failed to upload ${file.name}:\n\n${errorMsg}`);
+            failCount++;
+            continue;
+          }
+
+          // Step 3: Save photo metadata to database
+          await fetch('/api/photography/photos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              project_id: selectedProject.id,
+              photo_url: photoURL,
+              thumbnail_url: thumbnailURL,
+              filename: file.name
+            })
+          });
+
+          successCount++;
+          setUploadProgress(Math.round(((successCount + failCount) / totalFiles) * 100));
+          
+          // Add delay between uploads to avoid overwhelming the server
+          // Only add delay if there are more files to process
+          if (i < filesArray.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 second delay
+          }
+          
+        } catch (fileError) {
+          console.error(`Error uploading ${file.name}:`, fileError);
+          failCount++;
+          setUploadProgress(Math.round(((successCount + failCount) / totalFiles) * 100));
           continue;
         }
-
-        // Step 3: Save photo metadata to database
-        await fetch('/api/photography/photos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            project_id: selectedProject.id,
-            photo_url: photoURL,
-            thumbnail_url: thumbnailURL,
-            filename: file.name
-          })
-        });
-
-        uploadedCount++;
-        setUploadProgress(Math.round((uploadedCount / totalFiles) * 100));
       }
 
-      if (uploadedCount === totalFiles) {
-        alert('All photos uploaded successfully!');
+      // Show summary
+      if (successCount > 0) {
+        const message = failCount > 0 
+          ? `Successfully uploaded ${successCount} photo(s). ${failCount} failed.`
+          : `All ${successCount} photo(s) uploaded successfully!`;
+        alert(message);
         await fetchProjectPhotos(selectedProject.id);
         await fetchPhotoProjects();
+      } else if (failCount > 0) {
+        alert(`All ${failCount} upload(s) failed. Please try again.`);
       }
 
     } catch (error) {
