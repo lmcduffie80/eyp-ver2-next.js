@@ -171,9 +171,10 @@ export default function Videography() {
                 
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                  gap: '2rem',
-                  marginTop: '2rem'
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 400px))',
+                  gap: '1.5rem',
+                  marginTop: '2rem',
+                  justifyContent: 'center'
                 }}>
                   {project.videos.map((video: any) => (
                     <div key={video.id} style={{
