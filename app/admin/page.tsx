@@ -817,8 +817,8 @@ export default function AdminDashboard() {
     try {
       for (const file of Array.from(files)) {
         // File size validation (10MB max)
-        if (file.size > 30 * 1024 * 1024) {
-          alert(`${file.name} is too large. Maximum file size is 30MB (accounts for processing overhead).`);
+        if (file.size > 2.5 * 1024 * 1024) {
+          alert(`${file.name} is too large. Maximum file size is 2.5MB due to Vercel serverless limits.\n\nTip: Compress your images before uploading.`);
           return;
         }
 
