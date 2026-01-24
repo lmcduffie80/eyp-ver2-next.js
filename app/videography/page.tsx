@@ -184,59 +184,57 @@ export default function Videography() {
               No videos available yet. Check back soon!
             </div>
           ) : (
-            videoProjects.map((project) => (
-              <div key={project.id} style={{ marginBottom: '4rem' }}>
-                <div className="video-grid-fixed">
-                  {project.videos.map((video: any) => (
-                    <div key={video.id} style={{
-                      background: 'white',
-                      borderRadius: '12px',
-                      overflow: 'hidden',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                      transition: 'transform 0.3s ease, box-shadow 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-5px)';
-                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.15)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-                    }}
-                    >
-                      <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
-                        <iframe
-                          src={`https://www.youtube.com/embed/${video.video_id}`}
-                          title={video.title || 'Video'}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                          style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            border: 'none'
-                          }}
-                        />
-                      </div>
-                      {video.title && (
-                        <div style={{ padding: '1.25rem' }}>
-                          <h4 style={{ 
-                            margin: 0, 
-                            fontSize: '1.1rem', 
-                            color: 'var(--text-dark)',
-                            fontWeight: '500'
-                          }}>
-                            {video.title}
-                          </h4>
-                        </div>
-                      )}
+            <>
+              <div className="video-grid-fixed">
+                {videoProjects.flatMap(project => project.videos).map((video: any) => (
+                  <div key={video.id} style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-5px)';
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+                  }}
+                  >
+                    <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
+                      <iframe
+                        src={`https://www.youtube.com/embed/${video.video_id}`}
+                        title={video.title || 'Video'}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          border: 'none'
+                        }}
+                      />
                     </div>
-                  ))}
-                </div>
+                    {video.title && (
+                      <div style={{ padding: '1.25rem' }}>
+                        <h4 style={{ 
+                          margin: 0, 
+                          fontSize: '1.1rem', 
+                          color: 'var(--text-dark)',
+                          fontWeight: '500'
+                        }}>
+                          {video.title}
+                        </h4>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))
+            </>
           )}
         </div>
       </section>
