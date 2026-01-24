@@ -219,9 +219,11 @@ export default function Contact({ title = "Let's Work Together", description = "
               id="honeybook-contact-form"
               suppressHydrationWarning
               style={{ 
-                display: honeyBookLoaded ? 'block' : 'none',
                 width: '100%',
                 minHeight: '600px',
+                visibility: honeyBookLoaded ? 'visible' : 'hidden',
+                height: honeyBookLoaded ? 'auto' : '0',
+                overflow: 'hidden',
               }}
             />
             

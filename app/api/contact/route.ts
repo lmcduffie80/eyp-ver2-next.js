@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Contact API called');
+    console.log('Gmail configured:', !!process.env.GMAIL_USER && !!process.env.GMAIL_APP_PASSWORD);
+    console.log('SendGrid configured:', !!process.env.SENDGRID_API_KEY);
+    
     const body = await request.json();
     const { name, email, phone, service, message } = body;
 
@@ -61,6 +65,7 @@ ${message}
 
     // Try Gmail SMTP first (using existing configuration)
     if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+      console.log('Attempting Gmail SMTP send...');
       const nodemailer = (await import('nodemailer')).default;
       
       const transporter = nodemailer.createTransport({
@@ -80,16 +85,23 @@ ${message}
         html: emailHtml
       };
 
-      await transporter.sendMail(mailOptions);
-      
-      return NextResponse.json(
-        { success: true, message: 'Message sent successfully' },
-        { status: 200 }
-      );
+      try {
+        await transporter.sendMail(mailOptions);
+        console.log('Gmail SMTP send successful');
+        
+        return NextResponse.json(
+          { success: true, message: 'Message sent successfully' },
+          { status: 200 }
+        );
+      } catch (gmailError) {
+        console.error('Gmail SMTP error:', gmailError);
+        // Don't return here, fall through to SendGrid
+      }
     }
 
     // Fallback to SendGrid if configured
     if (process.env.SENDGRID_API_KEY) {
+      console.log('Attempting SendGrid send...');
       const sgMail = (await import('@sendgrid/mail')).default;
       sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -103,6 +115,7 @@ ${message}
       };
 
       await sgMail.send(msg);
+      console.log('SendGrid send successful');
       
       return NextResponse.json(
         { success: true, message: 'Message sent successfully' },
