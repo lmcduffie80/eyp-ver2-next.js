@@ -817,8 +817,8 @@ export default function AdminDashboard() {
     try {
       for (const file of Array.from(files)) {
         // File size validation (10MB max)
-        if (file.size > 2.5 * 1024 * 1024) {
-          alert(`${file.name} is too large. Maximum file size is 2.5MB due to Vercel serverless limits.\n\nTip: Compress your images before uploading.`);
+        if (file.size > 20 * 1024 * 1024) {
+          alert(`${file.name} is too large. Maximum file size is 20MB.`);
           return;
         }
 
@@ -876,36 +876,77 @@ export default function AdminDashboard() {
 
           const { fullImage, thumbnail, metadata } = processResult;
 
-          // Step 2: Upload both versions to S3
-          const uploadFormData = new FormData();
-          uploadFormData.append('fullImage', fullImage);
-          uploadFormData.append('thumbnail', thumbnail);
-          uploadFormData.append('project_id', selectedProject.id.toString());
-          uploadFormData.append('filename', file.name);
-
-          const uploadResponse = await fetch('/api/photography/upload', {
+          // Step 2: Get presigned URLs for direct S3 upload
+          const fullImagePresignedResponse = await fetch('/api/photography/presigned-url', {
             method: 'POST',
-            body: uploadFormData
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filename: file.name,
+              fileType: 'image/webp',
+              projectId: selectedProject.id.toString(),
+              isThumb: false
+            })
           });
-          
-          const { photoURL, thumbnailURL, success, error } = await uploadResponse.json();
 
-          if (!success) {
-            console.error('Failed to upload:', error);
-            const errorMsg = error || 'Unknown error occurred';
-            alert(`Failed to upload ${file.name}:\n\n${errorMsg}`);
+          const fullImagePresigned = await fullImagePresignedResponse.json();
+
+          if (!fullImagePresigned.success) {
+            console.error('Failed to get presigned URL:', fullImagePresigned.error);
+            alert(`Failed to get upload URL for ${file.name}`);
             failCount++;
             continue;
           }
 
-          // Step 3: Save photo metadata to database
+          // Step 3: Upload full image directly to S3
+          const fullImageBlob = await fetch(`data:image/webp;base64,${fullImage}`).then(r => r.blob());
+          const fullUploadResponse = await fetch(fullImagePresigned.presignedUrl, {
+            method: 'PUT',
+            body: fullImageBlob,
+            headers: {
+              'Content-Type': 'image/webp'
+            }
+          });
+
+          if (!fullUploadResponse.ok) {
+            console.error('Failed to upload full image to S3:', fullUploadResponse.statusText);
+            failCount++;
+            continue;
+          }
+
+          // Step 4: Get presigned URL for thumbnail
+          const thumbnailPresignedResponse = await fetch('/api/photography/presigned-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filename: file.name,
+              fileType: 'image/webp',
+              projectId: selectedProject.id.toString(),
+              isThumb: true
+            })
+          });
+
+          const thumbnailPresigned = await thumbnailPresignedResponse.json();
+
+          if (thumbnailPresigned.success) {
+            // Step 5: Upload thumbnail directly to S3
+            const thumbnailBlob = await fetch(`data:image/webp;base64,${thumbnail}`).then(r => r.blob());
+            await fetch(thumbnailPresigned.presignedUrl, {
+              method: 'PUT',
+              body: thumbnailBlob,
+              headers: {
+                'Content-Type': 'image/webp'
+              }
+            });
+          }
+
+          // Step 6: Save photo metadata to database
           await fetch('/api/photography/photos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               project_id: selectedProject.id,
-              photo_url: photoURL,
-              thumbnail_url: thumbnailURL,
+              photo_url: fullImagePresigned.publicUrl,
+              thumbnail_url: thumbnailPresigned.publicUrl || fullImagePresigned.publicUrl,
               filename: file.name
             })
           });
@@ -913,11 +954,7 @@ export default function AdminDashboard() {
           successCount++;
           setUploadProgress(Math.round(((successCount + failCount) / totalFiles) * 100));
           
-          // Add delay between uploads to avoid overwhelming the server
-          // Only add delay if there are more files to process
-          if (i < filesArray.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
-          }
+          // No delay needed - direct S3 upload doesn't overwhelm Vercel
           
         } catch (fileError) {
           console.error(`Error uploading ${file.name}:`, fileError);
