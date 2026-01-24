@@ -2179,8 +2179,8 @@ body.dashboard-page {
 
 /* Video Grid - Fixed Columns */
 .video-grid-fixed {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
   gap: 1.5rem;
   margin-top: 2rem;
   max-width: 1400px;
