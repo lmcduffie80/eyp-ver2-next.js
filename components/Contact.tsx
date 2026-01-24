@@ -221,9 +221,9 @@ export default function Contact({ title = "Let's Work Together", description = "
               style={{ 
                 width: '100%',
                 minHeight: '600px',
-                visibility: honeyBookLoaded ? 'visible' : 'hidden',
-                height: honeyBookLoaded ? 'auto' : '0',
-                overflow: 'hidden',
+                position: honeyBookLoaded ? 'relative' : 'absolute',
+                left: honeyBookLoaded ? '0' : '-9999px',
+                opacity: honeyBookLoaded ? '1' : '0',
               }}
             />
             
