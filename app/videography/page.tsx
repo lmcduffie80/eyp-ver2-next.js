@@ -220,7 +220,7 @@ export default function Videography() {
                       />
                     </div>
                     {video.title && (
-                      <div style={{ padding: '1.25rem' }}>
+                      <div style={{ padding: '1.25rem', textAlign: 'center' }}>
                         <h4 style={{ 
                           margin: 0, 
                           fontSize: '1.1rem', 
