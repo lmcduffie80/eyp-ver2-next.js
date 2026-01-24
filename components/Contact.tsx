@@ -45,27 +45,39 @@ export default function Contact({ title = "Let's Work Together", description = "
       // Check if script already loaded
       const existingScript = document.querySelector('script[src*="placement-controller.min.js"]');
       if (existingScript) {
-        // Script already loaded, trigger scan once
+        // Script already loaded from previous page navigation
+        // Force HoneyBook to scan this NEW container multiple times
         window._HB_ = window._HB_ || {};
         window._HB_.pid = '64f2adb3998a8300079826c0';
         
-        // Get container reference
-        const container = containerRef.current;
         if (!container) {
           console.warn('Container ref not available');
           return true;
         }
         
-        // Simple retry after delay
-        setTimeout(() => {
-          if (window._HB_ && typeof (window._HB_ as any).scan === 'function') {
-            (window._HB_ as any).scan();
-          }
-          const hasWidget = container.querySelector('iframe, form');
-          if (hasWidget) {
-            setHoneyBookLoaded(true);
-          }
-        }, 1000);
+        // Aggressive multi-attempt scanning for client-side navigation
+        const scanAttempts = [0, 500, 1000, 2000, 3000, 4000, 6000];
+        
+        scanAttempts.forEach(delay => {
+          setTimeout(() => {
+            if (!mounted || !containerRef.current) return;
+            
+            const currentContainer = containerRef.current;
+            
+            // Check if widget already loaded
+            const hasWidget = currentContainer.querySelector('iframe, form');
+            if (hasWidget) {
+              setHoneyBookLoaded(true);
+              return;
+            }
+            
+            // Force scan
+            if (window._HB_ && typeof (window._HB_ as any).scan === 'function') {
+              window._HB_.scan();
+            }
+          }, delay);
+        });
+        
         return true;
       }
 
