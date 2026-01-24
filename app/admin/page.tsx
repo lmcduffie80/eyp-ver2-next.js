@@ -4023,7 +4023,16 @@ export default function AdminDashboard() {
                         >
                           <div className="project-cover">
                             {project.cover_photo_url ? (
-                              <img src={project.cover_photo_url} alt={project.project_name} />
+                              <img 
+                                src={project.cover_photo_url} 
+                                alt={project.project_name}
+                                style={{ 
+                                  width: '30%', 
+                                  height: 'auto',
+                                  objectFit: 'cover',
+                                  borderRadius: '8px' 
+                                }}
+                              />
                             ) : (
                               <div className="no-cover">📸</div>
                             )}
