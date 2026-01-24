@@ -1,65 +1,78 @@
 # Email Configuration Guide for Vercel
 
+## IMPORTANT: The contact form email is currently not working because Gmail environment variables are not configured in Vercel.
+
 ## Overview
-The fallback contact form requires email environment variables to be set in Vercel. Follow these steps to configure Gmail SMTP for the contact form.
+The fallback contact form requires Gmail SMTP environment variables to be set in Vercel. Follow these steps to configure it.
 
 ## Step 1: Generate Gmail App Password
 
-Before adding environment variables, you need to create a Gmail App Password:
+**IMPORTANT**: You must have 2-Step Verification enabled on your Google account first!
 
-1. Go to your Google Account: https://myaccount.google.com/
-2. Navigate to **Security** → **2-Step Verification** (you must enable this first if not already enabled)
-3. Scroll down and click **App passwords** (or go directly to https://myaccount.google.com/apppasswords)
-4. Click **Select app** and choose "Mail" or create a custom app named "EYP Contact Form"
-5. Click **Generate**
-6. Copy the 16-character password (remove any spaces)
-7. **Save this password securely** - you'll need it in Step 2
+1. Go to https://myaccount.google.com/
+2. Click **Security** in the left sidebar
+3. Under "How you sign in to Google", click **2-Step Verification**
+   - If not enabled, follow the prompts to enable it
+4. Once enabled, go back to Security page
+5. Scroll down and click **App passwords** (or go directly to https://myaccount.google.com/apppasswords)
+6. Under "Select app", choose **Mail** or **Other (Custom name)**
+7. If choosing "Other", enter: `EYP Contact Form`
+8. Click **Generate**
+9. Google will display a 16-character password like: `abcd efgh ijkl mnop`
+10. **COPY THIS PASSWORD** (remove spaces: `abcdefghijklmnop`)
+11. **SAVE IT SECURELY** - you cannot view it again
 
 ## Step 2: Add Environment Variables in Vercel
 
 1. Go to https://vercel.com/dashboard
-2. Select your **EYP project**
-3. Click **Settings** in the top navigation
+2. Find and click on your **EYP project**
+3. Click **Settings** tab at the top
 4. Click **Environment Variables** in the left sidebar
-5. Add the following three variables (one at a time):
+5. Add these THREE variables:
 
 ### Variable 1: GMAIL_USER
-- **Name**: `GMAIL_USER`
-- **Value**: Your Gmail address (e.g., `lee@externallyyoursproductions.com`)
-- **Environment**: Select **Production** (and optionally Preview & Development)
+- Click **Add New** button
+- **Key**: `GMAIL_USER`
+- **Value**: Your Gmail address (example: `lee@externallyyoursproductions.com`)
+- **Environments**: Check **Production**, **Preview**, and **Development**
 - Click **Save**
 
 ### Variable 2: GMAIL_APP_PASSWORD
-- **Name**: `GMAIL_APP_PASSWORD`
-- **Value**: The 16-character app password from Step 1 (no spaces)
-- **Environment**: Select **Production** (and optionally Preview & Development)
+- Click **Add New** button again
+- **Key**: `GMAIL_APP_PASSWORD`
+- **Value**: The 16-character password from Step 1 (NO SPACES)
+- **Environments**: Check **Production**, **Preview**, and **Development**
 - Click **Save**
 
 ### Variable 3: EMAIL_FROM
-- **Name**: `EMAIL_FROM`
-- **Value**: Same as GMAIL_USER (e.g., `lee@externallyyoursproductions.com`)
-- **Environment**: Select **Production** (and optionally Preview & Development)
+- Click **Add New** button again
+- **Key**: `EMAIL_FROM`
+- **Value**: Same as GMAIL_USER (example: `lee@externallyyoursproductions.com`)
+- **Environments**: Check **Production**, **Preview**, and **Development**
 - Click **Save**
 
-## Step 3: Redeploy Your Application
+## Step 3: CRITICAL - Redeploy Your Application
 
-After adding all environment variables, you must redeploy for changes to take effect:
+**Environment variables only take effect after redeployment!**
 
-1. Go to the **Deployments** tab in your Vercel dashboard
-2. Find the latest deployment
-3. Click the **three dots (•••)** on the right side
+1. Go to the **Deployments** tab in Vercel
+2. Find the LATEST deployment (top of the list)
+3. Click the **three dots menu (•••)** on the right
 4. Click **Redeploy**
-5. Click **Redeploy** again to confirm
+5. In the popup, click **Redeploy** again to confirm
+6. Wait for deployment to complete (usually 1-2 minutes)
+7. Look for "Ready" status
 
 ## Step 4: Test the Contact Form
 
-After redeployment completes:
+After redeployment shows "Ready":
 
-1. Visit your website
-2. Navigate to the Contact section
-3. Wait for either HoneyBook to load or the fallback form to appear (after 10 seconds)
-4. Fill out and submit the fallback form
-5. Check the email inbox for `lee@externallyyoursproductions.com` to confirm receipt
+1. Visit your live website (not localhost)
+2. Navigate to any page with the Contact section
+3. Wait up to 10 seconds for HoneyBook OR fallback form
+4. Fill out and submit the fallback form with test data
+5. Check the email inbox for `lee@externallyyoursproductions.com`
+6. You should receive an email within 1-2 minutes
 
 ## Troubleshooting
 
