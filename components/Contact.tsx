@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 declare global {
   interface Window {
@@ -14,11 +15,9 @@ interface ContactProps {
 }
 
 export default function Contact({ title = "Let's Work Together", description = "Have a project in mind? We'd love to hear from you. Send us a message and we'll respond as soon as possible." }: ContactProps) {
+  const pathname = usePathname();
   const containerRef = useRef<HTMLDivElement>(null);
   const [honeyBookLoaded, setHoneyBookLoaded] = useState(false);
-  const [showFallback, setShowFallback] = useState(false);
-  const [formSubmitted, setFormSubmitted] = useState(false);
-  const [formLoading, setFormLoading] = useState(false);
 
   // Simplified HoneyBook loading with fallback
   useEffect(() => {
@@ -145,57 +144,15 @@ export default function Contact({ title = "Let's Work Together", description = "
 
     return () => {
       mounted = false;
+      // Clean up old HoneyBook widget iframe/form if it exists
+      if (containerRef.current) {
+        const oldWidget = containerRef.current.querySelector('iframe, form');
+        if (oldWidget) {
+          oldWidget.remove();
+        }
+      }
     };
-  }, []);
-
-  // Show fallback after timeout if HoneyBook doesn't load
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!honeyBookLoaded) {
-        setShowFallback(true);
-      }
-    }, 10000); // Give HoneyBook 10 seconds to load
-    
-    return () => clearTimeout(timer);
-  }, [honeyBookLoaded]);
-
-  // Handle fallback form submission
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setFormLoading(true);
-    
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    
-    try {
-      // Use SendGrid API endpoint
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.get('name'),
-          email: formData.get('email'),
-          phone: formData.get('phone'),
-          service: formData.get('service'),
-          message: formData.get('message'),
-        }),
-      });
-      
-      if (response.ok) {
-        setFormSubmitted(true);
-        form.reset();
-      } else {
-        alert('Failed to send message. Please try again or email us directly at lee@externallyyoursproductions.com');
-      }
-    } catch (error) {
-      console.error('Form submission error:', error);
-      alert('Failed to send message. Please try again or email us directly at lee@externallyyoursproductions.com');
-    } finally {
-      setFormLoading(false);
-    }
-  };
+  }, [pathname]);
 
   return (
     <section id="contact" className="contact-section">
@@ -211,7 +168,7 @@ export default function Contact({ title = "Let's Work Together", description = "
           </div>
           
           <div className="contact-form-wrapper">
-            {/* HoneyBook Container - Try to load first */}
+            {/* HoneyBook Container */}
             <div 
               ref={containerRef} 
               className="hb-p-64f2adb3998a8300079826c0-1"
@@ -227,105 +184,15 @@ export default function Contact({ title = "Let's Work Together", description = "
               }}
             />
             
-            {/* Loading Indicator */}
-            {!honeyBookLoaded && !showFallback && (
+            {/* Loading Indicator - shown until HoneyBook loads */}
+            {!honeyBookLoaded && (
               <div className="loading-indicator">
                 <div className="spinner"></div>
                 <p>Loading contact form...</p>
               </div>
             )}
             
-            {/* Fallback Contact Form */}
-            {showFallback && (
-              <div className="fallback-form">
-                {formSubmitted ? (
-                  <div className="success-message">
-                    <h3>Thank You!</h3>
-                    <p>Your message has been sent successfully. We'll get back to you as soon as possible.</p>
-                    <button 
-                      onClick={() => setFormSubmitted(false)}
-                      className="submit-btn"
-                      style={{ marginTop: '1rem' }}
-                    >
-                      Send Another Message
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <h3>Contact Form</h3>
-                    <form onSubmit={handleSubmit}>
-                      <div className="form-group">
-                        <label htmlFor="name">Name *</label>
-                        <input 
-                          type="text" 
-                          id="name" 
-                          name="name" 
-                          required 
-                          disabled={formLoading}
-                        />
-                      </div>
-                      
-                      <div className="form-group">
-                        <label htmlFor="email">Email *</label>
-                        <input 
-                          type="email" 
-                          id="email" 
-                          name="email" 
-                          required 
-                          disabled={formLoading}
-                        />
-                      </div>
-                      
-                      <div className="form-group">
-                        <label htmlFor="phone">Phone</label>
-                        <input 
-                          type="tel" 
-                          id="phone" 
-                          name="phone" 
-                          disabled={formLoading}
-                        />
-                      </div>
-                      
-                      <div className="form-group">
-                        <label htmlFor="service">Service Type *</label>
-                        <select 
-                          id="service" 
-                          name="service" 
-                          required 
-                          disabled={formLoading}
-                        >
-                          <option value="">Select a service...</option>
-                          <option value="photography">Photography</option>
-                          <option value="videography">Videography</option>
-                          <option value="dj">DJ Entertainment</option>
-                          <option value="other">Other</option>
-                        </select>
-                      </div>
-                      
-                      <div className="form-group">
-                        <label htmlFor="message">Message *</label>
-                        <textarea 
-                          id="message" 
-                          name="message" 
-                          rows={5} 
-                          required 
-                          disabled={formLoading}
-                        />
-                      </div>
-                      
-                      <button 
-                        type="submit" 
-                        className="submit-btn"
-                        disabled={formLoading}
-                      >
-                        {formLoading ? 'Sending...' : 'Send Message'}
-                      </button>
-                    </form>
-                  </>
-                )}
-              </div>
-            )}
-            
+            {/* HoneyBook tracking pixel */}
             <img 
               height={1} 
               width={1} 
