@@ -916,7 +916,7 @@ export default function AdminDashboard() {
           // Add delay between uploads to avoid overwhelming the server
           // Only add delay if there are more files to process
           if (i < filesArray.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 second delay
+            await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
           }
           
         } catch (fileError) {
