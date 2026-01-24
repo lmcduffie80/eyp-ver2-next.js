@@ -66,11 +66,11 @@ export default function Navigation() {
           ☰
         </button>
         {mobileMenuOpen && (
-          <ul className="md:hidden flex flex-col fixed top-[70px] left-0 right-0 w-full bg-[rgba(26,26,26,0.98)] backdrop-blur-[10px] p-4 gap-0 shadow-[0_5px_15px_rgba(0,0,0,0.3)] z-[1001] max-h-[calc(100vh-70px)] overflow-y-auto animate-[slideDown_0.3s_ease]">
+          <ul className="md:hidden flex flex-col fixed top-[70px] left-0 right-0 w-full bg-[rgba(26,26,26,0.98)] backdrop-blur-[10px] p-0 gap-0 shadow-[0_5px_15px_rgba(0,0,0,0.3)] z-[1001] max-h-[calc(100vh-70px)] overflow-y-auto animate-[slideDown_0.3s_ease]">
             <li className="w-full border-b border-[rgba(255,255,255,0.1)]">
               <Link 
                 href="/" 
-                className="block p-4 w-full text-white" 
+                className="block py-6 px-6 w-full text-white text-lg font-semibold transition-colors active:bg-[rgba(255,107,53,0.2)] hover:bg-[rgba(255,255,255,0.05)]" 
                 onClick={(e) => {
                   setMobileMenuOpen(false);
                   handleHomeClick(e);
@@ -80,19 +80,19 @@ export default function Navigation() {
               </Link>
             </li>
             <li className="w-full border-b border-[rgba(255,255,255,0.1)]">
-              <Link href="/about" className="block p-4 w-full text-white" onClick={() => setMobileMenuOpen(false)}>About</Link>
+              <Link href="/about" className="block py-6 px-6 w-full text-white text-lg font-semibold transition-colors active:bg-[rgba(255,107,53,0.2)] hover:bg-[rgba(255,255,255,0.05)]" onClick={() => setMobileMenuOpen(false)}>About</Link>
             </li>
             <li className="w-full border-b border-[rgba(255,255,255,0.1)]">
-              <Link href="/photography" className="block p-4 w-full text-white" onClick={() => setMobileMenuOpen(false)}>Photography</Link>
+              <Link href="/photography" className="block py-6 px-6 w-full text-white text-lg font-semibold transition-colors active:bg-[rgba(255,107,53,0.2)] hover:bg-[rgba(255,255,255,0.05)]" onClick={() => setMobileMenuOpen(false)}>Photography</Link>
             </li>
             <li className="w-full border-b border-[rgba(255,255,255,0.1)]">
-              <Link href="/videography" className="block p-4 w-full text-white" onClick={() => setMobileMenuOpen(false)}>Videography</Link>
+              <Link href="/videography" className="block py-6 px-6 w-full text-white text-lg font-semibold transition-colors active:bg-[rgba(255,107,53,0.2)] hover:bg-[rgba(255,255,255,0.05)]" onClick={() => setMobileMenuOpen(false)}>Videography</Link>
             </li>
             <li className="w-full border-b border-[rgba(255,255,255,0.1)]">
-              <Link href="/dj-entertainment" className="block p-4 w-full text-white" onClick={() => setMobileMenuOpen(false)}>DJ Entertainment</Link>
+              <Link href="/dj-entertainment" className="block py-6 px-6 w-full text-white text-lg font-semibold transition-colors active:bg-[rgba(255,107,53,0.2)] hover:bg-[rgba(255,255,255,0.05)]" onClick={() => setMobileMenuOpen(false)}>DJ Entertainment</Link>
             </li>
             <li className="w-full">
-              <Link href="#contact" className="block p-4 w-full text-white" onClick={() => setMobileMenuOpen(false)}>Contact</Link>
+              <Link href="#contact" className="block py-6 px-6 w-full text-white text-lg font-semibold transition-colors active:bg-[rgba(255,107,53,0.2)] hover:bg-[rgba(255,255,255,0.05)]" onClick={() => setMobileMenuOpen(false)}>Contact</Link>
             </li>
           </ul>
         )}
