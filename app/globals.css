@@ -2177,13 +2177,27 @@ body.dashboard-page {
   }
 }
 
-/* Video Grid - Fixed Columns */
+/* Video Grid - Responsive Columns */
 .video-grid-fixed {
   display: grid !important;
-  grid-template-columns: repeat(3, 1fr) !important;
+  grid-template-columns: 1fr !important; /* Mobile: 1 column */
   gap: 1.5rem;
   margin-top: 2rem;
   max-width: 1400px;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* Tablet: 2 columns */
+@media (min-width: 768px) {
+  .video-grid-fixed {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Desktop: 3 columns */
+@media (min-width: 1024px) {
+  .video-grid-fixed {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
 }
