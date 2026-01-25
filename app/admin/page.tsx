@@ -68,6 +68,10 @@ export default function AdminDashboard() {
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [modalProject, setModalProject] = useState<any | null>(null);
   
+  // Video modal state
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [modalVideoProject, setModalVideoProject] = useState<any | null>(null);
+  
   // Helper to format date as YYYY-MM-DD in local timezone (avoids UTC conversion issues)
   const formatDateLocal = (date: Date): string => {
     const year = date.getFullYear();
@@ -847,6 +851,15 @@ export default function AdminDashboard() {
     }
   };
 
+  // Open video project in modal view
+  const openVideoModal = (project: any) => {
+    setModalVideoProject(project);
+    setVideoModalOpen(true);
+    if (project) {
+      fetchProjectVideos(project.id);
+    }
+  };
+
   // Helper function to check image dimensions
   const checkImageDimensions = (file: File): Promise<{width: number, height: number}> => {
     return new Promise((resolve, reject) => {
@@ -1119,6 +1132,17 @@ export default function AdminDashboard() {
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [photoModalOpen]);
+
+  // ESC key handler for video modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && videoModalOpen) {
+        setVideoModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [videoModalOpen]);
 
   // Analytics Functions
   const loadAnalytics = () => {
@@ -1594,6 +1618,31 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error deleting video:', error);
       alert('Failed to delete video');
+    }
+  };
+
+  const deleteVideoProject = async (projectId: number) => {
+    if (!confirm('Are you sure you want to delete this video project? All videos will be removed.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/videography/projects?id=${projectId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        if (selectedVideoProject?.id === projectId) {
+          setSelectedVideoProject(null);
+          setProjectVideos([]);
+        }
+        await fetchVideoProjects();
+      } else {
+        alert('Failed to delete video project');
+      }
+    } catch (error) {
+      console.error('Error deleting video project:', error);
+      alert('Failed to delete video project');
     }
   };
 
@@ -4858,260 +4907,268 @@ export default function AdminDashboard() {
                 Manage your videography projects and add YouTube video links that will appear on the home page.
               </p>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '2rem' }}>
-                {/* Projects Sidebar */}
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3 style={{ margin: 0 }}>Projects</h3>
-                    <button
-                      onClick={() => setShowVideoProjectForm(!showVideoProjectForm)}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        background: 'var(--primary-color)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '0.9rem'
-                      }}
-                    >
-                      + New
-                    </button>
-                  </div>
+              {/* Modern Grid Layout */}
+              <div className="videography-manager-grid">
+                {/* Project Creation Header */}
+                <div className="projects-header">
+                  <h3 style={{ margin: 0 }}>Video Projects</h3>
+                  <button 
+                    onClick={() => setShowVideoProjectForm(!showVideoProjectForm)}
+                    className="btn-new-project"
+                  >
+                    {showVideoProjectForm ? 'Cancel' : '+ New Project'}
+                  </button>
+                </div>
 
-                  {showVideoProjectForm && (
-                    <div style={{ 
-                      padding: '1rem', 
-                      background: '#f8f9fa', 
-                      borderRadius: '8px',
-                      marginBottom: '1rem'
-                    }}>
+                {/* Project Creation Form */}
+                {showVideoProjectForm && (
+                  <div className="project-form-card">
+                    <div className="form-field-group">
+                      <label className="form-label">
+                        Project Name *
+                      </label>
                       <input
                         type="text"
-                        placeholder="Project name"
                         value={newVideoProjectName}
                         onChange={(e) => setNewVideoProjectName(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.5rem',
-                          marginBottom: '0.5rem',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '4px'
-                        }}
+                        placeholder="e.g., Wedding Highlight Reels 2025"
+                        className="form-input"
                       />
+                    </div>
+                    <div className="form-field-group">
+                      <label className="form-label">
+                        Description (Optional)
+                      </label>
                       <textarea
-                        placeholder="Description (optional)"
                         value={newVideoProjectDescription}
                         onChange={(e) => setNewVideoProjectDescription(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.5rem',
-                          marginBottom: '0.5rem',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '4px',
-                          minHeight: '60px'
-                        }}
+                        placeholder="Brief description of this video project..."
+                        rows={3}
+                        className="form-textarea"
                       />
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button
-                          onClick={createVideoProject}
-                          style={{
-                            flex: 1,
-                            padding: '0.5rem',
-                            background: 'var(--primary-color)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Create
-                        </button>
-                        <button
-                          onClick={() => setShowVideoProjectForm(false)}
-                          style={{
-                            flex: 1,
-                            padding: '0.5rem',
-                            background: '#e0e0e0',
-                            color: '#333',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
                     </div>
-                  )}
+                    <button
+                      onClick={createVideoProject}
+                      className="btn-create-project"
+                    >
+                      Create Project
+                    </button>
+                  </div>
+                )}
 
-                  {loadingVideoProjects ? (
-                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
-                      Loading...
-                    </div>
-                  ) : videoProjects.length === 0 ? (
-                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)', fontSize: '0.9rem' }}>
-                      No projects yet. Create your first project!
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {videoProjects.map(project => (
+                {/* Video Projects Grid */}
+                {loadingVideoProjects ? (
+                  <div className="albums-loading">
+                    <div className="spinner"></div>
+                    <p>Loading video projects...</p>
+                  </div>
+                ) : videoProjects.length === 0 ? (
+                  <div className="albums-empty">
+                    <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎬</div>
+                    <p>No video projects yet. Create your first project to get started!</p>
+                  </div>
+                ) : (
+                  <div className="video-projects-grid">
+                    {videoProjects.map(project => {
+                      // Use first_video_id from project data for cover image
+                      const coverImage = project.first_video_id 
+                        ? `https://img.youtube.com/vi/${project.first_video_id}/maxresdefault.jpg`
+                        : null;
+                      
+                      return (
                         <div
                           key={project.id}
-                          onClick={() => setSelectedVideoProject(project)}
-                          style={{
-                            padding: '1rem',
-                            background: selectedVideoProject?.id === project.id ? '#e8f4ff' : 'white',
-                            border: selectedVideoProject?.id === project.id ? '2px solid var(--primary-color)' : '1px solid #e0e0e0',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s'
-                          }}
+                          className="video-project-card"
                         >
-                          <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{project.project_name}</div>
-                          <div style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>
-                            {project.video_count || 0} videos
+                          {/* Video Project Cover */}
+                          <div className="video-card-image-wrapper">
+                            {coverImage ? (
+                              <img 
+                                src={coverImage}
+                                alt={project.project_name}
+                                className="video-card-image"
+                                onError={(e) => {
+                                  // Fallback to medium quality if maxres fails
+                                  e.currentTarget.src = `https://img.youtube.com/vi/${project.first_video_id}/mqdefault.jpg`;
+                                }}
+                              />
+                            ) : (
+                              <div className="video-card-placeholder">
+                                <span style={{ fontSize: '4rem' }}>🎬</span>
+                              </div>
+                            )}
+                            
+                            {/* Delete Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteVideoProject(project.id);
+                              }}
+                              className="video-card-delete"
+                              title="Delete project"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+
+                          {/* Video Project Info & Actions Overlay */}
+                          <div className="video-card-overlay">
+                            <div className="video-card-info">
+                              <h4 className="video-card-title">{project.project_name}</h4>
+                              <p className="video-card-count">{project.video_count || 0} videos</p>
+                            </div>
+                            
+                            {/* Action Button */}
+                            <div className="video-card-actions">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openVideoModal(project);
+                                }}
+                                className="video-action-btn primary"
+                              >
+                                Manage Videos
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Video Management Area */}
-                <div>
-                  {!selectedVideoProject ? (
-                    <div style={{ 
-                      padding: '4rem 2rem', 
-                      textAlign: 'center', 
-                      color: 'var(--text-light)',
-                      border: '2px dashed #e0e0e0',
-                      borderRadius: '8px'
-                    }}>
-                      <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>No project selected</p>
-                      <p style={{ fontSize: '0.9rem' }}>Select a project from the left or create a new one</p>
-                    </div>
-                  ) : (
-                    <>
-                      <h3 style={{ marginBottom: '1rem' }}>{selectedVideoProject.project_name}</h3>
-                      
-                      {/* Add Video Form */}
-                      <div style={{ 
-                        padding: '1.5rem', 
-                        background: '#f8f9fa', 
-                        borderRadius: '8px',
-                        marginBottom: '2rem'
-                      }}>
-                        <h4 style={{ marginBottom: '1rem' }}>Add YouTube Video</h4>
-                        <input
-                          type="text"
-                          placeholder="YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
-                          value={newVideoUrl}
-                          onChange={(e) => setNewVideoUrl(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            marginBottom: '0.5rem',
-                            border: '1px solid #e0e0e0',
-                            borderRadius: '4px',
-                            fontSize: '0.95rem'
-                          }}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Video title (optional)"
-                          value={newVideoTitle}
-                          onChange={(e) => setNewVideoTitle(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            marginBottom: '1rem',
-                            border: '1px solid #e0e0e0',
-                            borderRadius: '4px',
-                            fontSize: '0.95rem'
-                          }}
-                        />
-                        <button
-                          onClick={addVideo}
-                          style={{
-                            padding: '0.75rem 2rem',
-                            background: 'var(--primary-color)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '1rem',
-                            fontWeight: '500'
-                          }}
-                        >
-                          Add Video
-                        </button>
-                      </div>
-
-                      {/* Videos List */}
-                      <div>
-                        <h4 style={{ marginBottom: '1rem' }}>Videos ({projectVideos.length})</h4>
-                        
-                        {loadingVideos ? (
-                          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
-                            Loading videos...
-                          </div>
-                        ) : projectVideos.length === 0 ? (
-                          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
-                            No videos yet. Add your first video!
-                          </div>
-                        ) : (
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-                            {projectVideos.map(video => (
-                              <div key={video.id} style={{ 
-                                border: '1px solid #e0e0e0', 
-                                borderRadius: '8px',
-                                overflow: 'hidden',
-                                background: 'white'
-                              }}>
-                                <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
-                                  <img
-                                    src={`https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`}
-                                    alt={video.title || 'Video thumbnail'}
-                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                                  />
-                                </div>
-                                <div style={{ padding: '1rem' }}>
-                                  {video.title && (
-                                    <div style={{ fontWeight: '500', marginBottom: '0.5rem', fontSize: '0.95rem' }}>
-                                      {video.title}
-                                    </div>
-                                  )}
-                                  <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginBottom: '0.75rem' }}>
-                                    {new Date(video.created_at).toLocaleDateString()}
-                                  </div>
-                                  <button
-                                    onClick={() => deleteVideo(video.id)}
-                                    style={{
-                                      width: '100%',
-                                      padding: '0.5rem',
-                                      background: '#dc2626',
-                                      color: 'white',
-                                      border: 'none',
-                                      borderRadius: '4px',
-                                      cursor: 'pointer',
-                                      fontSize: '0.9rem'
-                                    }}
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
+
+          {/* Video Management Modal */}
+          {videoModalOpen && modalVideoProject && (
+            <div 
+              className="video-modal-overlay"
+              onClick={() => setVideoModalOpen(false)}
+            >
+              <div 
+                className="video-modal-container"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="video-modal-header">
+                  <div>
+                    <h2 style={{ margin: 0, marginBottom: '0.5rem', fontSize: '1.75rem' }}>
+                      {modalVideoProject.project_name}
+                    </h2>
+                    {modalVideoProject.description && (
+                      <p style={{ margin: 0, color: 'var(--text-light)', fontSize: '0.95rem' }}>
+                        {modalVideoProject.description}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setVideoModalOpen(false)}
+                    className="video-modal-close"
+                    aria-label="Close modal"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {/* Modal Content */}
+                <div className="video-modal-content">
+                  {/* Add Video Form */}
+                  <div className="video-modal-add-section">
+                    <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Add YouTube Video</h3>
+                    <div className="form-field-group">
+                      <input
+                        type="text"
+                        placeholder="YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
+                        value={newVideoUrl}
+                        onChange={(e) => setNewVideoUrl(e.target.value)}
+                        className="form-input"
+                      />
+                    </div>
+                    <div className="form-field-group">
+                      <input
+                        type="text"
+                        placeholder="Video title (optional)"
+                        value={newVideoTitle}
+                        onChange={(e) => setNewVideoTitle(e.target.value)}
+                        className="form-input"
+                      />
+                    </div>
+                    <button
+                      onClick={addVideo}
+                      className="btn-add-video"
+                    >
+                      Add Video
+                    </button>
+                  </div>
+
+                  {/* Videos Grid */}
+                  <div style={{ marginTop: '2.5rem' }}>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>
+                      Videos ({projectVideos.length})
+                    </h3>
+                    
+                    {loadingVideos ? (
+                      <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                        <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                        Loading videos...
+                      </div>
+                    ) : projectVideos.length === 0 ? (
+                      <div className="video-modal-empty-state">
+                        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎬</div>
+                        <p>No videos yet. Add your first video!</p>
+                      </div>
+                    ) : (
+                      <div className="video-modal-grid">
+                        {projectVideos.map((video) => (
+                          <div 
+                            key={video.id} 
+                            className="video-modal-grid-item"
+                          >
+                            <div className="video-modal-thumbnail">
+                              <img
+                                src={`https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`}
+                                alt={video.title || 'Video thumbnail'}
+                                style={{ 
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'cover'
+                                }}
+                                onError={(e) => {
+                                  e.currentTarget.src = `https://img.youtube.com/vi/${video.video_id}/default.jpg`;
+                                }}
+                              />
+                              <div className="video-play-icon">▶</div>
+                            </div>
+                            <div className="video-modal-info">
+                              {video.title && (
+                                <div className="video-modal-title">
+                                  {video.title}
+                                </div>
+                              )}
+                              <div className="video-modal-date">
+                                {new Date(video.created_at).toLocaleDateString()}
+                              </div>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteVideo(video.id);
+                              }}
+                              className="video-modal-delete-btn"
+                              title="Delete video"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Analytics Tab */}
           <div id="analytics-tab" className={`tab-content ${activeTab === 'analytics' ? 'active' : ''}`}>
