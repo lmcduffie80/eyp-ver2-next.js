@@ -2,11 +2,6 @@
 // Force redeploy to pick up AWS environment variables - 2026-01-24
 const nextConfig = {
   reactStrictMode: true,
-  api: {
-    bodyParser: {
-      sizeLimit: '100mb',
-    },
-  },
   images: {
     remotePatterns: [
       {
