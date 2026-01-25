@@ -2214,3 +2214,368 @@ body.dashboard-page {
     grid-template-columns: repeat(3, 1fr) !important;
   }
 }
+
+/* Analytics Dashboard Styles */
+.metrics-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.metric-card-modern {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 1px solid #e0e0e0;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent-color) 0%, #ff8f66 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.metric-card-modern:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.metric-card-modern:hover::before {
+  opacity: 1;
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.metric-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-icon {
+  font-size: 2rem;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.metric-card-modern:hover .metric-icon {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.metric-value {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  line-height: 1;
+  margin: 0.75rem 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-change {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-top: 0.75rem;
+}
+
+.metric-change.positive {
+  color: #10b981;
+}
+
+.metric-change.negative {
+  color: #ef4444;
+}
+
+.metric-change.neutral {
+  color: var(--text-light);
+}
+
+.metric-change .arrow {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/* Analytics Charts */
+.analytics-chart-container {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e0e0e0;
+}
+
+.analytics-chart-container h3 {
+  color: var(--primary-color);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+/* Analytics Lists */
+.analytics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.analytics-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--bg-light);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  border: 1px solid #e8e8e8;
+}
+
+.analytics-list-item:hover {
+  background: #f0f0f0;
+  transform: translateX(4px);
+  border-color: var(--accent-color);
+}
+
+.analytics-list-item-label {
+  font-weight: 500;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.analytics-list-item-value {
+  font-weight: 700;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+}
+
+.analytics-list-item-bar {
+  flex: 1;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  margin: 0 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.analytics-list-item-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-color) 0%, #ff8f66 100%);
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+/* Line Chart for Visits */
+.line-chart {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  padding: 1rem 0;
+}
+
+.line-chart-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.line-chart-line {
+  fill: none;
+  stroke: var(--accent-color);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.line-chart-area {
+  fill: url(#gradient);
+  opacity: 0.3;
+}
+
+.line-chart-point {
+  fill: white;
+  stroke: var(--accent-color);
+  stroke-width: 3;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.line-chart-point:hover {
+  r: 8;
+  stroke-width: 4;
+}
+
+.line-chart-grid {
+  stroke: #e0e0e0;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.line-chart-label {
+  fill: var(--text-light);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Recent Activity Timeline */
+.activity-timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.activity-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--accent-color) 0%, transparent 100%);
+}
+
+.activity-timeline-item {
+  position: relative;
+  padding: 1rem 0 1rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.activity-timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -1.5rem;
+  top: 1.25rem;
+  width: 12px;
+  height: 12px;
+  background: var(--accent-color);
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.activity-timeline-item:hover::before {
+  width: 16px;
+  height: 16px;
+  left: -1.7rem;
+  top: 1.05rem;
+}
+
+.activity-timeline-item:hover {
+  background: var(--bg-light);
+  border-radius: 8px;
+  padding-left: 1.5rem;
+}
+
+.activity-timeline-content {
+  font-size: 0.95rem;
+  color: var(--text-dark);
+  margin-bottom: 0.25rem;
+}
+
+.activity-timeline-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+/* Empty State */
+.analytics-empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-light);
+}
+
+.analytics-empty-state-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.3;
+}
+
+.analytics-empty-state-text {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text-light);
+}
+
+/* Analytics Mobile Responsive */
+@media (max-width: 1024px) {
+  .analytics-chart-container {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .metrics-grid-modern {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-value {
+    font-size: 2.5rem;
+  }
+
+  .metric-card-modern {
+    padding: 1.5rem;
+  }
+
+  .line-chart {
+    height: 250px;
+  }
+
+  .activity-timeline {
+    padding-left: 1.5rem;
+  }
+
+  .analytics-list-item {
+    flex-wrap: wrap;
+  }
+
+  .analytics-list-item-bar {
+    order: 3;
+    flex: 1 1 100%;
+    margin: 0.75rem 0 0 0;
+  }
+
+  .analytics-chart-container {
+    padding: 1rem;
+  }
+
+  .analytics-chart-container h3 {
+    font-size: 1.1rem;
+  }
+
+  #visits-chart {
+    min-width: 100% !important;
+  }
+
+  .analytics-charts-grid-main,
+  .analytics-charts-grid-secondary {
+    grid-template-columns: 1fr !important;
+  }
+}
