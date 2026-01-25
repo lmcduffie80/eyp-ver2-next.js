@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [navBackground, setNavBackground] = useState('rgba(26, 26, 26, 0.95)');
+  const [isDJAuthenticated, setIsDJAuthenticated] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -21,6 +22,20 @@ export default function Navigation() {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const checkDJAuth = () => {
+      const djUser = localStorage.getItem('dj_user');
+      const djToken = localStorage.getItem('dj_token');
+      setIsDJAuthenticated(!!(djUser && djToken));
+    };
+    
+    checkDJAuth();
+    
+    // Listen for storage changes (for cross-tab sync)
+    window.addEventListener('storage', checkDJAuth);
+    return () => window.removeEventListener('storage', checkDJAuth);
   }, []);
 
   const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -57,6 +72,9 @@ export default function Navigation() {
           <li><Link href="/videography" className="text-white no-underline font-medium transition-colors hover:text-accent">Videography</Link></li>
           <li><Link href="/dj-entertainment" className="text-white no-underline font-medium transition-colors hover:text-accent">DJ Entertainment</Link></li>
           <li><Link href="#contact" className="text-white no-underline font-medium transition-colors hover:text-accent">Contact</Link></li>
+          {isDJAuthenticated && (
+            <li><Link href="/dj-dashboard" className="text-white no-underline font-medium transition-colors hover:text-accent">DJ Portal</Link></li>
+          )}
         </ul>
         <button
           className="md:hidden bg-transparent border-none text-white text-3xl cursor-pointer p-2 z-[1001]"
@@ -94,6 +112,17 @@ export default function Navigation() {
             <li className="w-full">
               <Link href="#contact" className="block py-6 px-6 w-full text-white text-lg font-semibold transition-colors active:bg-[rgba(255,107,53,0.2)] hover:bg-[rgba(255,255,255,0.05)]" onClick={() => setMobileMenuOpen(false)}>Contact</Link>
             </li>
+            {isDJAuthenticated && (
+              <li className="w-full">
+                <Link 
+                  href="/dj-dashboard" 
+                  className="block py-6 px-6 w-full text-white text-lg font-semibold transition-colors active:bg-[rgba(255,107,53,0.2)] hover:bg-[rgba(255,255,255,0.05)]" 
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  DJ Portal
+                </Link>
+              </li>
+            )}
           </ul>
         )}
       </div>
