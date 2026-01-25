@@ -11,7 +11,14 @@ export async function GET() {
     const result = await client.query(`
       SELECT 
         vp.*,
-        COUNT(vv.id)::int as video_count
+        COUNT(vv.id)::int as video_count,
+        (
+          SELECT video_id 
+          FROM videography_videos 
+          WHERE project_id = vp.id 
+          ORDER BY created_at ASC 
+          LIMIT 1
+        ) as first_video_id
       FROM videography_projects vp
       LEFT JOIN videography_videos vv ON vp.id = vv.project_id
       GROUP BY vp.id
