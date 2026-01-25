@@ -2824,6 +2824,491 @@ body.dashboard-page {
   }
 }
 
+/* Videography Portfolio Manager - Modern Grid Layout */
+.videography-manager-grid {
+  width: 100%;
+}
+
+/* Video Projects Grid */
+.video-projects-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+/* Video Project Card */
+.video-project-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.video-project-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Video Card Image */
+.video-card-image-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #f0f0f0;
+}
+
+.video-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.video-project-card:hover .video-card-image {
+  transform: scale(1.05);
+}
+
+.video-card-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+/* Video Card Delete Button */
+.video-card-delete {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.95);
+  color: #dc2626;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+}
+
+.video-project-card:hover .video-card-delete {
+  opacity: 1;
+}
+
+.video-card-delete:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+/* Video Card Overlay */
+.video-card-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 70%, transparent 100%);
+  padding: 2rem 1.5rem 1.5rem;
+  transform: translateY(0);
+  transition: all 0.3s ease;
+}
+
+.video-project-card:hover .video-card-overlay {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.6) 70%, transparent 100%);
+}
+
+/* Video Card Info */
+.video-card-info {
+  margin-bottom: 1rem;
+}
+
+.video-card-title {
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.3;
+}
+
+.video-card-count {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Video Card Actions */
+.video-card-actions {
+  display: flex;
+  gap: 0.75rem;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+
+.video-project-card:hover .video-card-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.video-action-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.video-action-btn.primary {
+  background: var(--accent-color);
+  color: white;
+}
+
+.video-action-btn.primary:hover {
+  background: #ff8f66;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+/* Video Management Modal Styles */
+.video-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.video-modal-container {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 1400px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+  position: relative;
+}
+
+.video-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 2rem;
+  border-bottom: 2px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.video-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 3rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-light);
+  transition: all 0.2s ease;
+  padding: 0;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.video-modal-close:hover {
+  background: #f0f0f0;
+  color: var(--primary-color);
+  transform: rotate(90deg);
+}
+
+.video-modal-content {
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Add Video Section */
+.video-modal-add-section {
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  border: 2px solid #e8e8e8;
+}
+
+.btn-add-video {
+  padding: 0.875rem 2rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.btn-add-video:hover {
+  background: #2d2d2d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Video Grid in Modal */
+.video-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.video-modal-grid-item {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+  border: 1px solid #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.video-modal-grid-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: var(--accent-color);
+}
+
+.video-modal-thumbnail {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%;
+  background: #000;
+  overflow: hidden;
+}
+
+.video-modal-thumbnail img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-play-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 107, 53, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  padding-left: 4px;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.video-modal-grid-item:hover .video-play-icon {
+  transform: translate(-50%, -50%) scale(1.1);
+  background: var(--accent-color);
+}
+
+.video-modal-info {
+  padding: 1rem;
+}
+
+.video-modal-title {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--text-dark);
+}
+
+.video-modal-date {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.video-modal-delete-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: rgba(220, 53, 69, 0.9);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-size: 1.1rem;
+  opacity: 0;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  z-index: 2;
+}
+
+.video-modal-grid-item:hover .video-modal-delete-btn {
+  opacity: 1;
+}
+
+.video-modal-delete-btn:hover {
+  background: rgba(200, 35, 51, 1);
+  transform: scale(1.1);
+}
+
+.video-modal-empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-light);
+}
+
+.video-modal-empty-state p {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Responsive Video Grid */
+@media (max-width: 1400px) {
+  .video-projects-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .video-projects-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .video-card-title {
+    font-size: 1.1rem;
+  }
+  
+  .video-modal-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .video-projects-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .video-card-delete {
+    opacity: 1;
+  }
+  
+  .video-card-actions {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .video-action-btn {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.85rem;
+  }
+  
+  .video-modal-overlay {
+    padding: 1rem;
+  }
+
+  .video-modal-container {
+    width: 95%;
+    max-height: 95vh;
+    border-radius: 12px;
+  }
+
+  .video-modal-header {
+    padding: 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .video-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 40px;
+    height: 40px;
+    font-size: 2.5rem;
+  }
+
+  .video-modal-content {
+    padding: 1.5rem;
+  }
+
+  .video-modal-add-section {
+    padding: 1.5rem;
+  }
+
+  .video-modal-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .video-modal-delete-btn {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .video-card-overlay {
+    padding: 1.5rem 1rem 1rem;
+  }
+  
+  .video-card-title {
+    font-size: 1rem;
+  }
+  
+  .video-card-count {
+    font-size: 0.85rem;
+  }
+  
+  .video-modal-header h2 {
+    font-size: 1.5rem;
+  }
+  
+  .video-play-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+  }
+}
+
 /* Photography Portfolio Manager - Modern Grid Layout */
 .photography-manager-grid {
   width: 100%;
