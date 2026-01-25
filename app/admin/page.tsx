@@ -64,6 +64,10 @@ export default function AdminDashboard() {
   const [lightboxStartIndex, setLightboxStartIndex] = useState(0);
   const [lightboxTitle, setLightboxTitle] = useState('');
   
+  // Photo modal state
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [modalProject, setModalProject] = useState<any | null>(null);
+  
   // Helper to format date as YYYY-MM-DD in local timezone (avoids UTC conversion issues)
   const formatDateLocal = (date: Date): string => {
     const year = date.getFullYear();
@@ -834,6 +838,15 @@ export default function AdminDashboard() {
     setLightboxOpen(true);
   };
 
+  // Open project in modal view
+  const openProjectModal = (project: any) => {
+    setModalProject(project);
+    setPhotoModalOpen(true);
+    if (project) {
+      fetchProjectPhotos(project.id);
+    }
+  };
+
   // Helper function to check image dimensions
   const checkImageDimensions = (file: File): Promise<{width: number, height: number}> => {
     return new Promise((resolve, reject) => {
@@ -1095,6 +1108,17 @@ export default function AdminDashboard() {
       loadAnalytics();
     }
   }, [activeTab, analyticsTimeRange]);
+
+  // ESC key handler for photo modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && photoModalOpen) {
+        setPhotoModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [photoModalOpen]);
 
   // Analytics Functions
   const loadAnalytics = () => {
@@ -4696,6 +4720,27 @@ export default function AdminDashboard() {
                           >
                             View Gallery
                           </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openProjectModal(project);
+                            }}
+                            className="manage-photos-btn"
+                            title="Manage photos in modal view"
+                            style={{
+                              padding: '0.5rem 1rem',
+                              background: 'var(--accent-color)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.875rem',
+                              marginLeft: '0.5rem',
+                              fontWeight: '600'
+                            }}
+                          >
+                            📋 Manage Photos
+                          </button>
                         </div>
                       ))
                     )}
@@ -4891,6 +4936,146 @@ export default function AdminDashboard() {
             onClose={() => setLightboxOpen(false)}
             galleryTitle={lightboxTitle}
           />
+
+          {/* Photo Management Modal */}
+          {photoModalOpen && modalProject && (
+            <div 
+              className="photo-modal-overlay"
+              onClick={() => setPhotoModalOpen(false)}
+            >
+              <div 
+                className="photo-modal-container"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="photo-modal-header">
+                  <div>
+                    <h2 style={{ margin: 0, marginBottom: '0.5rem', fontSize: '1.75rem' }}>
+                      {modalProject.project_name}
+                    </h2>
+                    {modalProject.description && (
+                      <p style={{ margin: 0, color: 'var(--text-light)', fontSize: '0.95rem' }}>
+                        {modalProject.description}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setPhotoModalOpen(false)}
+                    className="photo-modal-close"
+                    aria-label="Close modal"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {/* Modal Content */}
+                <div className="photo-modal-content">
+                  {/* Upload Area */}
+                  <div className="photo-modal-upload-section">
+                    <input
+                      type="file"
+                      id="modal-photo-upload-input"
+                      multiple
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      style={{ display: 'none' }}
+                    />
+                    <label
+                      htmlFor="modal-photo-upload-input"
+                      className="photo-modal-upload-label"
+                    >
+                      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📁</div>
+                      <p style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                        {uploadingPhotos ? `Uploading... ${uploadProgress}%` : 'Click to upload or drag photos here'}
+                      </p>
+                      <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
+                        Supports: JPG, PNG, GIF, WEBP • Max 20MB per file
+                      </p>
+                      <p style={{ color: 'var(--text-light)', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+                        <strong>Recommended:</strong> Minimum 1200x800px for best quality
+                      </p>
+                      <p style={{ color: '#4CAF50', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                        Images will be automatically optimized for web display
+                      </p>
+                    </label>
+                    {uploadingPhotos && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <div style={{ 
+                          height: '8px', 
+                          background: '#e0e0e0', 
+                          borderRadius: '4px', 
+                          overflow: 'hidden' 
+                        }}>
+                          <div style={{ 
+                            height: '100%', 
+                            background: 'var(--accent-color)', 
+                            width: `${uploadProgress}%`,
+                            transition: 'width 0.3s ease'
+                          }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Photos Grid */}
+                  <div style={{ marginTop: '2rem' }}>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>
+                      Photos ({projectPhotos.length})
+                    </h3>
+                    
+                    {loadingPhotos ? (
+                      <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                        <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                        Loading photos...
+                      </div>
+                    ) : projectPhotos.length === 0 ? (
+                      <div className="photo-modal-empty-state">
+                        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📸</div>
+                        <p>No photos yet. Upload your first photo!</p>
+                      </div>
+                    ) : (
+                      <div className="photo-modal-grid">
+                        {projectPhotos.map((photo, index) => (
+                          <div 
+                            key={photo.id} 
+                            className="photo-modal-grid-item"
+                          >
+                            <img 
+                              src={photo.thumbnail_url || photo.photo_url} 
+                              alt={photo.caption || 'Project photo'}
+                              onClick={() => {
+                                const imageUrls = projectPhotos.map(p => p.photo_url);
+                                setLightboxImages(imageUrls);
+                                setLightboxStartIndex(index);
+                                setLightboxTitle(modalProject.project_name);
+                                setLightboxOpen(true);
+                              }}
+                              style={{ 
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                cursor: 'pointer'
+                              }}
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deletePhoto(photo.id);
+                              }}
+                              className="photo-modal-delete-btn"
+                              title="Delete photo"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Videography Tab */}
           <div id="videography-tab" className={`tab-content ${activeTab === 'videography' ? 'active' : ''}`}>
