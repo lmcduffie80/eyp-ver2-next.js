@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCSVImport } from '../hooks/useCSVImport';
+import ImageLightbox from '@/components/ImageLightbox';
 
 // Force fresh deployment - Updated: 2026-01-23T00:00:00Z
 
@@ -55,7 +56,12 @@ export default function AdminDashboard() {
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
   const [showProjectForm, setShowProjectForm] = useState(false);
-  const [selectedPhotoForPreview, setSelectedPhotoForPreview] = useState<any>(null);
+  
+  // Lightbox gallery state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxStartIndex, setLightboxStartIndex] = useState(0);
+  const [lightboxTitle, setLightboxTitle] = useState('');
   
   // Helper to format date as YYYY-MM-DD in local timezone (avoids UTC conversion issues)
   const formatDateLocal = (date: Date): string => {
@@ -796,6 +802,17 @@ export default function AdminDashboard() {
       console.error('Error deleting project:', error);
       alert('Failed to delete project');
     }
+  };
+
+  // Open project gallery in lightbox
+  const openProjectGallery = (project: any, startIndex: number = 0) => {
+    if (!projectPhotos || projectPhotos.length === 0) return;
+    
+    const imageUrls = projectPhotos.map(photo => photo.photo_url);
+    setLightboxImages(imageUrls);
+    setLightboxStartIndex(startIndex);
+    setLightboxTitle(project.project_name);
+    setLightboxOpen(true);
   };
 
   // Helper function to check image dimensions
@@ -4136,6 +4153,26 @@ export default function AdminDashboard() {
                           >
                             🗑️
                           </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openProjectGallery(project);
+                            }}
+                            className="view-gallery-btn"
+                            title="View all photos"
+                            style={{
+                              padding: '0.5rem 1rem',
+                              background: 'var(--primary)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.875rem',
+                              marginLeft: '0.5rem'
+                            }}
+                          >
+                            View Gallery
+                          </button>
                         </div>
                       ))
                     )}
@@ -4272,7 +4309,10 @@ export default function AdminDashboard() {
                                 <img 
                                   src={photo.thumbnail_url || photo.photo_url} 
                                   alt={photo.caption || 'Project photo'}
-                                  onClick={() => setSelectedPhotoForPreview(photo)}
+                                  onClick={() => {
+                                    const photoIndex = projectPhotos.findIndex(p => p.id === photo.id);
+                                    openProjectGallery(selectedProject, photoIndex);
+                                  }}
                                   style={{ 
                                     width: '100%', 
                                     height: '150px', 
@@ -4320,68 +4360,14 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Photo Preview Modal */}
-          {selectedPhotoForPreview && (
-            <div 
-              onClick={() => setSelectedPhotoForPreview(null)}
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'rgba(0, 0, 0, 0.9)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 10000,
-                cursor: 'pointer'
-              }}
-            >
-              <div style={{
-                position: 'relative',
-                maxWidth: '90vw',
-                maxHeight: '90vh',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center'
-              }}>
-                <button
-                  onClick={() => setSelectedPhotoForPreview(null)}
-                  style={{
-                    position: 'absolute',
-                    top: '-50px',
-                    right: '0',
-                    background: 'white',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '40px',
-                    height: '40px',
-                    fontSize: '1.5rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-                  }}
-                >
-                  ✕
-                </button>
-                <img
-                  src={selectedPhotoForPreview.photo_url}
-                  alt={selectedPhotoForPreview.caption || 'Project photo'}
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    maxWidth: '90vw',
-                    maxHeight: '90vh',
-                    objectFit: 'contain',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
-                  }}
-                />
-              </div>
-            </div>
-          )}
+          {/* Photo Gallery Lightbox */}
+          <ImageLightbox
+            images={lightboxImages}
+            currentIndex={lightboxStartIndex}
+            isOpen={lightboxOpen}
+            onClose={() => setLightboxOpen(false)}
+            galleryTitle={lightboxTitle}
+          />
 
           {/* Videography Tab */}
           <div id="videography-tab" className={`tab-content ${activeTab === 'videography' ? 'active' : ''}`}>
