@@ -2924,10 +2924,27 @@ export default function AdminDashboard() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h2 style={{ margin: 0 }}>All Projects</h2>
                 <button 
-                  onClick={() => {
-                    if (confirm('Are you sure you want to clear all projects? This action cannot be undone.')) {
-                      // Clear all projects functionality will be added here
-                      console.log('Clear all projects');
+                  onClick={async () => {
+                    if (confirm('Are you sure you want to clear ALL projects (bookings, photos, videos)? This will delete everything and cannot be undone!')) {
+                      try {
+                        const response = await fetch('/api/admin/clear-all-projects', {
+                          method: 'DELETE'
+                        });
+                        
+                        if (response.ok) {
+                          alert('All projects cleared successfully');
+                          // Refresh data
+                          fetchBookings();
+                          fetchPhotoProjects();
+                          fetchVideoProjects();
+                        } else {
+                          const error = await response.json();
+                          alert(`Failed to clear projects: ${error.error}`);
+                        }
+                      } catch (error) {
+                        console.error('Error clearing projects:', error);
+                        alert('Failed to clear projects');
+                      }
                     }
                   }}
                   style={{ padding: '0.5rem 1rem', background: 'var(--error-color)', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 'bold' }}
