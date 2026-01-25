@@ -1488,21 +1488,47 @@ export default function DJDashboard() {
                   </div>
                 </div>
                 
-                <button
-                  onClick={() => setSelectedBooking(null)}
-                  style={{
-                    marginTop: '2rem',
-                    width: '100%',
-                    padding: '0.75rem',
-                    background: '#f5f5f5',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontWeight: '500'
-                  }}
-                >
-                  Close
-                </button>
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '1rem', 
+                  marginTop: '2rem' 
+                }}>
+                  <button
+                    onClick={() => printBookingNotesAsPDF(selectedBooking)}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem',
+                      background: '#17a2b8',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    <span>📄</span>
+                    <span>Print Notes</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setSelectedBooking(null)}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem',
+                      background: '#f5f5f5',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           )}
