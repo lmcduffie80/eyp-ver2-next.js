@@ -2579,3 +2579,247 @@ body.dashboard-page {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Photography Modal Styles */
+.photo-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.photo-modal-container {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 1400px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+  position: relative;
+}
+
+.photo-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 2rem;
+  border-bottom: 2px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.photo-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 3rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-light);
+  transition: all 0.2s ease;
+  padding: 0;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.photo-modal-close:hover {
+  background: #f0f0f0;
+  color: var(--primary-color);
+  transform: rotate(90deg);
+}
+
+.photo-modal-content {
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.photo-modal-upload-section {
+  margin-bottom: 2rem;
+}
+
+.photo-modal-upload-label {
+  display: block;
+  padding: 3rem 2rem;
+  border: 3px dashed #e0e0e0;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.photo-modal-upload-label:hover {
+  border-color: var(--accent-color);
+  background: #fff5f0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.15);
+}
+
+.photo-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.photo-modal-grid-item {
+  position: relative;
+  aspect-ratio: 4/3;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  background: #f0f0f0;
+}
+
+.photo-modal-grid-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.photo-modal-grid-item img {
+  transition: transform 0.3s ease;
+}
+
+.photo-modal-grid-item:hover img {
+  transform: scale(1.05);
+}
+
+.photo-modal-delete-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: rgba(220, 53, 69, 0.9);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-size: 1.1rem;
+  opacity: 0;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.photo-modal-grid-item:hover .photo-modal-delete-btn {
+  opacity: 1;
+}
+
+.photo-modal-delete-btn:hover {
+  background: rgba(200, 35, 51, 1);
+  transform: scale(1.1);
+}
+
+.photo-modal-empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-light);
+}
+
+.photo-modal-empty-state p {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Modal Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Photo Modal */
+@media (max-width: 1200px) {
+  .photo-modal-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .photo-modal-overlay {
+    padding: 1rem;
+  }
+
+  .photo-modal-container {
+    width: 95%;
+    max-height: 95vh;
+    border-radius: 12px;
+  }
+
+  .photo-modal-header {
+    padding: 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .photo-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 40px;
+    height: 40px;
+    font-size: 2.5rem;
+  }
+
+  .photo-modal-content {
+    padding: 1.5rem;
+  }
+
+  .photo-modal-upload-label {
+    padding: 2rem 1rem;
+  }
+
+  .photo-modal-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+
+  .photo-modal-delete-btn {
+    opacity: 1;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .photo-modal-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .photo-modal-header h2 {
+    font-size: 1.5rem;
+  }
+}
