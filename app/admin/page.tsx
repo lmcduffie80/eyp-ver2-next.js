@@ -879,10 +879,22 @@ export default function AdminDashboard() {
 
   // Open video project in modal view
   const openVideoModal = (project: any) => {
+    console.log('[VIDEO MODAL] Opening for project:', project.id, project.project_name);
+    
+    // Reset state to avoid showing stale data
+    setProjectVideos([]);
+    setPlayingVideoId(null);
+    
+    // Set modal state
     setModalVideoProject(project);
     setVideoModalOpen(true);
-    if (project) {
+    
+    // Fetch videos for this project
+    if (project && project.id) {
+      console.log('[VIDEO MODAL] Fetching videos for project:', project.id);
       fetchProjectVideos(project.id);
+    } else {
+      console.error('[VIDEO MODAL] No project ID provided');
     }
   };
 
@@ -1541,12 +1553,15 @@ export default function AdminDashboard() {
   const fetchProjectVideos = async (projectId: number) => {
     try {
       setLoadingVideos(true);
+      console.log('[VIDEO API] Fetching videos for project:', projectId);
       const response = await fetch(`/api/videography/videos?project_id=${projectId}`);
       if (response.ok) {
         const result = await response.json();
+        console.log('[VIDEO API] Received videos:', result.data?.length || 0, 'videos');
+        console.log('[VIDEO API] Videos data:', result.data);
         setProjectVideos(result.data || []);
       } else {
-        console.error('Failed to fetch project videos');
+        console.error('Failed to fetch project videos', response.status);
       }
     } catch (error) {
       console.error('Error fetching project videos:', error);
@@ -1580,7 +1595,8 @@ export default function AdminDashboard() {
         setSelectedVideoProject(result.data);
       } else {
         const error = await response.json();
-        alert(`Failed to create project: ${error.error}`);
+        console.error('[CREATE PROJECT] Server error:', error);
+        alert(`Failed to create project: ${error.error}\n${error.details || ''}`);
       }
     } catch (error) {
       console.error('Error creating project:', error);
@@ -1594,7 +1610,8 @@ export default function AdminDashboard() {
       return;
     }
 
-    if (!selectedVideoProject) {
+    // Use modalVideoProject instead of selectedVideoProject
+    if (!modalVideoProject) {
       alert('Please select a project first');
       return;
     }
@@ -1604,7 +1621,7 @@ export default function AdminDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          project_id: selectedVideoProject.id,
+          project_id: modalVideoProject.id,  // Changed from selectedVideoProject
           video_url: newVideoUrl,
           title: newVideoTitle || null
         })
@@ -1613,7 +1630,7 @@ export default function AdminDashboard() {
       if (response.ok) {
         setNewVideoUrl('');
         setNewVideoTitle('');
-        await fetchProjectVideos(selectedVideoProject.id);
+        await fetchProjectVideos(modalVideoProject.id);  // Changed from selectedVideoProject
         await fetchVideoProjects();
         alert('Video added successfully!');
       } else {
