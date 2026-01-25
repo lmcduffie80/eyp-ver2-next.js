@@ -64,6 +64,12 @@ export default function AdminDashboard() {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
+
+  // Helper to parse YYYY-MM-DD string as local date (not UTC)
+  const parseDateLocal = (dateStr: string): Date => {
+    const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
   
   // Videography state
   const [videoProjects, setVideoProjects] = useState<any[]>([]);
@@ -200,10 +206,10 @@ export default function AdminDashboard() {
       const totalProjects = bookings.length;
       
       // Completed Projects (past dates)
-      const completed = bookings.filter(b => new Date(b.date) < today).length;
+      const completed = bookings.filter(b => parseDateLocal(b.date) < today).length;
       
       // Future Bookings
-      const futureBookings = bookings.filter(b => new Date(b.date) >= today).length;
+      const futureBookings = bookings.filter(b => parseDateLocal(b.date) >= today).length;
       
       // Total Revenue
       const totalRevenue = bookings.reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0);
@@ -213,11 +219,11 @@ export default function AdminDashboard() {
       
       // Revenue by Year
       const revenue2025 = bookings
-        .filter(b => new Date(b.date).getFullYear() === 2025)
+        .filter(b => parseDateLocal(b.date).getFullYear() === 2025)
         .reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0);
       
       const revenue2026 = bookings
-        .filter(b => new Date(b.date).getFullYear() === 2026)
+        .filter(b => parseDateLocal(b.date).getFullYear() === 2026)
         .reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0);
       
       // Calculate percentages
@@ -540,7 +546,7 @@ export default function AdminDashboard() {
     if (!currentEditingBooking) return;
     
     const projectName = currentEditingBooking.eventType || 'Project';
-    const date = new Date(currentEditingBooking.date).toLocaleDateString();
+    const date = parseDateLocal(currentEditingBooking.date).toLocaleDateString();
     const dj = currentEditingBooking.djUser || 'Unassigned';
     const notes = modalNotes || '';
     
@@ -2118,7 +2124,7 @@ export default function AdminDashboard() {
                         today.setHours(0, 0, 0, 0);
                         const upcomingBookings = bookings
                           .filter(b => {
-                            const bookingDate = new Date(b.date);
+                            const bookingDate = parseDateLocal(b.date);
                             const isUpcoming = (b as any).status === 'upcoming' || !(b as any).status;
                             return bookingDate >= today && isUpcoming;
                           })
@@ -2126,7 +2132,7 @@ export default function AdminDashboard() {
                           .sort((a, b) => {
                             let comparison = 0;
                             if (upcomingSortField === 'date') {
-                              comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+                              comparison = parseDateLocal(a.date).getTime() - parseDateLocal(b.date).getTime();
                             } else if (upcomingSortField === 'dj') {
                               comparison = (a.djUser || '').localeCompare(b.djUser || '');
                             } else if (upcomingSortField === 'revenue') {
@@ -2146,7 +2152,7 @@ export default function AdminDashboard() {
                             const bookingStatus = (booking as any).status || 'upcoming';
                             return (
                               <tr key={booking.id}>
-                                <td>{new Date(booking.date).toLocaleDateString()}</td>
+                                <td>{parseDateLocal(booking.date).toLocaleDateString()}</td>
                                 <td>{booking.djUser || 'N/A'}</td>
                                 <td>{booking.eventType || 'N/A'}</td>
                                 <td>{booking.location || 'N/A'}</td>
@@ -2238,7 +2244,7 @@ export default function AdminDashboard() {
                                 #{booking.id} - {booking.djUser || 'N/A'}
                               </div>
                               <div className="order-email">
-                                {booking.eventType || 'N/A'} • {new Date(booking.date).toLocaleDateString()}
+                                {booking.eventType || 'N/A'} • {parseDateLocal(booking.date).toLocaleDateString()}
                               </div>
                               <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
                                 {booking.clientName || 'N/A'} • {booking.location || 'N/A'}
@@ -2563,7 +2569,7 @@ export default function AdminDashboard() {
                           
                           // Time Period Filter
                           if (analyticsFilterTime) {
-                            const bookingDate = new Date(booking.date);
+                            const bookingDate = parseDateLocal(booking.date);
                             bookingDate.setHours(0, 0, 0, 0);
                             
                             if (analyticsFilterTime === 'future' && bookingDate < today) {
@@ -2576,7 +2582,7 @@ export default function AdminDashboard() {
                           
                           // Year Filter
                           if (analyticsFilterYear) {
-                            const bookingYear = new Date(booking.date).getFullYear();
+                            const bookingYear = parseDateLocal(booking.date).getFullYear();
                             if (bookingYear !== parseInt(analyticsFilterYear)) {
                               return false;
                             }
@@ -2589,7 +2595,7 @@ export default function AdminDashboard() {
                         const sortedBookings = [...filteredBookings].sort((a, b) => {
                           let comparison = 0;
                           if (analyticsSortField === 'date') {
-                            comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+                            comparison = parseDateLocal(a.date).getTime() - parseDateLocal(b.date).getTime();
                           } else if (analyticsSortField === 'dj') {
                             comparison = (a.djUser || '').localeCompare(b.djUser || '');
                           } else if (analyticsSortField === 'project') {
@@ -2600,7 +2606,7 @@ export default function AdminDashboard() {
                         
                         return sortedBookings.map((booking) => (
                         <tr key={booking.id}>
-                          <td>{new Date(booking.date).toLocaleDateString()}</td>
+                          <td>{parseDateLocal(booking.date).toLocaleDateString()}</td>
                           <td>{booking.djUser || 'N/A'}</td>
                           <td>{booking.eventType || 'N/A'}</td>
                           <td>{booking.location || 'N/A'}</td>
@@ -2739,7 +2745,7 @@ export default function AdminDashboard() {
                       Date:
                     </div>
                     <div>
-                      {currentEditingBooking?.date ? new Date(currentEditingBooking.date).toLocaleDateString() : 'N/A'}
+                      {currentEditingBooking?.date ? parseDateLocal(currentEditingBooking.date).toLocaleDateString() : 'N/A'}
                     </div>
                   </div>
                   
