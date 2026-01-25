@@ -21,6 +21,20 @@ export default function AdminDashboard() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [blockedDates, setBlockedDates] = useState<any[]>([]);
+  
+  // Dashboard statistics state
+  const [dashboardStats, setDashboardStats] = useState({
+    totalProjects: 0,
+    completedProjects: 0,
+    futureBookings: 0,
+    blockedDatesCount: 0,
+    totalRevenue: 0,
+    djRevenue: 0,
+    revenue2025: 0,
+    revenue2026: 0,
+    completionRate: 0,
+    djRevenuePercentage: 0
+  });
   const [loadingBlockedDates, setLoadingBlockedDates] = useState(false);
   const [blockedDateFilter, setBlockedDateFilter] = useState('pending');
   const [userTab, setUserTab] = useState('create');
@@ -265,52 +279,33 @@ export default function AdminDashboard() {
       const completionRate = totalProjects > 0 ? ((completed / totalProjects) * 100) : 0;
       const djRevenuePercentage = totalRevenue > 0 ? ((djRevenue / totalRevenue) * 100) : 0;
       
-      // Update DOM elements
-      const totalProjectsEl = document.getElementById('total-projects');
-      const completedProjectsEl = document.getElementById('completed-projects');
-      const futureBookingsEl = document.getElementById('future-bookings-projects');
-      const totalRevenueEl = document.getElementById('total-revenue');
-      const djRevenueEl = document.getElementById('dj-revenue');
-      const revenue2025El = document.getElementById('revenue-2025');
-      const revenue2026El = document.getElementById('revenue-2026');
-      
-      // Progress bar elements
-      const completedProgressBar = document.getElementById('completed-progress-bar');
-      const completedPercentage = document.getElementById('completed-percentage');
-      
-      // DJ revenue display and bar
-      const djRevenueDisplay = document.getElementById('dj-revenue-display');
-      const djRevenueBar = document.getElementById('dj-revenue-bar');
-      
-      if (totalProjectsEl) totalProjectsEl.textContent = totalProjects.toString();
-      if (completedProjectsEl) completedProjectsEl.textContent = completed.toString();
-      if (futureBookingsEl) futureBookingsEl.textContent = futureBookings.toString();
-      if (totalRevenueEl) totalRevenueEl.textContent = `$${(Number(totalRevenue) || 0).toFixed(2)}`;
-      if (djRevenueEl) djRevenueEl.textContent = `$${(Number(djRevenue) || 0).toFixed(2)}`;
-      if (revenue2025El) revenue2025El.textContent = `$${(Number(revenue2025) || 0).toFixed(2)}`;
-      if (revenue2026El) revenue2026El.textContent = `$${(Number(revenue2026) || 0).toFixed(2)}`;
-      
-      // Update progress bar for completed projects
-      if (completedProgressBar) completedProgressBar.style.width = `${completionRate}%`;
-      if (completedPercentage) completedPercentage.textContent = `${(Number(completionRate) || 0).toFixed(0)}% completion rate`;
-      
-      // Update DJ revenue display and bar
-      if (djRevenueDisplay) djRevenueDisplay.textContent = `$${(Number(djRevenue) || 0).toFixed(2)} (${(Number(djRevenuePercentage) || 0).toFixed(0)}%)`;
-      if (djRevenueBar) djRevenueBar.style.width = `${djRevenuePercentage}%`;
+      // Update state instead of DOM manipulation
+      setDashboardStats({
+        totalProjects,
+        completedProjects: completed,
+        futureBookings,
+        blockedDatesCount: blockedDates.length,
+        totalRevenue,
+        djRevenue,
+        revenue2025,
+        revenue2026,
+        completionRate,
+        djRevenuePercentage
+      });
     }
   }, [bookings]);
 
   // Update blocked dates count when blocked dates change
   useEffect(() => {
-    if (blockedDates.length > 0) {
-      // Count only approved blocked dates
-      const approvedCount = blockedDates.filter(bd => 
-        bd.status === 'approved' || !bd.status
-      ).length;
-      
-      const blockedDatesEl = document.getElementById('blocked-dates-count');
-      if (blockedDatesEl) blockedDatesEl.textContent = approvedCount.toString();
-    }
+    // Count only approved blocked dates
+    const approvedCount = blockedDates.filter(bd => 
+      bd.status === 'approved' || !bd.status
+    ).length;
+    
+    setDashboardStats(prev => ({
+      ...prev,
+      blockedDatesCount: approvedCount
+    }));
   }, [blockedDates]);
 
   const switchTab = (tab: string) => {
@@ -2392,7 +2387,7 @@ export default function AdminDashboard() {
                   </h3>
                   <span className="stat-info-icon" title="Click to view all projects">ℹ️</span>
                 </div>
-                <div className="stat-value" id="total-projects">0</div>
+                <div className="stat-value">{dashboardStats.totalProjects}</div>
               </div>
 
               {/* Completed Projects with Progress Bar */}
@@ -2404,23 +2399,23 @@ export default function AdminDashboard() {
                   </h3>
                   <span className="stat-info-icon" title="Click to filter completed projects">ℹ️</span>
                 </div>
-                <div className="stat-value" id="completed-projects">0</div>
-                <div id="completed-progress-container" style={{ marginTop: '0.75rem' }}>
+                <div className="stat-value">{dashboardStats.completedProjects}</div>
+                <div style={{ marginTop: '0.75rem' }}>
                   <div style={{ 
                     height: '6px',
                     background: '#e0e0e0',
                     borderRadius: '3px',
                     overflow: 'hidden'
                   }}>
-                    <div id="completed-progress-bar" style={{
+                    <div style={{
                       height: '100%',
                       background: 'linear-gradient(90deg, #10b981, #059669)',
-                      width: '0%',
+                      width: `${dashboardStats.completionRate}%`,
                       transition: 'width 0.3s ease'
                     }} />
                   </div>
-                  <small id="completed-percentage" style={{ color: 'var(--text-light)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
-                    0% completion rate
+                  <small style={{ color: 'var(--text-light)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                    {dashboardStats.completionRate.toFixed(0)}% completion rate
                   </small>
                 </div>
               </div>
@@ -2434,7 +2429,7 @@ export default function AdminDashboard() {
                   </h3>
                   <span className="stat-info-icon" title="Click to filter future bookings">ℹ️</span>
                 </div>
-                <div className="stat-value" id="future-bookings-projects">0</div>
+                <div className="stat-value">{dashboardStats.futureBookings}</div>
               </div>
 
               {/* Blocked Dates */}
@@ -2446,7 +2441,7 @@ export default function AdminDashboard() {
                   </h3>
                   <span className="stat-info-icon" title="Click to view all blocked dates">ℹ️</span>
                 </div>
-                <div className="stat-value" id="blocked-dates-count">0</div>
+                <div className="stat-value">{dashboardStats.blockedDatesCount}</div>
               </div>
 
               {/* Consolidated Revenue Overview Card - Spans 2 Columns */}
@@ -2460,19 +2455,23 @@ export default function AdminDashboard() {
                 </div>
                 
                 {/* Main Total Revenue */}
-                <div className="stat-value" id="total-revenue" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>$0.00</div>
+                <div className="stat-value" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>
+                  ${dashboardStats.totalRevenue.toFixed(2)}
+                </div>
                 
                 {/* DJ vs Company Revenue Split */}
                 <div style={{ margin: '1rem 0' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                     <span style={{ fontSize: '0.95rem', color: 'var(--text-light)' }}>DJ Payout</span>
-                    <span id="dj-revenue-display" style={{ fontSize: '0.95rem', fontWeight: '600' }}>$0.00 (0%)</span>
+                    <span style={{ fontSize: '0.95rem', fontWeight: '600' }}>
+                      ${dashboardStats.djRevenue.toFixed(2)} ({dashboardStats.djRevenuePercentage.toFixed(0)}%)
+                    </span>
                   </div>
                   <div style={{ height: '8px', background: '#e0e0e0', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div id="dj-revenue-bar" style={{ 
+                    <div style={{ 
                       height: '100%', 
                       background: 'linear-gradient(90deg, #3b82f6, #2563eb)',
-                      width: '0%',
+                      width: `${dashboardStats.djRevenuePercentage}%`,
                       transition: 'width 0.3s ease'
                     }} />
                   </div>
@@ -2482,17 +2481,16 @@ export default function AdminDashboard() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1.25rem' }}>
                   <div style={{ padding: '0.75rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginBottom: '0.25rem' }}>2025 Revenue</div>
-                    <div id="revenue-2025" style={{ fontSize: '1.35rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>$0.00</div>
+                    <div style={{ fontSize: '1.35rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>
+                      ${dashboardStats.revenue2025.toFixed(2)}
+                    </div>
                   </div>
                   <div style={{ padding: '0.75rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginBottom: '0.25rem' }}>2026 Revenue</div>
-                    <div id="revenue-2026" style={{ fontSize: '1.35rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>$0.00</div>
+                    <div style={{ fontSize: '1.35rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>
+                      ${dashboardStats.revenue2026.toFixed(2)}
+                    </div>
                   </div>
-                </div>
-                
-                {/* Hidden elements for backward compatibility */}
-                <div style={{ display: 'none' }}>
-                  <span id="dj-revenue">$0.00</span>
                 </div>
               </div>
             </div>
