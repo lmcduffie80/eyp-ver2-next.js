@@ -833,14 +833,39 @@ export default function AdminDashboard() {
   };
 
   // Open project gallery in lightbox
-  const openProjectGallery = (project: any, startIndex: number = 0) => {
-    if (!projectPhotos || projectPhotos.length === 0) return;
-    
-    const imageUrls = projectPhotos.map(photo => photo.photo_url);
-    setLightboxImages(imageUrls);
-    setLightboxStartIndex(startIndex);
-    setLightboxTitle(project.project_name);
-    setLightboxOpen(true);
+  const openProjectGallery = async (project: any, startIndex: number = 0) => {
+    try {
+      // Fetch photos for this specific project
+      const response = await fetch(`/api/photography/photos?project_id=${project.id}`);
+      
+      if (!response.ok) {
+        console.error('Failed to fetch project photos');
+        return;
+      }
+      
+      const result = await response.json();
+      const photos = result.data || [];
+      
+      // Check if project has any photos
+      if (photos.length === 0) {
+        alert('This project has no photos yet.');
+        return;
+      }
+      
+      // Update state with fetched photos
+      setProjectPhotos(photos);
+      
+      // Open lightbox with photos
+      const imageUrls = photos.map((photo: any) => photo.photo_url);
+      setLightboxImages(imageUrls);
+      setLightboxStartIndex(startIndex);
+      setLightboxTitle(project.project_name);
+      setLightboxOpen(true);
+      
+    } catch (error) {
+      console.error('Error fetching project photos:', error);
+      alert('Failed to load gallery. Please try again.');
+    }
   };
 
   // Open project in modal view
