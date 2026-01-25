@@ -2108,13 +2108,12 @@ export default function AdminDashboard() {
                       </th>
                       <th>DJ Payout</th>
                       <th>Status</th>
-                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loadingBookings ? (
                       <tr>
-                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                        <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
                           Loading upcoming projects...
                         </td>
                       </tr>
@@ -2143,7 +2142,7 @@ export default function AdminDashboard() {
                         
                         return upcomingBookings.length === 0 ? (
                           <tr>
-                            <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                            <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
                               No upcoming projects scheduled
                             </td>
                           </tr>
@@ -2162,24 +2161,6 @@ export default function AdminDashboard() {
                                   <span className={`status-badge ${bookingStatus}`}>
                                     {bookingStatus}
                                   </span>
-                                </td>
-                                <td>
-                                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <button
-                                      onClick={() => updateBookingStatus(booking.id, 'completed')}
-                                      className="mark-complete-btn"
-                                      title="Mark as complete"
-                                    >
-                                      ✓ Complete
-                                    </button>
-                                    <button
-                                      onClick={() => updateBookingStatus(booking.id, 'cancelled')}
-                                      className="mark-cancelled-btn"
-                                      title="Mark as cancelled"
-                                    >
-                                      ✕ Cancel
-                                    </button>
-                                  </div>
                                 </td>
                               </tr>
                             );
@@ -2539,19 +2520,20 @@ export default function AdminDashboard() {
                       >
                         DJ Payout
                       </th>
+                      <th>Status</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody id="all-bookings-container">
                     {loadingBookings ? (
                       <tr>
-                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                        <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
                           Loading bookings...
                         </td>
                       </tr>
                     ) : bookings.length === 0 ? (
                       <tr>
-                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                        <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
                           No bookings found. Import a CSV file to add bookings.
                         </td>
                       </tr>
@@ -2604,59 +2586,89 @@ export default function AdminDashboard() {
                           return analyticsSortDirection === 'asc' ? comparison : -comparison;
                         });
                         
-                        return sortedBookings.map((booking) => (
-                        <tr key={booking.id}>
-                          <td>{parseDateLocal(booking.date).toLocaleDateString()}</td>
-                          <td>{booking.djUser || 'N/A'}</td>
-                          <td>{booking.eventType || 'N/A'}</td>
-                          <td>{booking.location || 'N/A'}</td>
-                          <td>${(Number(booking.totalRevenue) || 0).toFixed(2)}</td>
-                          <td>${(Number(booking.ccPayment) || 0).toFixed(2)}</td>
-                          <td>${(Number(booking.payout) || 0).toFixed(2)}</td>
-                          <td>
-                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                              <button
-                                onClick={() => openNotesModal(booking)}
-                                style={{
-                                  padding: '0.4rem 0.8rem',
-                                  background: 'var(--accent-color)',
-                                  color: 'white',
-                                  border: 'none',
-                                  borderRadius: '5px',
-                                  cursor: 'pointer',
-                                  fontSize: '0.85rem',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.3rem'
-                                }}
-                                title="Add or edit project notes"
-                              >
-                                {booking.notes && <span>📝</span>}
-                                <span>{booking.notes ? 'Edit Notes' : 'Add Notes'}</span>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (confirm('Are you sure you want to delete this booking?')) {
-                                    console.log('Delete booking:', booking.id);
-                                  }
-                                }}
-                                style={{
-                                  padding: '0.4rem 0.8rem',
-                                  fontSize: '0.85rem',
-                                  background: 'var(--error-color)',
-                                  color: 'white',
-                                  border: 'none',
-                                  borderRadius: '5px',
-                                  cursor: 'pointer'
-                                }}
-                                title="Delete project"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                        ));
+                        return sortedBookings.map((booking) => {
+                          const bookingStatus = (booking as any).status || 'upcoming';
+                          return (
+                          <tr key={booking.id}>
+                            <td>{parseDateLocal(booking.date).toLocaleDateString()}</td>
+                            <td>{booking.djUser || 'N/A'}</td>
+                            <td>{booking.eventType || 'N/A'}</td>
+                            <td>{booking.location || 'N/A'}</td>
+                            <td>${(Number(booking.totalRevenue) || 0).toFixed(2)}</td>
+                            <td>${(Number(booking.ccPayment) || 0).toFixed(2)}</td>
+                            <td>${(Number(booking.payout) || 0).toFixed(2)}</td>
+                            <td>
+                              <span className={`status-badge ${bookingStatus}`}>
+                                {bookingStatus}
+                              </span>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <button
+                                  onClick={() => updateBookingStatus(booking.id, 'completed')}
+                                  className="mark-complete-btn"
+                                  title="Mark as complete"
+                                  style={{
+                                    padding: '0.4rem 0.8rem',
+                                    fontSize: '0.85rem'
+                                  }}
+                                >
+                                  ✓ Complete
+                                </button>
+                                <button
+                                  onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                                  className="mark-cancelled-btn"
+                                  title="Mark as cancelled"
+                                  style={{
+                                    padding: '0.4rem 0.8rem',
+                                    fontSize: '0.85rem'
+                                  }}
+                                >
+                                  ✕ Cancel
+                                </button>
+                                <button
+                                  onClick={() => openNotesModal(booking)}
+                                  style={{
+                                    padding: '0.4rem 0.8rem',
+                                    background: 'var(--accent-color)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '5px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.3rem'
+                                  }}
+                                  title="Add or edit project notes"
+                                >
+                                  {booking.notes && <span>📝</span>}
+                                  <span>{booking.notes ? 'Edit Notes' : 'Add Notes'}</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm('Are you sure you want to delete this booking?')) {
+                                      console.log('Delete booking:', booking.id);
+                                    }
+                                  }}
+                                  style={{
+                                    padding: '0.4rem 0.8rem',
+                                    fontSize: '0.85rem',
+                                    background: 'var(--error-color)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '5px',
+                                    cursor: 'pointer'
+                                  }}
+                                  title="Delete project"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                          );
+                        });
                       })()
                     )}
                   </tbody>
