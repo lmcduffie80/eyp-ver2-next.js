@@ -2925,18 +2925,16 @@ export default function AdminDashboard() {
                 <h2 style={{ margin: 0 }}>All Projects</h2>
                 <button 
                   onClick={async () => {
-                    if (confirm('Are you sure you want to clear ALL projects (bookings, photos, videos)? This will delete everything and cannot be undone!')) {
+                    if (confirm('Are you sure you want to clear all booking projects? This will delete all DJ booking records and cannot be undone!')) {
                       try {
                         const response = await fetch('/api/admin/clear-all-projects', {
                           method: 'DELETE'
                         });
                         
                         if (response.ok) {
-                          alert('All projects cleared successfully');
-                          // Refresh data
+                          alert('All booking projects cleared successfully');
+                          // Refresh bookings data
                           fetchBookings();
-                          fetchPhotoProjects();
-                          fetchVideoProjects();
                         } else {
                           const error = await response.json();
                           alert(`Failed to clear projects: ${error.error}`);
