@@ -103,3 +103,53 @@ export async function POST(request: NextRequest) {
     }
   }
 }
+
+// DELETE a videography project
+export async function DELETE(request: NextRequest) {
+  let client;
+  
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Project ID is required' 
+      }, { status: 400 });
+    }
+    
+    client = await getConnection();
+    
+    const result = await client.query(
+      `DELETE FROM videography_projects WHERE id = $1 RETURNING id`,
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Project not found' 
+      }, { status: 404 });
+    }
+    
+    console.log('[API] Deleted video project:', id);
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Project deleted successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error deleting videography project:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to delete project',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+  } finally {
+    if (client) {
+      client.release();
+    }
+  }
+}
