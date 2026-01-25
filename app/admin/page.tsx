@@ -71,6 +71,7 @@ export default function AdminDashboard() {
   // Video modal state
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [modalVideoProject, setModalVideoProject] = useState<any | null>(null);
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   
   // Helper to format date as YYYY-MM-DD in local timezone (avoids UTC conversion issues)
   const formatDateLocal = (date: Date): string => {
@@ -1138,6 +1139,7 @@ export default function AdminDashboard() {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && videoModalOpen) {
         setVideoModalOpen(false);
+        setPlayingVideoId(null);
       }
     };
     window.addEventListener('keydown', handleEsc);
@@ -4981,7 +4983,16 @@ export default function AdminDashboard() {
                           className="video-project-card"
                         >
                           {/* Video Project Cover */}
-                          <div className="video-card-image-wrapper">
+                          <div 
+                            className="video-card-image-wrapper"
+                            onClick={() => {
+                              openVideoModal(project);
+                              if (project.first_video_id) {
+                                setPlayingVideoId(project.first_video_id);
+                              }
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          >
                             {coverImage ? (
                               <img 
                                 src={coverImage}
@@ -5044,7 +5055,10 @@ export default function AdminDashboard() {
           {videoModalOpen && modalVideoProject && (
             <div 
               className="video-modal-overlay"
-              onClick={() => setVideoModalOpen(false)}
+              onClick={() => {
+                setVideoModalOpen(false);
+                setPlayingVideoId(null);
+              }}
             >
               <div 
                 className="video-modal-container"
@@ -5063,7 +5077,10 @@ export default function AdminDashboard() {
                     )}
                   </div>
                   <button
-                    onClick={() => setVideoModalOpen(false)}
+                    onClick={() => {
+                      setVideoModalOpen(false);
+                      setPlayingVideoId(null);
+                    }}
                     className="video-modal-close"
                     aria-label="Close modal"
                   >
@@ -5125,21 +5142,46 @@ export default function AdminDashboard() {
                             key={video.id} 
                             className="video-modal-grid-item"
                           >
-                            <div className="video-modal-thumbnail">
-                              <img
-                                src={`https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`}
-                                alt={video.title || 'Video thumbnail'}
-                                style={{ 
-                                  width: '100%',
-                                  height: '100%',
-                                  objectFit: 'cover'
-                                }}
-                                onError={(e) => {
-                                  e.currentTarget.src = `https://img.youtube.com/vi/${video.video_id}/default.jpg`;
-                                }}
-                              />
-                              <div className="video-play-icon">▶</div>
-                            </div>
+                            {playingVideoId === video.video_id ? (
+                              // Show YouTube player
+                              <div className="video-modal-player-wrapper">
+                                <iframe
+                                  src={`https://www.youtube.com/embed/${video.video_id}?autoplay=1`}
+                                  title={video.title || 'Video'}
+                                  frameBorder="0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                  className="video-modal-player"
+                                />
+                                <button
+                                  onClick={() => setPlayingVideoId(null)}
+                                  className="video-player-close"
+                                  title="Close player"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              // Show thumbnail
+                              <div 
+                                className="video-modal-thumbnail"
+                                onClick={() => setPlayingVideoId(video.video_id)}
+                              >
+                                <img
+                                  src={`https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`}
+                                  alt={video.title || 'Video thumbnail'}
+                                  style={{ 
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover'
+                                  }}
+                                  onError={(e) => {
+                                    e.currentTarget.src = `https://img.youtube.com/vi/${video.video_id}/default.jpg`;
+                                  }}
+                                />
+                                <div className="video-play-icon">▶</div>
+                              </div>
+                            )}
                             <div className="video-modal-info">
                               {video.title && (
                                 <div className="video-modal-title">
