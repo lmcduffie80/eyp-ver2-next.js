@@ -242,8 +242,9 @@ export default function AdminDashboard() {
       // Completed Projects (past dates)
       const completed = bookings.filter(b => parseDateLocal(b.date) < today).length;
       
-      // Future Bookings
-      const futureBookings = bookings.filter(b => parseDateLocal(b.date) >= today).length;
+      // Future Bookings (count unique client-date combinations)
+      const futureBookingsFiltered = bookings.filter(b => parseDateLocal(b.date) >= today);
+      const futureBookings = new Set(futureBookingsFiltered.map(b => `${b.clientName || 'Unknown'}-${b.date}`)).size;
       
       // Total Revenue
       const totalRevenue = bookings.reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0);
@@ -700,7 +701,7 @@ export default function AdminDashboard() {
     
     return Array.from(djMap.values()).map(dj => ({
       ...dj,
-      projectCount: dj.projects.length,
+      projectCount: new Set(dj.projects.map((b: any) => `${b.clientName || 'Unknown'}-${b.date}`)).size,
       dates: dj.dates.sort((a: Date, b: Date) => a.getTime() - b.getTime())
     }));
   };
