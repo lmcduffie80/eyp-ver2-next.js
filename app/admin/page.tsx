@@ -123,6 +123,11 @@ export default function AdminDashboard() {
   const [analyticsSortField, setAnalyticsSortField] = useState<'date' | 'dj' | 'project'>('date');
   const [analyticsSortDirection, setAnalyticsSortDirection] = useState<'asc' | 'desc'>('asc');
   
+  // Analytics state
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsTimeRange, setAnalyticsTimeRange] = useState<string>('30');
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  
   const { importing, status, importCSV} = useCSVImport();
 
   // Sort handler functions
@@ -1083,6 +1088,362 @@ export default function AdminDashboard() {
       fetchBlockedDates();
     }
   }, [blockedDateFilter, activeTab]);
+
+  // Load analytics when analytics tab is active
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      loadAnalytics();
+    }
+  }, [activeTab, analyticsTimeRange]);
+
+  // Analytics Functions
+  const loadAnalytics = () => {
+    try {
+      setLoadingAnalytics(true);
+      
+      // Load analytics data from localStorage
+      const rawData = localStorage.getItem('analytics_data');
+      if (!rawData) {
+        setAnalyticsData({
+          visits: [],
+          pageViews: [],
+          sessions: {},
+          uniqueVisitors: []
+        });
+        setLoadingAnalytics(false);
+        return;
+      }
+
+      const data = JSON.parse(rawData);
+      
+      // Convert uniqueVisitors to array if it's an object
+      if (data.uniqueVisitors && typeof data.uniqueVisitors === 'object' && !Array.isArray(data.uniqueVisitors)) {
+        data.uniqueVisitors = Object.keys(data.uniqueVisitors);
+      } else if (!data.uniqueVisitors) {
+        data.uniqueVisitors = [];
+      }
+
+      // Filter by time range
+      const now = new Date();
+      const daysAgo = analyticsTimeRange === 'all' ? null : parseInt(analyticsTimeRange);
+      
+      if (daysAgo) {
+        const cutoffDate = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
+        data.visits = data.visits.filter((v: any) => new Date(v.timestamp) >= cutoffDate);
+        data.pageViews = data.pageViews.filter((p: any) => new Date(p.timestamp) >= cutoffDate);
+      }
+
+      setAnalyticsData(data);
+      
+      // Update the display
+      setTimeout(() => {
+        displayAnalytics(data);
+      }, 100);
+      
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+      setAnalyticsData({
+        visits: [],
+        pageViews: [],
+        sessions: {},
+        uniqueVisitors: []
+      });
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
+  const displayAnalytics = (data: any) => {
+    try {
+      // Calculate metrics
+      const totalVisits = data.visits?.length || 0;
+      const totalPageViews = data.pageViews?.length || 0;
+      const uniqueVisitors = data.uniqueVisitors?.length || 0;
+      
+      // Calculate average session duration
+      const sessions = Object.values(data.sessions || {}) as any[];
+      const avgDuration = sessions.length > 0
+        ? sessions.reduce((sum: number, s: any) => sum + (s.duration || 0), 0) / sessions.length
+        : 0;
+      const avgMinutes = Math.round(avgDuration / 60000);
+
+      // Update metric cards
+      const totalVisitsEl = document.getElementById('total-visits');
+      const totalPageViewsEl = document.getElementById('total-page-views');
+      const uniqueVisitorsEl = document.getElementById('unique-visitors');
+      const avgSessionEl = document.getElementById('avg-session-duration');
+
+      if (totalVisitsEl) totalVisitsEl.textContent = totalVisits.toLocaleString();
+      if (totalPageViewsEl) totalPageViewsEl.textContent = totalPageViews.toLocaleString();
+      if (uniqueVisitorsEl) uniqueVisitorsEl.textContent = uniqueVisitors.toLocaleString();
+      if (avgSessionEl) avgSessionEl.textContent = `${avgMinutes}m`;
+
+      // Display top pages
+      displayTopPages(data);
+      
+      // Display traffic sources
+      displayTrafficSources(data);
+      
+      // Display device types
+      displayDeviceTypes(data);
+      
+      // Display visits over time chart
+      displayVisitsChart(data);
+      
+      // Display recent activity
+      displayRecentActivity(data);
+      
+    } catch (error) {
+      console.error('Error displaying analytics:', error);
+    }
+  };
+
+  const displayTopPages = (data: any) => {
+    const topPagesEl = document.getElementById('top-pages-list');
+    if (!topPagesEl) return;
+
+    // Count page views by page
+    const pageCounts: { [key: string]: number } = {};
+    (data.pageViews || []).forEach((pv: any) => {
+      pageCounts[pv.page] = (pageCounts[pv.page] || 0) + 1;
+    });
+
+    // Sort and get top 5
+    const sortedPages = Object.entries(pageCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    if (sortedPages.length === 0) {
+      topPagesEl.innerHTML = '<div class="analytics-empty-state"><div class="analytics-empty-state-icon">📄</div><div class="analytics-empty-state-text">No page data yet</div></div>';
+      return;
+    }
+
+    const maxViews = sortedPages[0][1];
+    topPagesEl.innerHTML = `
+      <div class="analytics-list">
+        ${sortedPages.map(([page, count]) => `
+          <div class="analytics-list-item">
+            <span class="analytics-list-item-label">${page}</span>
+            <div class="analytics-list-item-bar">
+              <div class="analytics-list-item-bar-fill" style="width: ${(count / maxViews) * 100}%"></div>
+            </div>
+            <span class="analytics-list-item-value">${count}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  };
+
+  const displayTrafficSources = (data: any) => {
+    const trafficSourcesEl = document.getElementById('traffic-sources-list');
+    if (!trafficSourcesEl) return;
+
+    // Count by referrer source
+    const sourceCounts: { [key: string]: number } = {};
+    (data.visits || []).forEach((v: any) => {
+      const source = v.referrerSource || 'Direct';
+      sourceCounts[source] = (sourceCounts[source] || 0) + 1;
+    });
+
+    const sortedSources = Object.entries(sourceCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    if (sortedSources.length === 0) {
+      trafficSourcesEl.innerHTML = '<div class="analytics-empty-state"><div class="analytics-empty-state-icon">🌐</div><div class="analytics-empty-state-text">No traffic data yet</div></div>';
+      return;
+    }
+
+    const maxCount = sortedSources[0][1];
+    trafficSourcesEl.innerHTML = `
+      <div class="analytics-list">
+        ${sortedSources.map(([source, count]) => `
+          <div class="analytics-list-item">
+            <span class="analytics-list-item-label">${source}</span>
+            <div class="analytics-list-item-bar">
+              <div class="analytics-list-item-bar-fill" style="width: ${(count / maxCount) * 100}%"></div>
+            </div>
+            <span class="analytics-list-item-value">${count}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  };
+
+  const displayDeviceTypes = (data: any) => {
+    const deviceTypesEl = document.getElementById('device-types-list');
+    if (!deviceTypesEl) return;
+
+    // Count by device type
+    const deviceCounts: { [key: string]: number } = {};
+    (data.visits || []).forEach((v: any) => {
+      const device = v.deviceType || 'Unknown';
+      deviceCounts[device] = (deviceCounts[device] || 0) + 1;
+    });
+
+    const sortedDevices = Object.entries(deviceCounts)
+      .sort((a, b) => b[1] - a[1]);
+
+    if (sortedDevices.length === 0) {
+      deviceTypesEl.innerHTML = '<div class="analytics-empty-state"><div class="analytics-empty-state-icon">📱</div><div class="analytics-empty-state-text">No device data yet</div></div>';
+      return;
+    }
+
+    const maxCount = sortedDevices[0][1];
+    deviceTypesEl.innerHTML = `
+      <div class="analytics-list">
+        ${sortedDevices.map(([device, count]) => `
+          <div class="analytics-list-item">
+            <span class="analytics-list-item-label">${device}</span>
+            <div class="analytics-list-item-bar">
+              <div class="analytics-list-item-bar-fill" style="width: ${(count / maxCount) * 100}%"></div>
+            </div>
+            <span class="analytics-list-item-value">${count}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  };
+
+  const displayVisitsChart = (data: any) => {
+    const chartEl = document.getElementById('visits-chart');
+    if (!chartEl) return;
+
+    const visits = data.visits || [];
+    if (visits.length === 0) {
+      chartEl.innerHTML = '<div class="analytics-empty-state"><div class="analytics-empty-state-icon">📊</div><div class="analytics-empty-state-text">No visit data yet</div></div>';
+      return;
+    }
+
+    // Group visits by date
+    const visitsByDate: { [key: string]: number } = {};
+    visits.forEach((v: any) => {
+      const date = new Date(v.timestamp).toLocaleDateString();
+      visitsByDate[date] = (visitsByDate[date] || 0) + 1;
+    });
+
+    // Sort dates and prepare chart data
+    const sortedDates = Object.entries(visitsByDate)
+      .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+      .slice(-14); // Last 14 days
+
+    if (sortedDates.length === 0) {
+      chartEl.innerHTML = '<div class="analytics-empty-state"><div class="analytics-empty-state-icon">📊</div><div class="analytics-empty-state-text">No visit data yet</div></div>';
+      return;
+    }
+
+    const maxVisits = Math.max(...sortedDates.map(([, count]) => count));
+    const width = 800;
+    const height = 300;
+    const padding = { top: 20, right: 20, bottom: 40, left: 50 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+
+    // Create SVG
+    const points = sortedDates.map(([date, count], i) => {
+      const x = padding.left + (i / (sortedDates.length - 1 || 1)) * chartWidth;
+      const y = padding.top + chartHeight - (count / maxVisits) * chartHeight;
+      return { x, y, date, count };
+    });
+
+    const pathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+    const areaData = `${pathData} L ${points[points.length - 1].x} ${height - padding.bottom} L ${padding.left} ${height - padding.bottom} Z`;
+
+    chartEl.innerHTML = `
+      <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" class="line-chart-svg">
+        <defs>
+          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:var(--accent-color);stop-opacity:0.3" />
+            <stop offset="100%" style="stop-color:var(--accent-color);stop-opacity:0.05" />
+          </linearGradient>
+        </defs>
+        
+        <!-- Grid lines -->
+        ${Array.from({ length: 5 }, (_, i) => {
+          const y = padding.top + (i * chartHeight / 4);
+          return `<line class="line-chart-grid" x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" />`;
+        }).join('')}
+        
+        <!-- Area -->
+        <path class="line-chart-area" d="${areaData}" />
+        
+        <!-- Line -->
+        <path class="line-chart-line" d="${pathData}" />
+        
+        <!-- Points -->
+        ${points.map(p => `
+          <circle class="line-chart-point" cx="${p.x}" cy="${p.y}" r="5">
+            <title>${p.date}: ${p.count} visits</title>
+          </circle>
+        `).join('')}
+        
+        <!-- Y-axis labels -->
+        ${Array.from({ length: 5 }, (_, i) => {
+          const value = Math.round((maxVisits * (4 - i)) / 4);
+          const y = padding.top + (i * chartHeight / 4);
+          return `<text class="line-chart-label" x="${padding.left - 10}" y="${y + 5}" text-anchor="end">${value}</text>`;
+        }).join('')}
+        
+        <!-- X-axis labels (every other date) -->
+        ${points.filter((_, i) => i % Math.ceil(points.length / 7) === 0).map(p => `
+          <text class="line-chart-label" x="${p.x}" y="${height - padding.bottom + 25}" text-anchor="middle" transform="rotate(-45 ${p.x} ${height - padding.bottom + 25})">${p.date.split('/').slice(0, 2).join('/')}</text>
+        `).join('')}
+      </svg>
+    `;
+  };
+
+  const displayRecentActivity = (data: any) => {
+    const activityEl = document.getElementById('recent-activity-list');
+    if (!activityEl) return;
+
+    const visits = (data.visits || []).slice(-20).reverse();
+    
+    if (visits.length === 0) {
+      activityEl.innerHTML = '<div class="analytics-empty-state"><div class="analytics-empty-state-icon">📝</div><div class="analytics-empty-state-text">No activity yet</div></div>';
+      return;
+    }
+
+    activityEl.innerHTML = `
+      <div class="activity-timeline">
+        ${visits.map((v: any) => {
+          const time = new Date(v.timestamp);
+          const timeStr = time.toLocaleString();
+          return `
+            <div class="activity-timeline-item">
+              <div class="activity-timeline-content">
+                Visitor from <strong>${v.referrerSource || 'Direct'}</strong> viewed <strong>${v.page}</strong>
+              </div>
+              <div class="activity-timeline-meta">
+                <span>🕐 ${timeStr}</span>
+                <span>📱 ${v.deviceType || 'Unknown'}</span>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  };
+
+  const clearAnalyticsData = () => {
+    if (!confirm('Are you sure you want to clear all analytics data? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      localStorage.removeItem('analytics_data');
+      setAnalyticsData({
+        visits: [],
+        pageViews: [],
+        sessions: {},
+        uniqueVisitors: []
+      });
+      loadAnalytics();
+      alert('Analytics data cleared successfully!');
+    } catch (error) {
+      console.error('Error clearing analytics:', error);
+      alert('Failed to clear analytics data');
+    }
+  };
 
   // Videography Management Functions
   const fetchVideoProjects = async () => {
@@ -4802,12 +5163,9 @@ export default function AdminDashboard() {
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <select 
                     id="analytics-time-range" 
-                    defaultValue="30" 
-                    onChange={() => {
-                      // Load analytics functionality will be added here
-                      console.log('Analytics time range changed');
-                    }}
-                    style={{ padding: '0.5rem 1rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
+                    value={analyticsTimeRange}
+                    onChange={(e) => setAnalyticsTimeRange(e.target.value)}
+                    style={{ padding: '0.5rem 1rem', border: '2px solid #e0e0e0', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     <option value="7">Last 7 Days</option>
                     <option value="30">Last 30 Days</option>
@@ -4816,13 +5174,10 @@ export default function AdminDashboard() {
                     <option value="all">All Time</option>
                   </select>
                   <button 
-                    onClick={() => {
-                      if (confirm('Are you sure you want to clear all analytics data? This action cannot be undone.')) {
-                        // Clear analytics functionality will be added here
-                        console.log('Clear analytics data');
-                      }
-                    }}
-                    style={{ padding: '0.5rem 1rem', background: 'var(--error-color)', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    onClick={clearAnalyticsData}
+                    style={{ padding: '0.5rem 1rem', background: 'var(--error-color)', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s ease' }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#c0392b'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'var(--error-color)'}
                   >
                     Clear Data
                   </button>
@@ -4873,48 +5228,60 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
+              {/* Loading State */}
+              {loadingAnalytics && (
+                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                  <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+                  <p style={{ color: 'var(--text-light)' }}>Loading analytics data...</p>
+                </div>
+              )}
+
               {/* Analytics Charts Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
-                <div style={{ background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
-                  <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Visits Over Time</h3>
-                  <div id="visits-chart" style={{ height: '300px', position: 'relative', padding: '1rem 0', width: '100%', minWidth: '400px' }}>
-                    {/* Line graph will be generated here */}
+              {!loadingAnalytics && (
+                <>
+                  <div className="analytics-charts-grid-main" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+                    <div className="analytics-chart-container">
+                      <h3>Visits Over Time</h3>
+                      <div id="visits-chart" style={{ height: '300px', position: 'relative', padding: '1rem 0', width: '100%', minWidth: '400px' }}>
+                        {/* Line graph will be generated here */}
+                      </div>
+                    </div>
+                    <div className="analytics-chart-container">
+                      <h3>Top Pages</h3>
+                      <div id="top-pages-list">
+                        {/* Top pages will be listed here */}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div style={{ background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
-                  <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Top Pages</h3>
-                  <div id="top-pages-list">
-                    {/* Top pages will be listed here */}
-                  </div>
-                </div>
-              </div>
 
-              {/* Additional Analytics */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                {/* Traffic Sources */}
-                <div style={{ background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
-                  <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Traffic Sources</h3>
-                  <div id="traffic-sources-list">
-                    {/* Traffic sources will be listed here */}
-                  </div>
-                </div>
+                  {/* Additional Analytics */}
+                  <div className="analytics-charts-grid-secondary" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                    {/* Traffic Sources */}
+                    <div className="analytics-chart-container">
+                      <h3>Traffic Sources</h3>
+                      <div id="traffic-sources-list">
+                        {/* Traffic sources will be listed here */}
+                      </div>
+                    </div>
 
-                {/* Device Types */}
-                <div style={{ background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
-                  <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Device Types</h3>
-                  <div id="device-types-list">
-                    {/* Device types will be listed here */}
+                    {/* Device Types */}
+                    <div className="analytics-chart-container">
+                      <h3>Device Types</h3>
+                      <div id="device-types-list">
+                        {/* Device types will be listed here */}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Recent Activity */}
-              <div style={{ marginTop: '2rem', background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
-                <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Recent Activity</h3>
-                <div id="recent-activity-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                  {/* Recent activity will be listed here */}
-                </div>
-              </div>
+                  {/* Recent Activity */}
+                  <div style={{ marginTop: '2rem' }} className="analytics-chart-container">
+                    <h3>Recent Activity</h3>
+                    <div id="recent-activity-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                      {/* Recent activity will be listed here */}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
