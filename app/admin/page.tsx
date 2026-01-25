@@ -4570,360 +4570,133 @@ export default function AdminDashboard() {
                 Manage your photography projects and upload photos that will appear on the public photography page.
               </p>
 
-              <div className="photography-manager">
-                {/* Projects Panel */}
-                <div className="projects-panel">
-                  <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0 }}>Projects</h3>
-                    <button 
-                      onClick={() => setShowProjectForm(!showProjectForm)}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        background: 'var(--primary-color)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontWeight: '600',
-                        fontSize: '0.95rem'
-                      }}
+              {/* Modern Grid Layout */}
+              <div className="photography-manager-grid">
+                {/* Project Creation Header */}
+                <div className="projects-header">
+                  <h3 style={{ margin: 0 }}>Albums</h3>
+                  <button 
+                    onClick={() => setShowProjectForm(!showProjectForm)}
+                    className="btn-new-project"
+                  >
+                    {showProjectForm ? 'Cancel' : '+ New Album'}
+                  </button>
+                </div>
+
+                {/* Project Creation Form */}
+                {showProjectForm && (
+                  <div className="project-form-card">
+                    <div className="form-field-group">
+                      <label className="form-label">
+                        Album Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={newProjectName}
+                        onChange={(e) => setNewProjectName(e.target.value)}
+                        placeholder="e.g., Smith Wedding 2025"
+                        className="form-input"
+                      />
+                    </div>
+                    <div className="form-field-group">
+                      <label className="form-label">
+                        Description (Optional)
+                      </label>
+                      <textarea
+                        value={newProjectDescription}
+                        onChange={(e) => setNewProjectDescription(e.target.value)}
+                        placeholder="Brief description of this album..."
+                        rows={3}
+                        className="form-textarea"
+                      />
+                    </div>
+                    <button
+                      onClick={createProject}
+                      className="btn-create-project"
                     >
-                      {showProjectForm ? 'Cancel' : '+ New Project'}
+                      Create Album
                     </button>
                   </div>
+                )}
 
-                  {showProjectForm && (
-                    <div className="project-form" style={{ 
-                      padding: '1.5rem', 
-                      background: '#f8f9fa', 
-                      borderRadius: '8px', 
-                      marginBottom: '1.5rem' 
-                    }}>
-                      <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
-                          Project Name *
-                        </label>
-                        <input
-                          type="text"
-                          value={newProjectName}
-                          onChange={(e) => setNewProjectName(e.target.value)}
-                          placeholder="e.g., Smith Wedding 2025"
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
-                            fontSize: '0.95rem'
-                          }}
-                        />
-                      </div>
-                      <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
-                          Description (Optional)
-                        </label>
-                        <textarea
-                          value={newProjectDescription}
-                          onChange={(e) => setNewProjectDescription(e.target.value)}
-                          placeholder="Brief description of this project..."
-                          rows={3}
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '2px solid #e0e0e0',
-                            borderRadius: '8px',
-                            fontSize: '0.95rem',
-                            resize: 'vertical'
-                          }}
-                        />
-                      </div>
-                      <button
-                        onClick={createProject}
-                        style={{
-                          padding: '0.75rem 1.5rem',
-                          background: 'var(--primary-color)',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          fontWeight: '600',
-                          fontSize: '0.95rem'
-                        }}
+                {/* Albums Grid */}
+                {loadingProjects ? (
+                  <div className="albums-loading">
+                    <div className="spinner"></div>
+                    <p>Loading albums...</p>
+                  </div>
+                ) : photoProjects.length === 0 ? (
+                  <div className="albums-empty">
+                    <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📸</div>
+                    <p>No albums yet. Create your first album to get started!</p>
+                  </div>
+                ) : (
+                  <div className="albums-grid">
+                    {photoProjects.map(project => (
+                      <div
+                        key={project.id}
+                        className="album-card"
                       >
-                        Create Project
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="projects-list">
-                    {loadingProjects ? (
-                      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
-                        Loading projects...
-                      </div>
-                    ) : photoProjects.length === 0 ? (
-                      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
-                        No projects yet. Create your first project to get started!
-                      </div>
-                    ) : (
-                      photoProjects.map(project => (
-                        <div
-                          key={project.id}
-                          className={`project-item ${selectedProject?.id === project.id ? 'active' : ''}`}
-                          onClick={() => setSelectedProject(project)}
-                        >
-                          <div className="project-cover">
-                            {project.cover_photo_url ? (
-                              <img 
-                                src={project.cover_photo_url} 
-                                alt={project.project_name}
-                                style={{ 
-                                  width: '30%', 
-                                  height: 'auto',
-                                  objectFit: 'cover',
-                                  borderRadius: '8px' 
-                                }}
-                              />
-                            ) : (
-                              <div className="no-cover">📸</div>
-                            )}
-                          </div>
-                          <div className="project-info">
-                            <h4>{project.project_name}</h4>
-                            <p>{project.photo_count || 0} photos</p>
-                          </div>
+                        {/* Album Cover Image */}
+                        <div className="album-card-image-wrapper">
+                          {project.cover_photo_url ? (
+                            <img 
+                              src={project.cover_photo_url} 
+                              alt={project.project_name}
+                              className="album-card-image"
+                            />
+                          ) : (
+                            <div className="album-card-placeholder">
+                              <span style={{ fontSize: '4rem' }}>📸</span>
+                            </div>
+                          )}
+                          
+                          {/* Delete Button */}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               deleteProject(project.id);
                             }}
-                            className="delete-project-btn"
-                            title="Delete project"
+                            className="album-card-delete"
+                            title="Delete album"
                           >
                             🗑️
                           </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openProjectGallery(project);
-                            }}
-                            className="view-gallery-btn"
-                            title="View all photos"
-                            style={{
-                              padding: '0.5rem 1rem',
-                              background: 'var(--primary)',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '0.875rem',
-                              marginLeft: '0.5rem'
-                            }}
-                          >
-                            View Gallery
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openProjectModal(project);
-                            }}
-                            className="manage-photos-btn"
-                            title="Manage photos in modal view"
-                            style={{
-                              padding: '0.5rem 1rem',
-                              background: 'var(--accent-color)',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '0.875rem',
-                              marginLeft: '0.5rem',
-                              fontWeight: '600'
-                            }}
-                          >
-                            📋 Manage Photos
-                          </button>
                         </div>
-                      ))
-                    )}
+
+                        {/* Album Info & Actions Overlay */}
+                        <div className="album-card-overlay">
+                          <div className="album-card-info">
+                            <h4 className="album-card-title">{project.project_name}</h4>
+                            <p className="album-card-count">{project.photo_count || 0} photos</p>
+                          </div>
+                          
+                          {/* Action Buttons */}
+                          <div className="album-card-actions">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openProjectModal(project);
+                              }}
+                              className="album-action-btn primary"
+                            >
+                              Manage Photos
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openProjectGallery(project);
+                              }}
+                              className="album-action-btn secondary"
+                            >
+                              View Gallery
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-
-                {/* Photos Panel */}
-                <div className="photos-panel">
-                  {!selectedProject ? (
-                    <div style={{ 
-                      height: '100%', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      color: 'var(--text-light)',
-                      textAlign: 'center',
-                      padding: '2rem'
-                    }}>
-                      <div>
-                        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📸</div>
-                        <p>Select a project from the left to view and upload photos</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div style={{ marginBottom: '1.5rem' }}>
-                        <h3 style={{ margin: 0, marginBottom: '0.5rem' }}>{selectedProject.project_name}</h3>
-                        {selectedProject.description && (
-                          <p style={{ color: 'var(--text-light)', margin: 0 }}>{selectedProject.description}</p>
-                        )}
-                      </div>
-
-                      <div className="upload-area">
-                        <input
-                          type="file"
-                          id="photo-upload-input"
-                          multiple
-                          accept="image/*"
-                          onChange={handlePhotoUpload}
-                          style={{ display: 'none' }}
-                        />
-                        <label
-                          htmlFor="photo-upload-input"
-                          style={{
-                            display: 'block',
-                            padding: '3rem 2rem',
-                            border: '3px dashed #e0e0e0',
-                            borderRadius: '12px',
-                            textAlign: 'center',
-                            cursor: 'pointer',
-                            background: '#f8f9fa',
-                            transition: 'all 0.2s'
-                          }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.borderColor = 'var(--primary-color)';
-                            e.currentTarget.style.background = '#f0f4ff';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.borderColor = '#e0e0e0';
-                            e.currentTarget.style.background = '#f8f9fa';
-                          }}
-                        >
-                          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📁</div>
-                          <p style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-                            {uploadingPhotos ? `Uploading... ${uploadProgress}%` : 'Click to upload or drag photos here'}
-                          </p>
-                          <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
-                            Supports: JPG, PNG, GIF, WEBP • Max 10MB per file
-                          </p>
-                          <p style={{ color: 'var(--text-light)', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
-                            <strong>Recommended:</strong> Minimum 1200x800px for best quality
-                          </p>
-                          <p style={{ color: '#4CAF50', fontSize: '0.8rem', fontStyle: 'italic' }}>
-                            Images will be automatically optimized for web display
-                          </p>
-                        </label>
-                        {uploadingPhotos && (
-                          <div style={{ marginTop: '1rem' }}>
-                            <div style={{ 
-                              height: '8px', 
-                              background: '#e0e0e0', 
-                              borderRadius: '4px', 
-                              overflow: 'hidden' 
-                            }}>
-                              <div style={{ 
-                                height: '100%', 
-                                background: 'var(--primary-color)', 
-                                width: `${uploadProgress}%`,
-                                transition: 'width 0.3s ease'
-                              }} />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div style={{ marginTop: '2rem' }}>
-                        <h4 style={{ marginBottom: '1rem' }}>Photos ({projectPhotos.length})</h4>
-                        
-                        {loadingPhotos ? (
-                          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
-                            Loading photos...
-                          </div>
-                        ) : projectPhotos.length === 0 ? (
-                          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
-                            No photos yet. Upload your first photo!
-                          </div>
-                        ) : (
-                          <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-                            gap: '1rem',
-                            marginTop: '1rem'
-                          }}>
-                            {projectPhotos.map(photo => (
-                              <div 
-                                key={photo.id} 
-                                style={{
-                                  position: 'relative',
-                                  cursor: 'pointer',
-                                  borderRadius: '8px',
-                                  overflow: 'hidden',
-                                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                  transition: 'transform 0.2s, box-shadow 0.2s'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.transform = 'scale(1.05)';
-                                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.transform = 'scale(1)';
-                                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                                }}
-                              >
-                                <img 
-                                  src={photo.thumbnail_url || photo.photo_url} 
-                                  alt={photo.caption || 'Project photo'}
-                                  onClick={() => {
-                                    const photoIndex = projectPhotos.findIndex(p => p.id === photo.id);
-                                    openProjectGallery(selectedProject, photoIndex);
-                                  }}
-                                  style={{ 
-                                    width: '100%', 
-                                    height: '150px', 
-                                    objectFit: 'cover',
-                                    display: 'block'
-                                  }}
-                                />
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    deletePhoto(photo.id);
-                                  }}
-                                  style={{
-                                    position: 'absolute',
-                                    top: '0.5rem',
-                                    right: '0.5rem',
-                                    background: 'rgba(255, 255, 255, 0.9)',
-                                    border: 'none',
-                                    borderRadius: '50%',
-                                    width: '32px',
-                                    height: '32px',
-                                    cursor: 'pointer',
-                                    fontSize: '1.2rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                                    transition: 'background 0.2s'
-                                  }}
-                                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 0, 0, 0.9)'}
-                                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.9)'}
-                                  title="Delete photo"
-                                >
-                                  🗑️
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
+                )}
               </div>
             </div>
           </div>
