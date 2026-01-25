@@ -105,7 +105,6 @@ export default function AdminDashboard() {
   const [loadingPricing, setLoadingPricing] = useState(false);
   const [savingPackage, setSavingPackage] = useState(false);
   const [editingPackage, setEditingPackage] = useState<any | null>(null);
-  const [showPackageForm, setShowPackageForm] = useState(false);
   const [packageForm, setPackageForm] = useState({
     package_name: '',
     price: '',
@@ -115,6 +114,7 @@ export default function AdminDashboard() {
   });
   const [newFeature, setNewFeature] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
   
   // Notes modal state
   const [notesModalOpen, setNotesModalOpen] = useState(false);
@@ -1183,6 +1183,17 @@ export default function AdminDashboard() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [videoModalOpen]);
 
+  // ESC key handler for pricing modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && pricingModalOpen) {
+        setPricingModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [pricingModalOpen]);
+
   // Analytics Functions
   const loadAnalytics = () => {
     try {
@@ -1730,8 +1741,9 @@ export default function AdminDashboard() {
       });
 
       if (response.ok) {
+        await fetchPricingPackages(pricingServiceTab);
         setSaveSuccess(true);
-        setShowPackageForm(false);
+        setPricingModalOpen(false);
         setEditingPackage(null);
         setPackageForm({
           package_name: '',
@@ -1740,7 +1752,6 @@ export default function AdminDashboard() {
           features: [],
           display_order: 0
         });
-        await fetchPricingPackages(pricingServiceTab);
         
         // Show success message briefly
         setTimeout(() => setSaveSuccess(false), 3000);
@@ -1765,7 +1776,7 @@ export default function AdminDashboard() {
       features: Array.isArray(pkg.features) ? pkg.features : [],
       display_order: pkg.display_order || 0
     });
-    setShowPackageForm(true);
+    setPricingModalOpen(true);
   };
 
   const deletePackage = async (id: number) => {
@@ -3937,214 +3948,197 @@ export default function AdminDashboard() {
               )}
 
               {/* Add New Package Button */}
-              {!showPackageForm && (
-                <button 
-                  onClick={() => {
-                    setEditingPackage(null);
-                    setPackageForm({
-                      package_name: '',
-                      price: '',
-                      description: '',
-                      features: [],
-                      display_order: 0
-                    });
-                    setShowPackageForm(true);
-                  }}
-                  className="cta-button" 
-                  style={{ marginBottom: '2rem' }}
-                >
-                  + Add New Package
-                </button>
-              )}
+              <button 
+                onClick={() => {
+                  setEditingPackage(null);
+                  setPackageForm({
+                    package_name: '',
+                    price: '',
+                    description: '',
+                    features: [],
+                    display_order: 0
+                  });
+                  setPricingModalOpen(true);
+                }}
+                className="cta-button" 
+                style={{ marginBottom: '2rem' }}
+              >
+                + Add New Package
+              </button>
 
-              {/* Package Form */}
-              {showPackageForm && (
-                <div style={{ 
-                  marginBottom: '2rem', 
-                  padding: '1.5rem', 
-                  border: '2px solid var(--primary-color)', 
-                  borderRadius: '8px', 
-                  background: '#f9f9f9' 
-                }}>
-                  <h3 style={{ marginBottom: '1rem' }}>
-                    {editingPackage ? 'Edit Package' : 'Create New Package'}
-                  </h3>
-                  
-                  <div style={{ display: 'grid', gap: '1rem' }}>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        Package Name *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g., Ceremony Package, Premium Package"
-                        value={packageForm.package_name}
-                        onChange={(e) => setPackageForm({ ...packageForm, package_name: e.target.value })}
-                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
-                      />
+              {/* Pricing Package Modal */}
+              {pricingModalOpen && (
+                <div className="pricing-modal-overlay" onClick={() => setPricingModalOpen(false)}>
+                  <div className="pricing-modal-container" onClick={(e) => e.stopPropagation()}>
+                    <div className="pricing-modal-header">
+                      <h3>{editingPackage ? 'Edit Package' : 'Create New Package'}</h3>
+                      <button 
+                        className="pricing-modal-close"
+                        onClick={() => setPricingModalOpen(false)}
+                      >
+                        ×
+                      </button>
                     </div>
+                    
+                    <div className="pricing-modal-content">
+                      <div style={{ display: 'grid', gap: '1rem' }}>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                            Package Name *
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g., Ceremony Package, Premium Package"
+                            value={packageForm.package_name}
+                            onChange={(e) => setPackageForm({ ...packageForm, package_name: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                          />
+                        </div>
 
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        Price (USD) *
-                      </label>
-                      <input
-                        type="number"
-                        placeholder="e.g., 1800"
-                        value={packageForm.price}
-                        onChange={(e) => setPackageForm({ ...packageForm, price: e.target.value })}
-                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
-                      />
-                    </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                            Price (USD) *
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="e.g., 1800"
+                            value={packageForm.price}
+                            onChange={(e) => setPackageForm({ ...packageForm, price: e.target.value })}
+                            style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                          />
+                        </div>
 
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        Description
-                      </label>
-                      <textarea
-                        placeholder="Brief description of the package"
-                        value={packageForm.description}
-                        onChange={(e) => setPackageForm({ ...packageForm, description: e.target.value })}
-                        rows={3}
-                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
-                      />
-                    </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                            Description
+                          </label>
+                          <textarea
+                            placeholder="Brief description of the package"
+                            value={packageForm.description}
+                            onChange={(e) => setPackageForm({ ...packageForm, description: e.target.value })}
+                            rows={3}
+                            style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                          />
+                        </div>
 
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        Features / What's Included
-                      </label>
-                      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                        <input
-                          type="text"
-                          placeholder="Add a feature"
-                          value={newFeature}
-                          onChange={(e) => setNewFeature(e.target.value)}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              addFeatureToForm();
-                            }
-                          }}
-                          style={{ flexGrow: 1, padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
-                        />
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                            Features / What's Included
+                          </label>
+                          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                            <input
+                              type="text"
+                              placeholder="Add a feature"
+                              value={newFeature}
+                              onChange={(e) => setNewFeature(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  addFeatureToForm();
+                                }
+                              }}
+                              style={{ flexGrow: 1, padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                            />
+                            <button 
+                              onClick={addFeatureToForm}
+                              className="cta-button"
+                              type="button"
+                            >
+                              Add
+                            </button>
+                          </div>
+                          
+                          {packageForm.features.length > 0 && (
+                            <ul style={{ 
+                              listStyle: 'none', 
+                              padding: 0, 
+                              background: 'white', 
+                              borderRadius: '5px', 
+                              border: '1px solid #e0e0e0' 
+                            }}>
+                              {packageForm.features.map((feature, index) => (
+                                <li 
+                                  key={index}
+                                  style={{ 
+                                    padding: '0.75rem', 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    alignItems: 'center',
+                                    borderBottom: index < packageForm.features.length - 1 ? '1px solid #e0e0e0' : 'none'
+                                  }}
+                                >
+                                  <span>✓ {feature}</span>
+                                  <button
+                                    onClick={() => removeFeatureFromForm(index)}
+                                    style={{
+                                      background: '#ff4444',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '3px',
+                                      padding: '0.25rem 0.5rem',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Remove
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                            Display Order
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={packageForm.display_order}
+                            onChange={(e) => setPackageForm({ ...packageForm, display_order: parseInt(e.target.value) || 0 })}
+                            style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                          />
+                          <small style={{ color: 'var(--text-light)' }}>Lower numbers appear first</small>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
                         <button 
-                          onClick={addFeatureToForm}
+                          onClick={createOrUpdatePackage} 
                           className="cta-button"
-                          type="button"
+                          disabled={savingPackage || !packageForm.package_name || !packageForm.price}
+                          style={{
+                            opacity: (savingPackage || !packageForm.package_name || !packageForm.price) ? 0.6 : 1,
+                            cursor: (savingPackage || !packageForm.package_name || !packageForm.price) ? 'not-allowed' : 'pointer'
+                          }}
                         >
-                          Add
+                          {savingPackage ? 'Saving...' : (editingPackage ? 'Save Changes' : 'Save Package')}
+                        </button>
+                        <button 
+                          onClick={() => setPricingModalOpen(false)}
+                          className="secondary-button"
+                          disabled={savingPackage}
+                          style={{
+                            opacity: savingPackage ? 0.6 : 1,
+                            cursor: savingPackage ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          Cancel
                         </button>
                       </div>
                       
-                      {packageForm.features.length > 0 && (
-                        <ul style={{ 
-                          listStyle: 'none', 
-                          padding: 0, 
-                          background: 'white', 
-                          borderRadius: '5px', 
-                          border: '1px solid #e0e0e0' 
+                      {(!packageForm.package_name || !packageForm.price) && (
+                        <p style={{ 
+                          color: '#ff6b6b', 
+                          fontSize: '0.9rem', 
+                          marginTop: '0.5rem',
+                          fontStyle: 'italic'
                         }}>
-                          {packageForm.features.map((feature, index) => (
-                            <li 
-                              key={index}
-                              style={{ 
-                                padding: '0.75rem', 
-                                display: 'flex', 
-                                justifyContent: 'space-between', 
-                                alignItems: 'center',
-                                borderBottom: index < packageForm.features.length - 1 ? '1px solid #e0e0e0' : 'none'
-                              }}
-                            >
-                              <span>✓ {feature}</span>
-                              <button
-                                onClick={() => removeFeatureFromForm(index)}
-                                style={{
-                                  background: '#ff4444',
-                                  color: 'white',
-                                  border: 'none',
-                                  borderRadius: '3px',
-                                  padding: '0.25rem 0.5rem',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                Remove
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
+                          * Package name and price are required
+                        </p>
                       )}
                     </div>
-
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        Display Order
-                      </label>
-                      <input
-                        type="number"
-                        placeholder="0"
-                        value={packageForm.display_order}
-                        onChange={(e) => setPackageForm({ ...packageForm, display_order: parseInt(e.target.value) || 0 })}
-                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
-                      />
-                      <small style={{ color: 'var(--text-light)' }}>Lower numbers appear first</small>
-                    </div>
                   </div>
-
-                  <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                    <button 
-                      onClick={createOrUpdatePackage} 
-                      className="cta-button"
-                      disabled={savingPackage || !packageForm.package_name || !packageForm.price}
-                      style={{
-                        opacity: (savingPackage || !packageForm.package_name || !packageForm.price) ? 0.6 : 1,
-                        cursor: (savingPackage || !packageForm.package_name || !packageForm.price) ? 'not-allowed' : 'pointer',
-                        position: 'relative',
-                        minWidth: '150px'
-                      }}
-                    >
-                      {savingPackage ? (
-                        <>
-                          <span style={{ opacity: 0.7 }}>Saving...</span>
-                        </>
-                      ) : (
-                        editingPackage ? '💾 Save Changes' : '💾 Save Package'
-                      )}
-                    </button>
-                    <button 
-                      onClick={() => {
-                        setShowPackageForm(false);
-                        setEditingPackage(null);
-                        setPackageForm({
-                          package_name: '',
-                          price: '',
-                          description: '',
-                          features: [],
-                          display_order: 0
-                        });
-                      }}
-                      className="secondary-button"
-                      disabled={savingPackage}
-                      style={{
-                        opacity: savingPackage ? 0.6 : 1,
-                        cursor: savingPackage ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                  
-                  {/* Validation message */}
-                  {(!packageForm.package_name || !packageForm.price) && (
-                    <p style={{ 
-                      color: '#ff6b6b', 
-                      fontSize: '0.9rem', 
-                      marginTop: '0.5rem',
-                      fontStyle: 'italic'
-                    }}>
-                      * Package name and price are required
-                    </p>
-                  )}
                 </div>
               )}
 
