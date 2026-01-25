@@ -44,6 +44,7 @@ export default function AdminDashboard() {
   const [analyticsFilterDJ, setAnalyticsFilterDJ] = useState<string>('');
   const [analyticsFilterTime, setAnalyticsFilterTime] = useState<string>('');
   const [analyticsFilterYear, setAnalyticsFilterYear] = useState<string>('');
+  const [analyticsFilterStatus, setAnalyticsFilterStatus] = useState<string>('active');
   
   // Photography state
   const [photoProjects, setPhotoProjects] = useState<any[]>([]);
@@ -201,6 +202,19 @@ export default function AdminDashboard() {
     fetchBookings();
     fetchBlockedDates();
   }, []);
+
+  // Click-away handler for dropdown menus
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if ((window as any).openDropdownId) {
+        (window as any).openDropdownId = null;
+        setBookings([...bookings]);
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [bookings]);
 
   // Calculate and update dashboard statistics when bookings change
   useEffect(() => {
@@ -2465,6 +2479,24 @@ export default function AdminDashboard() {
                     <option key={year} value={year}>{year}</option>
                   ))}
                 </select>
+                <select
+                  value={analyticsFilterStatus}
+                  onChange={(e) => setAnalyticsFilterStatus(e.target.value)}
+                  style={{
+                    padding: '0.6rem',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-color)',
+                    background: 'white',
+                    cursor: 'pointer',
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  <option value="active">Active Only</option>
+                  <option value="all">All Statuses</option>
+                  <option value="completed">Completed Only</option>
+                  <option value="cancelled">Cancelled Only</option>
+                  <option value="upcoming">Upcoming Only</option>
+                </select>
               </div>
               
               <div style={{ overflowX: 'auto' }}>
@@ -2587,6 +2619,20 @@ export default function AdminDashboard() {
                             }
                           }
                           
+                          // Status Filter
+                          if (analyticsFilterStatus !== 'all') {
+                            const bookingStatus = (booking as any).status || 'upcoming';
+                            
+                            if (analyticsFilterStatus === 'active') {
+                              // Active = upcoming projects (not completed or cancelled)
+                              if (bookingStatus === 'completed' || bookingStatus === 'cancelled') {
+                                return false;
+                              }
+                            } else if (analyticsFilterStatus !== bookingStatus) {
+                              return false;
+                            }
+                          }
+                          
                           return true;
                         });
                         
@@ -2615,72 +2661,188 @@ export default function AdminDashboard() {
                             <td>${(Number(booking.ccPayment) || 0).toFixed(2)}</td>
                             <td>${(Number(booking.payout) || 0).toFixed(2)}</td>
                             <td>
-                              <span className={`status-badge ${bookingStatus}`}>
+                              <span 
+                                className={`status-badge status-${bookingStatus}`}
+                                style={{
+                                  padding: '0.4rem 0.8rem',
+                                  borderRadius: '12px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '600',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  display: 'inline-block',
+                                  ...(bookingStatus === 'completed' && {
+                                    background: '#dcfce7',
+                                    color: '#166534',
+                                    border: '1px solid #86efac'
+                                  }),
+                                  ...(bookingStatus === 'cancelled' && {
+                                    background: '#fee2e2',
+                                    color: '#991b1b',
+                                    border: '1px solid #fca5a5'
+                                  }),
+                                  ...(bookingStatus === 'upcoming' && {
+                                    background: '#dbeafe',
+                                    color: '#1e40af',
+                                    border: '1px solid #93c5fd'
+                                  })
+                                }}
+                              >
                                 {bookingStatus}
                               </span>
                             </td>
                             <td>
-                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                              <div style={{ position: 'relative' }}>
                                 <button
-                                  onClick={() => updateBookingStatus(booking.id, 'completed')}
-                                  className="mark-complete-btn"
-                                  title="Mark as complete"
-                                  style={{
-                                    padding: '0.4rem 0.8rem',
-                                    fontSize: '0.85rem'
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const currentOpenId = (window as any).openDropdownId;
+                                    if (currentOpenId === booking.id) {
+                                      (window as any).openDropdownId = null;
+                                    } else {
+                                      (window as any).openDropdownId = booking.id;
+                                    }
+                                    // Force re-render by triggering state update
+                                    setBookings([...bookings]);
                                   }}
-                                >
-                                  ✓ Complete
-                                </button>
-                                <button
-                                  onClick={() => updateBookingStatus(booking.id, 'cancelled')}
-                                  className="mark-cancelled-btn"
-                                  title="Mark as cancelled"
                                   style={{
-                                    padding: '0.4rem 0.8rem',
-                                    fontSize: '0.85rem'
-                                  }}
-                                >
-                                  ✕ Cancel
-                                </button>
-                                <button
-                                  onClick={() => openNotesModal(booking)}
-                                  style={{
-                                    padding: '0.4rem 0.8rem',
-                                    background: 'var(--accent-color)',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '5px',
+                                    padding: '0.5rem 1rem',
+                                    background: '#f3f4f6',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '6px',
                                     cursor: 'pointer',
-                                    fontSize: '0.85rem',
+                                    fontSize: '0.875rem',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '0.3rem'
+                                    gap: '0.5rem',
+                                    fontWeight: '500'
                                   }}
-                                  title="Add or edit project notes"
+                                  title="Actions"
                                 >
-                                  {booking.notes && <span>📝</span>}
-                                  <span>{booking.notes ? 'Edit Notes' : 'Add Notes'}</span>
+                                  Actions
+                                  <span style={{ fontSize: '0.7rem' }}>▼</span>
                                 </button>
-                                <button
-                                  onClick={() => {
-                                    if (confirm('Are you sure you want to delete this booking?')) {
-                                      console.log('Delete booking:', booking.id);
-                                    }
-                                  }}
-                                  style={{
-                                    padding: '0.4rem 0.8rem',
-                                    fontSize: '0.85rem',
-                                    background: 'var(--error-color)',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '5px',
-                                    cursor: 'pointer'
-                                  }}
-                                  title="Delete project"
-                                >
-                                  Delete
-                                </button>
+                                
+                                {(window as any).openDropdownId === booking.id && (
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      top: '100%',
+                                      right: 0,
+                                      marginTop: '0.25rem',
+                                      background: 'white',
+                                      border: '1px solid #e5e7eb',
+                                      borderRadius: '8px',
+                                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                      minWidth: '160px',
+                                      zIndex: 1000,
+                                      overflow: 'hidden'
+                                    }}
+                                  >
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateBookingStatus(booking.id, 'completed');
+                                        (window as any).openDropdownId = null;
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        padding: '0.75rem 1rem',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        textAlign: 'left',
+                                        cursor: 'pointer',
+                                        fontSize: '0.875rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem'
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                      <span style={{ color: '#10b981' }}>✓</span> Mark Complete
+                                    </button>
+                                    
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateBookingStatus(booking.id, 'cancelled');
+                                        (window as any).openDropdownId = null;
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        padding: '0.75rem 1rem',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        textAlign: 'left',
+                                        cursor: 'pointer',
+                                        fontSize: '0.875rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem'
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                      <span style={{ color: '#ef4444' }}>✕</span> Cancel Project
+                                    </button>
+                                    
+                                    <div style={{ borderTop: '1px solid #e5e7eb', margin: '0.25rem 0' }} />
+                                    
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openNotesModal(booking);
+                                        (window as any).openDropdownId = null;
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        padding: '0.75rem 1rem',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        textAlign: 'left',
+                                        cursor: 'pointer',
+                                        fontSize: '0.875rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem'
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                      {booking.notes ? '📝 Edit Notes' : '📝 Add Notes'}
+                                    </button>
+                                    
+                                    <div style={{ borderTop: '1px solid #e5e7eb', margin: '0.25rem 0' }} />
+                                    
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (confirm('Are you sure you want to delete this booking?')) {
+                                          console.log('Delete booking:', booking.id);
+                                        }
+                                        (window as any).openDropdownId = null;
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        padding: '0.75rem 1rem',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        textAlign: 'left',
+                                        cursor: 'pointer',
+                                        fontSize: '0.875rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        color: '#ef4444'
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
+                                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                      🗑️ Delete
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </td>
                           </tr>
