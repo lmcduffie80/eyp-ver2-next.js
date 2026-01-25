@@ -41,6 +41,11 @@ export async function GET(request: NextRequest) {
       ORDER BY display_order ASC, created_at DESC
     `, [project_id]);
     
+    console.log(`[API] Videography videos query: Found ${result.rows.length} videos for project ${project_id}`);
+    if (result.rows.length > 0) {
+      console.log('[API] Sample video:', result.rows[0]);
+    }
+    
     return NextResponse.json({
       success: true,
       data: result.rows
@@ -87,12 +92,28 @@ export async function POST(request: NextRequest) {
     
     client = await getConnection();
     
+    // Ensure videos table exists
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS videography_videos (
+        id SERIAL PRIMARY KEY,
+        project_id INTEGER REFERENCES videography_projects(id) ON DELETE CASCADE,
+        video_url TEXT NOT NULL,
+        video_id TEXT NOT NULL,
+        title TEXT,
+        description TEXT,
+        display_order INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
     const result = await client.query(`
       INSERT INTO videography_videos 
       (project_id, video_url, video_id, title, description)
       VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `, [project_id, video_url, video_id, title || null, description || null]);
+    
+    console.log('[API] Added video:', result.rows[0]);
     
     return NextResponse.json({
       success: true,
