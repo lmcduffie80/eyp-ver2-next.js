@@ -48,6 +48,7 @@ export default function DJDashboard() {
   const [djUsername, setDjUsername] = useState('');
   const [djDisplayName, setDjDisplayName] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   
   // Navigation
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
@@ -106,6 +107,7 @@ export default function DJDashboard() {
       setDjUsername(storedUsername);
       setDjDisplayName(storedDisplayName);
       setIsAuthenticated(true);
+      setIsCheckingAuth(false);
       
       // Fetch reviews using username (matches how reviews are assigned)
       // Fetch bookings/blocked dates using display name (matches database format)
@@ -114,6 +116,7 @@ export default function DJDashboard() {
       fetchBlockedDates(storedDisplayName);
     } else {
       // Redirect to main login if not authenticated
+      setIsCheckingAuth(false);
       window.location.href = '/DJ';
     }
   }, []);
@@ -213,6 +216,8 @@ export default function DJDashboard() {
     localStorage.removeItem('dj_token');
     localStorage.removeItem('dj_token_expiry');
     localStorage.removeItem('dj_last_activity');
+    localStorage.removeItem('dj_display_name');
+    setIsCheckingAuth(true);
     window.location.href = '/DJ';
   };
 
@@ -528,8 +533,36 @@ export default function DJDashboard() {
     ? (reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / reviews.length).toFixed(1)
     : '0.0';
 
-  if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
+  if (isCheckingAuth || !isAuthenticated) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+        color: 'white'
+      }}>
+        <div style={{
+          width: '60px',
+          height: '60px',
+          border: '4px solid rgba(255,107,53,0.2)',
+          borderTopColor: '#ff6b35',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          marginBottom: '1.5rem'
+        }} />
+        <p style={{ fontSize: '1.25rem', fontWeight: '500' }}>
+          {isCheckingAuth ? 'Verifying credentials...' : 'Redirecting to login...'}
+        </p>
+        <style jsx>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
   }
 
   return (
