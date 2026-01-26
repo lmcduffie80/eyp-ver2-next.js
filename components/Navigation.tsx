@@ -72,9 +72,7 @@ export default function Navigation() {
           <li><Link href="/videography" className="text-white no-underline font-medium transition-colors hover:text-accent">Videography</Link></li>
           <li><Link href="/dj-entertainment" className="text-white no-underline font-medium transition-colors hover:text-accent">DJ Entertainment</Link></li>
           <li><Link href="#contact" className="text-white no-underline font-medium transition-colors hover:text-accent">Contact</Link></li>
-          {isDJAuthenticated && (
-            <li><Link href="/dj-dashboard" className="text-white no-underline font-medium transition-colors hover:text-accent">DJ Portal</Link></li>
-          )}
+          <li><Link href="/dj-dashboard" className="text-white no-underline font-medium transition-colors hover:text-accent">DJ Portal</Link></li>
         </ul>
         <button
           className="md:hidden bg-transparent border-none text-white text-3xl cursor-pointer p-2 z-[1001]"
@@ -112,17 +110,15 @@ export default function Navigation() {
             <li className="w-full">
               <Link href="#contact" className="block py-6 px-6 w-full text-white text-lg font-semibold transition-colors active:bg-[rgba(255,107,53,0.2)] hover:bg-[rgba(255,255,255,0.05)]" onClick={() => setMobileMenuOpen(false)}>Contact</Link>
             </li>
-            {isDJAuthenticated && (
-              <li className="w-full">
-                <Link 
-                  href="/dj-dashboard" 
-                  className="block py-6 px-6 w-full text-white text-lg font-semibold transition-colors active:bg-[rgba(255,107,53,0.2)] hover:bg-[rgba(255,255,255,0.05)]" 
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  DJ Portal
-                </Link>
-              </li>
-            )}
+            <li className="w-full">
+              <Link 
+                href="/dj-dashboard" 
+                className="block py-6 px-6 w-full text-white text-lg font-semibold transition-colors active:bg-[rgba(255,107,53,0.2)] hover:bg-[rgba(255,255,255,0.05)]" 
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                DJ Portal
+              </Link>
+            </li>
           </ul>
         )}
       </div>
