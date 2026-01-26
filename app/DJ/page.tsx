@@ -84,13 +84,10 @@ export default function DJPortal() {
 
       if (data.success) {
         // Set authentication data
-        const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
-        const tokenExpiry = Date.now() + SESSION_TIMEOUT;
-        
         localStorage.setItem('dj_token', data.token);
         localStorage.setItem('dj_user', data.user);
         localStorage.setItem('dj_display_name', data.displayName || data.user);
-        localStorage.setItem('dj_token_expiry', tokenExpiry.toString());
+        localStorage.setItem('dj_token_expiry', data.tokenExpiry?.toString() || (Date.now() + 30 * 60 * 1000).toString());
         localStorage.setItem('dj_last_activity', Date.now().toString());
         
         router.push('/dj-dashboard');
