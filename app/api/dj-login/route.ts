@@ -75,7 +75,8 @@ export async function POST(request: Request) {
         userId: user.id,
         firstName: user.first_name,
         lastName: user.last_name,
-        email: user.email
+        email: user.email,
+        tokenExpiry: Date.now() + (30 * 60 * 1000) // 30 minutes
       },
       { status: 200 }
     );
