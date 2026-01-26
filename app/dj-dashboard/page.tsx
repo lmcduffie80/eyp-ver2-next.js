@@ -50,6 +50,12 @@ export default function DJDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   
+  // Inactivity tracking
+  const INACTIVITY_TIMEOUT = 30 * 1000; // 30 seconds
+  const WARNING_TIME = 10 * 1000; // Show warning 10 seconds before logout
+  const [showInactivityWarning, setShowInactivityWarning] = useState(false);
+  const [secondsUntilLogout, setSecondsUntilLogout] = useState(30);
+  
   // Navigation
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -120,6 +126,90 @@ export default function DJDashboard() {
       window.location.href = '/DJ';
     }
   }, []);
+
+  // Activity tracking and auto-logout
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let inactivityTimer: ReturnType<typeof setTimeout>;
+    let warningTimer: ReturnType<typeof setTimeout>;
+    let countdownInterval: ReturnType<typeof setInterval>;
+
+    const updateLastActivity = () => {
+      const now = Date.now().toString();
+      localStorage.setItem('dj_last_activity', now);
+      setShowInactivityWarning(false);
+      resetInactivityTimer();
+    };
+
+    const startCountdown = () => {
+      let seconds = 10;
+      setSecondsUntilLogout(seconds);
+      countdownInterval = setInterval(() => {
+        seconds--;
+        setSecondsUntilLogout(seconds);
+        if (seconds <= 0) {
+          clearInterval(countdownInterval);
+        }
+      }, 1000);
+    };
+
+    const resetInactivityTimer = () => {
+      // Clear existing timers
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      if (warningTimer) clearTimeout(warningTimer);
+      if (countdownInterval) clearInterval(countdownInterval);
+
+      // Set warning timer (20 seconds - shows warning at 10 seconds remaining)
+      warningTimer = setTimeout(() => {
+        setShowInactivityWarning(true);
+        startCountdown();
+      }, INACTIVITY_TIMEOUT - WARNING_TIME);
+
+      // Set logout timer (30 seconds)
+      inactivityTimer = setTimeout(() => {
+        console.log('Auto-logout due to inactivity');
+        handleLogout();
+      }, INACTIVITY_TIMEOUT);
+    };
+
+    // Activity event listeners
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    activityEvents.forEach(event => {
+      window.addEventListener(event, updateLastActivity);
+    });
+
+    // Initialize timer
+    updateLastActivity();
+
+    // Cleanup
+    return () => {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      if (warningTimer) clearTimeout(warningTimer);
+      if (countdownInterval) clearInterval(countdownInterval);
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, updateLastActivity);
+      });
+    };
+  }, [isAuthenticated, INACTIVITY_TIMEOUT, WARNING_TIME]);
+
+  // Session token expiration check
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    // Check token expiration every 5 seconds
+    const expiryCheckInterval = setInterval(() => {
+      const tokenExpiry = localStorage.getItem('dj_token_expiry');
+      if (tokenExpiry && Date.now() > parseInt(tokenExpiry)) {
+        console.log('Session expired - logging out');
+        alert('Your session has expired. Please log in again.');
+        handleLogout();
+      }
+    }, 5000);
+
+    return () => clearInterval(expiryCheckInterval);
+  }, [isAuthenticated]);
 
   const fetchReviews = async (username: string) => {
     setLoadingReviews(true);
@@ -565,8 +655,66 @@ export default function DJDashboard() {
     );
   }
 
+  // Inactivity Warning Modal
+  const InactivityWarning = () => {
+    if (!showInactivityWarning) return null;
+
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0, 0, 0, 0.8)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10000
+      }}>
+        <div style={{
+          background: 'white',
+          padding: '2rem',
+          borderRadius: '12px',
+          maxWidth: '400px',
+          textAlign: 'center',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+        }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+          <h2 style={{ color: '#1a1a1a', marginBottom: '1rem' }}>Inactivity Detected</h2>
+          <p style={{ color: '#666', marginBottom: '1.5rem' }}>
+            You will be logged out in <strong style={{ color: '#ff6b35', fontSize: '1.5rem' }}>{secondsUntilLogout}</strong> seconds due to inactivity.
+          </p>
+          <button
+            onClick={() => {
+              setShowInactivityWarning(false);
+              localStorage.setItem('dj_last_activity', Date.now().toString());
+            }}
+            style={{
+              background: '#ff6b35',
+              color: 'white',
+              border: 'none',
+              padding: '0.75rem 2rem',
+              borderRadius: '8px',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'background 0.3s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#e55a2b'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#ff6b35'}
+          >
+            I'm Still Here
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="dashboard-wrapper">
+    <>
+      <InactivityWarning />
+      <div className="dashboard-wrapper">
       {/* Sidebar Navigation */}
       <nav className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         {/* DJ Portal Header */}
@@ -1568,5 +1716,6 @@ export default function DJDashboard() {
         </div>
       </div>
     </div>
+    </>
   );
 }
