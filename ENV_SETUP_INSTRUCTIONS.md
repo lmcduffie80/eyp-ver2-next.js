@@ -42,6 +42,16 @@ AWS_REGION=us-east-1
 AWS_ROLE_ARN=
 
 # ============================================
+# RESEND (DJ blackout date email notifications)
+# ============================================
+# Get API key from https://resend.com/api-keys
+RESEND_API_KEY=re_xxxxxxxxxxxx
+# From address (use onboarding@resend.dev for testing; use verified domain for production)
+RESEND_FROM_EMAIL=onboarding@resend.dev
+# Email to receive blackout date notifications (optional; defaults to lee@... in code)
+ADMIN_NOTIFICATION_EMAIL=lee@externallyyoursproductions.com
+
+# ============================================
 # OTHER ENVIRONMENT VARIABLES
 # ============================================
 
