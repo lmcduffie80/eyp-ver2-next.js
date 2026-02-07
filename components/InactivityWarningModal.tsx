@@ -23,12 +23,20 @@ export default function InactivityWarningModal({
           <p className="inactivity-modal-message">
             You've been inactive for 30 seconds.
           </p>
-          <div className="inactivity-countdown">
-            <div className="countdown-circle">
-              <span className="countdown-number">{countdown}</span>
+          {countdown > 10 ? (
+            <div className="inactivity-message">
+              <p className="warning-text">
+                You will be automatically logged out in {countdown} seconds unless you take action.
+              </p>
             </div>
-            <p className="countdown-text">seconds until automatic logout</p>
-          </div>
+          ) : (
+            <div className="inactivity-countdown">
+              <div className="countdown-circle">
+                <span className="countdown-number">{countdown}</span>
+              </div>
+              <p className="countdown-text">seconds until automatic logout</p>
+            </div>
+          )}
           <div className="inactivity-modal-actions">
             <button 
               className="stay-logged-in-btn"
@@ -119,6 +127,21 @@ export default function InactivityWarningModal({
           font-size: 1.1rem;
           margin: 0 0 2rem 0;
           line-height: 1.5;
+        }
+
+        .inactivity-message {
+          margin: 2rem 0;
+        }
+
+        .warning-text {
+          color: #dc2626;
+          font-size: 1.2rem;
+          font-weight: 600;
+          margin: 0;
+          padding: 1.5rem;
+          background: #fef2f2;
+          border-radius: 8px;
+          border: 2px solid #fecaca;
         }
 
         .inactivity-countdown {
