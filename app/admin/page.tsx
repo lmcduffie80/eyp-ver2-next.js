@@ -2159,7 +2159,7 @@ export default function AdminDashboard() {
     handleLogoutNow
   } = useInactivityTimeout({
     timeoutSeconds: 30,
-    warningSeconds: 10,
+    warningSeconds: 30,
     onTimeout: handleLogout,
     enabled: isAuthenticated
   });
