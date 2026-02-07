@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCSVImport } from '../hooks/useCSVImport';
+import { useInactivityTimeout } from '../hooks/useInactivityTimeout';
 import ImageLightbox from '@/components/ImageLightbox';
+import InactivityWarningModal from '@/components/InactivityWarningModal';
 
 // Force fresh deployment - Updated: 2026-01-23T00:00:00Z
 
@@ -2148,6 +2150,19 @@ export default function AdminDashboard() {
       }
     }
   };
+
+  // Inactivity timeout - auto logout after 30 seconds of inactivity
+  const {
+    showWarning,
+    countdown,
+    handleStayLoggedIn,
+    handleLogoutNow
+  } = useInactivityTimeout({
+    timeoutSeconds: 30,
+    warningSeconds: 10,
+    onTimeout: handleLogout,
+    enabled: isAuthenticated
+  });
 
   // Show loading state while checking authentication
   if (authLoading) {
@@ -5782,6 +5797,15 @@ export default function AdminDashboard() {
       
       {/* Build verification - Jan 23, 2026 */}
       <div style={{display: 'none'}} data-build="2026-01-23-v2"></div>
+
+      {/* Inactivity Warning Modal */}
+      {showWarning && (
+        <InactivityWarningModal
+          countdown={countdown}
+          onStayLoggedIn={handleStayLoggedIn}
+          onLogoutNow={handleLogoutNow}
+        />
+      )}
     </div>
   );
 }
