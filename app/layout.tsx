@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Metadata } from "next";
 import "./globals.css";
+import { inter, robotoMono } from './fonts';
 
 export const metadata: Metadata = {
   title: "Externally Yours Productions, LLC",
@@ -23,12 +24,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${robotoMono.variable}`}>
       <head>
         <link rel="dns-prefetch" href="https://www.honeybook.com" />
         <link rel="preconnect" href="https://widget.honeybook.com" crossOrigin="anonymous" />
       </head>
-      <body>{children}</body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }
