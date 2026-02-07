@@ -10,6 +10,7 @@ export async function POST() {
     cookieStore.delete('auth_token');
     cookieStore.delete('session_id');
     cookieStore.delete('admin_session');
+    cookieStore.delete('admin_user_id');
     
     return NextResponse.json(
       { success: true, message: 'Logged out successfully' },
