@@ -8,6 +8,23 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 function VideoEmbed({ video }: { video: any }) {
+  // Load TikTok embed script when needed
+  useEffect(() => {
+    if (video.platform === 'tiktok') {
+      const script = document.createElement('script');
+      script.src = 'https://www.tiktok.com/embed.js';
+      script.async = true;
+      document.body.appendChild(script);
+      return () => {
+        try {
+          document.body.removeChild(script);
+        } catch {
+          // Script might already be removed
+        }
+      };
+    }
+  }, [video.platform]);
+
   const renderEmbed = () => {
     switch (video.platform) {
       case 'youtube':
@@ -21,16 +38,22 @@ function VideoEmbed({ video }: { video: any }) {
           />
         );
       
-      case 'tiktok':
+      case 'tiktok': {
+        // TikTok requires original URL for proper embedding
+        const tiktokUrl = video.video_url || `https://www.tiktok.com/@user/video/${video.video_id}`;
         return (
-          <iframe
-            src={`https://www.tiktok.com/embed/${video.video_id}`}
-            title={video.title || 'TikTok Video'}
-            allow="encrypted-media"
-            allowFullScreen
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-          />
+          <blockquote
+            className="tiktok-embed"
+            cite={tiktokUrl}
+            data-video-id={video.video_id}
+            style={{ maxWidth: '605px', minWidth: '325px', margin: '0 auto' }}
+          >
+            <section>
+              <a target="_blank" rel="noopener noreferrer" href={tiktokUrl}>View on TikTok</a>
+            </section>
+          </blockquote>
         );
+      }
       
       case 'instagram':
         return (
@@ -54,7 +77,13 @@ function VideoEmbed({ video }: { video: any }) {
       overflow: 'hidden',
       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
     }}>
-      <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
+      <div style={{ 
+        position: 'relative', 
+        paddingBottom: video.platform === 'tiktok' ? '177.78%' : '56.25%', // 9:16 for TikTok, 16:9 for others
+        height: 0, 
+        overflow: 'hidden',
+        background: '#000' // Black background for letterboxing
+      }}>
         {renderEmbed()}
       </div>
       {video.title && (
