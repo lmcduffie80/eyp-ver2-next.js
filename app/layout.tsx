@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Metadata } from "next";
+import Script from 'next/script';
 import "./globals.css";
 import { inter, robotoMono } from './fonts';
 
@@ -29,7 +30,13 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://www.honeybook.com" />
         <link rel="preconnect" href="https://widget.honeybook.com" crossOrigin="anonymous" />
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        {children}
+        <Script 
+          src="/analytics.js" 
+          strategy="afterInteractive"
+        />
+      </body>
     </html>
   );
 }
