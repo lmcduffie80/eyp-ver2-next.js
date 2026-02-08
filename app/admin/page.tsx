@@ -870,67 +870,119 @@ export default function AdminDashboard() {
 
     try {
       for (const file of Array.from(files)) {
-        console.log(`Processing ${file.name}...`);
-        
-        // Convert image to base64 and create thumbnail
-        const fullImageBase64 = await fileToBase64(file);
-        const thumbnailBase64 = await createThumbnail(file, 400); // 400px max width
-        
-        console.log(`Converted ${file.name}:`, {
-          fullImageLength: fullImageBase64.length,
-          thumbnailLength: thumbnailBase64.length,
-          project_id: selectedProject.id.toString(),
-          filename: file.name
-        });
-        
-        // Create FormData with correct field names
-        const formData = new FormData();
-        formData.append('fullImage', fullImageBase64);
-        formData.append('thumbnail', thumbnailBase64);
-        formData.append('project_id', selectedProject.id.toString());
-        formData.append('filename', file.name);
-        
-        console.log('FormData fields:', Array.from(formData.keys()));
+        try {
+          console.log(`Processing ${file.name}...`);
+          
+          // Convert image to base64 and create thumbnail
+          let fullImageBase64;
+          let thumbnailBase64;
+          
+          try {
+            fullImageBase64 = await fileToBase64(file);
+            console.log(`✓ Converted ${file.name} to base64 (${fullImageBase64.length} chars)`);
+          } catch (err) {
+            console.error(`✗ Failed to convert ${file.name} to base64:`, err);
+            alert(`Failed to process ${file.name}: Could not read image file`);
+            continue;
+          }
+          
+          try {
+            thumbnailBase64 = await createThumbnail(file, 400);
+            console.log(`✓ Created thumbnail for ${file.name} (${thumbnailBase64.length} chars)`);
+          } catch (err) {
+            console.error(`✗ Failed to create thumbnail for ${file.name}:`, err);
+            alert(`Failed to process ${file.name}: Could not create thumbnail`);
+            continue;
+          }
+          
+          console.log(`Converted ${file.name}:`, {
+            fullImageLength: fullImageBase64.length,
+            thumbnailLength: thumbnailBase64.length,
+            project_id: selectedProject.id.toString(),
+            filename: file.name
+          });
+          
+          // Create FormData with correct field names
+          const formData = new FormData();
+          formData.append('fullImage', fullImageBase64);
+          formData.append('thumbnail', thumbnailBase64);
+          formData.append('project_id', selectedProject.id.toString());
+          formData.append('filename', file.name);
+          
+          console.log('FormData fields:', Array.from(formData.keys()));
 
-        // Upload to server (which uploads to S3)
-        const uploadResponse = await fetch('/api/photography/upload', {
-          method: 'POST',
-          body: formData
-        });
-        
-        const uploadResult = await uploadResponse.json();
+          // Upload to server (which uploads to S3)
+          console.log(`Uploading ${file.name} to server...`);
+          let uploadResponse;
+          try {
+            uploadResponse = await fetch('/api/photography/upload', {
+              method: 'POST',
+              body: formData
+            });
+            console.log(`Server responded with status: ${uploadResponse.status}`);
+          } catch (err) {
+            console.error(`✗ Network error uploading ${file.name}:`, err);
+            alert(`Failed to upload ${file.name}: Network error`);
+            continue;
+          }
+          
+          const uploadResult = await uploadResponse.json();
+          console.log(`Upload result for ${file.name}:`, uploadResult);
 
-        if (!uploadResult.success) {
-          console.error('Failed to upload:', uploadResult.error);
-          alert(`Failed to upload ${file.name}: ${uploadResult.error}`);
+          if (!uploadResult.success) {
+            console.error('Failed to upload:', uploadResult.error);
+            alert(`Failed to upload ${file.name}: ${uploadResult.error || 'Unknown server error'}`);
+            continue;
+          }
+
+          console.log(`✓ ${file.name} uploaded to S3 successfully`);
+
+          // Save photo metadata to database
+          console.log(`Saving ${file.name} metadata to database...`);
+          try {
+            const dbResponse = await fetch('/api/photography/photos', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                project_id: selectedProject.id,
+                photo_url: uploadResult.photoURL,
+                thumbnail_url: uploadResult.thumbnailURL,
+                filename: file.name
+              })
+            });
+            
+            if (!dbResponse.ok) {
+              console.error(`✗ Failed to save ${file.name} to database`);
+            } else {
+              console.log(`✓ ${file.name} saved to database`);
+            }
+          } catch (err) {
+            console.error(`✗ Database error for ${file.name}:`, err);
+          }
+
+          uploadedCount++;
+          setUploadProgress(Math.round((uploadedCount / totalFiles) * 100));
+          
+        } catch (fileError) {
+          console.error(`Error processing ${file.name}:`, fileError);
+          alert(`Error processing ${file.name}: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`);
           continue;
         }
-
-        // Save photo metadata to database
-        await fetch('/api/photography/photos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            project_id: selectedProject.id,
-            photo_url: uploadResult.photoURL,
-            thumbnail_url: uploadResult.thumbnailURL,
-            filename: file.name
-          })
-        });
-
-        uploadedCount++;
-        setUploadProgress(Math.round((uploadedCount / totalFiles) * 100));
       }
 
       if (uploadedCount === totalFiles) {
         alert('All photos uploaded successfully!');
         await fetchProjectPhotos(selectedProject.id);
         await fetchPhotoProjects();
+      } else if (uploadedCount > 0) {
+        alert(`Uploaded ${uploadedCount} of ${totalFiles} photos. Some uploads failed.`);
+        await fetchProjectPhotos(selectedProject.id);
+        await fetchPhotoProjects();
       }
 
     } catch (error) {
       console.error('Error during photo upload:', error);
-      alert('Upload failed. Please check your connection and try again.');
+      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setTimeout(() => {
         setUploadingPhotos(false);
