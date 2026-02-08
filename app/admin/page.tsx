@@ -870,9 +870,18 @@ export default function AdminDashboard() {
 
     try {
       for (const file of Array.from(files)) {
+        console.log(`Processing ${file.name}...`);
+        
         // Convert image to base64 and create thumbnail
         const fullImageBase64 = await fileToBase64(file);
         const thumbnailBase64 = await createThumbnail(file, 400); // 400px max width
+        
+        console.log(`Converted ${file.name}:`, {
+          fullImageLength: fullImageBase64.length,
+          thumbnailLength: thumbnailBase64.length,
+          project_id: selectedProject.id.toString(),
+          filename: file.name
+        });
         
         // Create FormData with correct field names
         const formData = new FormData();
@@ -880,6 +889,8 @@ export default function AdminDashboard() {
         formData.append('thumbnail', thumbnailBase64);
         formData.append('project_id', selectedProject.id.toString());
         formData.append('filename', file.name);
+        
+        console.log('FormData fields:', Array.from(formData.keys()));
 
         // Upload to server (which uploads to S3)
         const uploadResponse = await fetch('/api/photography/upload', {
