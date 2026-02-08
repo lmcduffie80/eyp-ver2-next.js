@@ -63,6 +63,18 @@ export default function AdminDashboard() {
   const [newVideoUrl, setNewVideoUrl] = useState('');
   const [newVideoTitle, setNewVideoTitle] = useState('');
   
+  // DJ Entertainment state
+  const [djProjects, setDjProjects] = useState<any[]>([]);
+  const [selectedDjProject, setSelectedDjProject] = useState<any | null>(null);
+  const [djVideos, setDjVideos] = useState<any[]>([]);
+  const [loadingDjProjects, setLoadingDjProjects] = useState(false);
+  const [loadingDjVideos, setLoadingDjVideos] = useState(false);
+  const [newDjProjectName, setNewDjProjectName] = useState('');
+  const [newDjProjectDescription, setNewDjProjectDescription] = useState('');
+  const [showDjProjectForm, setShowDjProjectForm] = useState(false);
+  const [newDjVideoUrl, setNewDjVideoUrl] = useState('');
+  const [newDjVideoTitle, setNewDjVideoTitle] = useState('');
+  
   // Pricing state
   const [pricingServiceTab, setPricingServiceTab] = useState<'photography' | 'videography' | 'dj'>('photography');
   const [pricingPackages, setPricingPackages] = useState<any[]>([]);
@@ -880,6 +892,8 @@ export default function AdminDashboard() {
       fetchPhotoProjects();
     } else if (activeTab === 'videography') {
       fetchVideoProjects();
+    } else if (activeTab === 'dj-entertainment') {
+      fetchDjProjects();
     }
   }, [activeTab]);
 
@@ -894,6 +908,12 @@ export default function AdminDashboard() {
       fetchProjectVideos(selectedVideoProject.id);
     }
   }, [selectedVideoProject]);
+
+  useEffect(() => {
+    if (selectedDjProject) {
+      fetchDjVideos(selectedDjProject.id);
+    }
+  }, [selectedDjProject]);
 
   useEffect(() => {
     if (activeTab === 'users' && userTab === 'manage') {
@@ -1038,6 +1058,158 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error deleting video:', error);
       alert('Failed to delete video');
+    }
+  };
+
+  // DJ Entertainment Management Functions
+  const fetchDjProjects = async () => {
+    try {
+      setLoadingDjProjects(true);
+      const response = await fetch('/api/dj-entertainment/projects');
+      if (response.ok) {
+        const result = await response.json();
+        setDjProjects(result.data || []);
+      } else {
+        console.error('Failed to fetch DJ Entertainment projects');
+      }
+    } catch (error) {
+      console.error('Error fetching DJ Entertainment projects:', error);
+    } finally {
+      setLoadingDjProjects(false);
+    }
+  };
+
+  const fetchDjVideos = async (projectId: number) => {
+    try {
+      setLoadingDjVideos(true);
+      const response = await fetch(`/api/dj-entertainment/videos?project_id=${projectId}`);
+      if (response.ok) {
+        const result = await response.json();
+        setDjVideos(result.data || []);
+      } else {
+        console.error('Failed to fetch DJ Entertainment videos');
+      }
+    } catch (error) {
+      console.error('Error fetching DJ Entertainment videos:', error);
+    } finally {
+      setLoadingDjVideos(false);
+    }
+  };
+
+  const createDjProject = async () => {
+    if (!newDjProjectName.trim()) {
+      alert('Please enter a project name');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/dj-entertainment/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_name: newDjProjectName,
+          description: newDjProjectDescription
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setNewDjProjectName('');
+        setNewDjProjectDescription('');
+        setShowDjProjectForm(false);
+        await fetchDjProjects();
+        setSelectedDjProject(result.data);
+      } else {
+        const error = await response.json();
+        alert(`Failed to create project: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error creating project:', error);
+      alert('Failed to create project');
+    }
+  };
+
+  const addDjVideo = async () => {
+    if (!newDjVideoUrl.trim()) {
+      alert('Please enter a video URL (YouTube, TikTok, or Instagram)');
+      return;
+    }
+
+    if (!selectedDjProject) {
+      alert('Please select a project first');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/dj-entertainment/videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: selectedDjProject.id,
+          video_url: newDjVideoUrl,
+          title: newDjVideoTitle || null
+        })
+      });
+
+      if (response.ok) {
+        setNewDjVideoUrl('');
+        setNewDjVideoTitle('');
+        await fetchDjVideos(selectedDjProject.id);
+        await fetchDjProjects();
+        alert('Video added successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Failed to add video: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error adding video:', error);
+      alert('Failed to add video');
+    }
+  };
+
+  const deleteDjVideo = async (videoId: number) => {
+    if (!confirm('Are you sure you want to delete this video?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/dj-entertainment/videos?id=${videoId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok && selectedDjProject) {
+        await fetchDjVideos(selectedDjProject.id);
+        await fetchDjProjects();
+      } else {
+        alert('Failed to delete video');
+      }
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      alert('Failed to delete video');
+    }
+  };
+
+  const deleteDjProject = async (projectId: number) => {
+    if (!confirm('Are you sure you want to delete this project and all its videos?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/dj-entertainment/projects?id=${projectId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        setSelectedDjProject(null);
+        setDjVideos([]);
+        await fetchDjProjects();
+        alert('Project deleted successfully');
+      } else {
+        alert('Failed to delete project');
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('Failed to delete project');
     }
   };
 
@@ -1612,6 +1784,13 @@ export default function AdminDashboard() {
           >
             <span className="nav-icon">📹</span>
             <span>Videography</span>
+          </a>
+          <a 
+            className={`sidebar-nav-link ${activeTab === 'dj-entertainment' ? 'active' : ''}`}
+            onClick={() => switchTab('dj-entertainment')}
+          >
+            <span className="nav-icon">🎧</span>
+            <span>DJ Entertainment</span>
           </a>
           <a 
             className={`sidebar-nav-link ${activeTab === 'pricing' ? 'active' : ''}`}
@@ -4306,6 +4485,315 @@ export default function AdminDashboard() {
                                   </div>
                                   <button
                                     onClick={() => deleteVideo(video.id)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '0.5rem',
+                                      background: '#dc2626',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      fontSize: '0.9rem'
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* DJ Entertainment Tab */}
+          <div id="dj-entertainment-tab" className={`tab-content ${activeTab === 'dj-entertainment' ? 'active' : ''}`}>
+            <div className="section-card" style={{ marginBottom: '2rem' }}>
+              <h2 style={{ marginBottom: '1.5rem' }}>DJ Entertainment Portfolio Manager</h2>
+              <p style={{ color: 'var(--text-light)', marginBottom: '2rem' }}>
+                Manage your DJ Entertainment projects and add video links (YouTube, TikTok, Instagram) that will appear on the DJ Entertainment page.
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '2rem' }}>
+                {/* Projects Sidebar */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 style={{ margin: 0 }}>Projects</h3>
+                    <button
+                      onClick={() => setShowDjProjectForm(!showDjProjectForm)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        background: 'var(--primary-color)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem'
+                      }}
+                    >
+                      + New
+                    </button>
+                  </div>
+
+                  {showDjProjectForm && (
+                    <div style={{ 
+                      padding: '1rem', 
+                      background: '#f8f9fa', 
+                      borderRadius: '8px',
+                      marginBottom: '1rem'
+                    }}>
+                      <input
+                        type="text"
+                        placeholder="Project name"
+                        value={newDjProjectName}
+                        onChange={(e) => setNewDjProjectName(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          marginBottom: '0.5rem',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '4px'
+                        }}
+                      />
+                      <textarea
+                        placeholder="Description (optional)"
+                        value={newDjProjectDescription}
+                        onChange={(e) => setNewDjProjectDescription(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          marginBottom: '0.5rem',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '4px',
+                          minHeight: '60px'
+                        }}
+                      />
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          onClick={createDjProject}
+                          style={{
+                            flex: 1,
+                            padding: '0.5rem',
+                            background: 'var(--primary-color)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Create
+                        </button>
+                        <button
+                          onClick={() => setShowDjProjectForm(false)}
+                          style={{
+                            flex: 1,
+                            padding: '0.5rem',
+                            background: '#e0e0e0',
+                            color: '#333',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {loadingDjProjects ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                      Loading...
+                    </div>
+                  ) : djProjects.length === 0 ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)', fontSize: '0.9rem' }}>
+                      No projects yet. Create your first project!
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {djProjects.map(project => (
+                        <div
+                          key={project.id}
+                          onClick={() => setSelectedDjProject(project)}
+                          style={{
+                            padding: '1rem',
+                            background: selectedDjProject?.id === project.id ? '#e8f4ff' : 'white',
+                            border: selectedDjProject?.id === project.id ? '2px solid var(--primary-color)' : '1px solid #e0e0e0',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{project.project_name}</div>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>
+                            {project.video_count || 0} videos
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Video Management Area */}
+                <div>
+                  {!selectedDjProject ? (
+                    <div style={{ 
+                      padding: '4rem 2rem', 
+                      textAlign: 'center', 
+                      color: 'var(--text-light)',
+                      border: '2px dashed #e0e0e0',
+                      borderRadius: '8px'
+                    }}>
+                      <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>No project selected</p>
+                      <p style={{ fontSize: '0.9rem' }}>Select a project from the left or create a new one</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3 style={{ margin: 0 }}>{selectedDjProject.project_name}</h3>
+                        <button
+                          onClick={() => deleteDjProject(selectedDjProject.id)}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            background: '#dc2626',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem'
+                          }}
+                        >
+                          Delete Project
+                        </button>
+                      </div>
+                      
+                      {/* Add Video Form */}
+                      <div style={{ 
+                        padding: '1.5rem', 
+                        background: '#f8f9fa', 
+                        borderRadius: '8px',
+                        marginBottom: '2rem'
+                      }}>
+                        <h4 style={{ marginBottom: '0.5rem' }}>Add Video</h4>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginBottom: '1rem' }}>
+                          Supports YouTube, TikTok, and Instagram video links
+                        </p>
+                        <input
+                          type="text"
+                          placeholder="Video URL (YouTube, TikTok, or Instagram)"
+                          value={newDjVideoUrl}
+                          onChange={(e) => setNewDjVideoUrl(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            marginBottom: '0.5rem',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '4px',
+                            fontSize: '0.95rem'
+                          }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Video title (optional)"
+                          value={newDjVideoTitle}
+                          onChange={(e) => setNewDjVideoTitle(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            marginBottom: '1rem',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '4px',
+                            fontSize: '0.95rem'
+                          }}
+                        />
+                        <button
+                          onClick={addDjVideo}
+                          style={{
+                            padding: '0.75rem 2rem',
+                            background: 'var(--primary-color)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '1rem',
+                            fontWeight: '500'
+                          }}
+                        >
+                          Add Video
+                        </button>
+                      </div>
+
+                      {/* Videos List */}
+                      <div>
+                        <h4 style={{ marginBottom: '1rem' }}>Videos ({djVideos.length})</h4>
+                        
+                        {loadingDjVideos ? (
+                          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                            Loading videos...
+                          </div>
+                        ) : djVideos.length === 0 ? (
+                          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                            No videos yet. Add your first video!
+                          </div>
+                        ) : (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                            {djVideos.map(video => (
+                              <div key={video.id} style={{ 
+                                border: '1px solid #e0e0e0', 
+                                borderRadius: '8px',
+                                overflow: 'hidden',
+                                background: 'white'
+                              }}>
+                                <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, background: '#f0f0f0' }}>
+                                  {video.platform === 'youtube' && (
+                                    <img
+                                      src={`https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`}
+                                      alt={video.title || 'Video thumbnail'}
+                                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
+                                  )}
+                                  {video.platform === 'tiktok' && (
+                                    <div style={{ 
+                                      position: 'absolute', 
+                                      top: '50%', 
+                                      left: '50%', 
+                                      transform: 'translate(-50%, -50%)',
+                                      fontSize: '3rem'
+                                    }}>
+                                      🎵
+                                    </div>
+                                  )}
+                                  {video.platform === 'instagram' && (
+                                    <div style={{ 
+                                      position: 'absolute', 
+                                      top: '50%', 
+                                      left: '50%', 
+                                      transform: 'translate(-50%, -50%)',
+                                      fontSize: '3rem'
+                                    }}>
+                                      📷
+                                    </div>
+                                  )}
+                                </div>
+                                <div style={{ padding: '1rem' }}>
+                                  {video.title && (
+                                    <div style={{ fontWeight: '500', marginBottom: '0.5rem', fontSize: '0.95rem' }}>
+                                      {video.title}
+                                    </div>
+                                  )}
+                                  <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginBottom: '0.5rem' }}>
+                                    Platform: {video.platform}
+                                  </div>
+                                  <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginBottom: '0.75rem' }}>
+                                    {new Date(video.created_at).toLocaleDateString()}
+                                  </div>
+                                  <button
+                                    onClick={() => deleteDjVideo(video.id)}
                                     style={{
                                       width: '100%',
                                       padding: '0.5rem',
