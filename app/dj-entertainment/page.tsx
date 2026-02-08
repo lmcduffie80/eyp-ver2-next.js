@@ -7,10 +7,9 @@ import Contact from '@/components/ContactWrapper';
 import Link from 'next/link';
 import Image from 'next/image';
 
-function VideoEmbed({ video }: { video: any }) {
-  // Load TikTok embed script when needed
+function VideoModal({ video, isOpen, onClose }: { video: any; isOpen: boolean; onClose: () => void }) {
   useEffect(() => {
-    if (video.platform === 'tiktok') {
+    if (isOpen && video.platform === 'tiktok') {
       const script = document.createElement('script');
       script.src = 'https://www.tiktok.com/embed.js';
       script.async = true;
@@ -18,35 +17,34 @@ function VideoEmbed({ video }: { video: any }) {
       return () => {
         try {
           document.body.removeChild(script);
-        } catch {
-          // Script might already be removed
-        }
+        } catch {}
       };
     }
-  }, [video.platform]);
+  }, [isOpen, video.platform]);
 
-  const renderEmbed = () => {
+  if (!isOpen) return null;
+
+  const renderFullEmbed = () => {
     switch (video.platform) {
       case 'youtube':
         return (
           <iframe
-            src={`https://www.youtube.com/embed/${video.video_id}`}
+            src={`https://www.youtube.com/embed/${video.video_id}?autoplay=1`}
             title={video.title || 'Video'}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+            style={{ width: '100%', height: '100%', border: 'none' }}
           />
         );
       
       case 'tiktok': {
-        // TikTok requires original URL for proper embedding
         const tiktokUrl = video.video_url || `https://www.tiktok.com/@user/video/${video.video_id}`;
         return (
           <blockquote
             className="tiktok-embed"
             cite={tiktokUrl}
             data-video-id={video.video_id}
-            style={{ maxWidth: '100%', minWidth: '400px', margin: '0 auto' }}
+            style={{ maxWidth: '605px', minWidth: '325px', margin: '0 auto' }}
           >
             <section>
               <a target="_blank" rel="noopener noreferrer" href={tiktokUrl}>View on TikTok</a>
@@ -61,34 +59,195 @@ function VideoEmbed({ video }: { video: any }) {
             src={`https://www.instagram.com/p/${video.video_id}/embed`}
             title={video.title || 'Instagram Video'}
             allowFullScreen
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+            style={{ width: '100%', height: '100%', border: 'none' }}
           />
         );
       
       default:
-        return <div>Unsupported platform</div>;
+        return null;
     }
   };
 
   return (
-    <div style={{
-      background: 'white',
-      borderRadius: '12px',
-      overflow: 'hidden',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-    }}>
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        padding: '2rem'
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: video.platform === 'tiktok' ? '500px' : '900px',
+          height: video.platform === 'tiktok' ? '80vh' : '70vh',
+          backgroundColor: '#000',
+          borderRadius: '12px',
+          overflow: 'hidden'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '1rem',
+            right: '1rem',
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            border: 'none',
+            borderRadius: '50%',
+            width: '40px',
+            height: '40px',
+            fontSize: '24px',
+            cursor: 'pointer',
+            zIndex: 10,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          ×
+        </button>
+        {renderFullEmbed()}
+      </div>
+    </div>
+  );
+}
+
+function VideoEmbed({ video, onClick }: { video: any; onClick: () => void }) {
+  const getThumbnail = () => {
+    switch (video.platform) {
+      case 'youtube':
+        return `https://img.youtube.com/vi/${video.video_id}/maxresdefault.jpg`;
+      case 'tiktok':
+        return null; // Use placeholder
+      case 'instagram':
+        return null; // Use placeholder
+      default:
+        return null;
+    }
+  };
+
+  const getPlatformIcon = () => {
+    switch (video.platform) {
+      case 'youtube':
+        return '▶️';
+      case 'tiktok':
+        return '🎵';
+      case 'instagram':
+        return '📷';
+      default:
+        return '▶️';
+    }
+  };
+
+  const thumbnail = getThumbnail();
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        background: 'white',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+        cursor: 'pointer',
+        transition: 'transform 0.2s, box-shadow 0.2s'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'scale(1.03)';
+        e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.2)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'scale(1)';
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+      }}
+    >
       <div style={{ 
         position: 'relative', 
-        paddingBottom: video.platform === 'tiktok' ? '177.78%' : '56.25%', // 9:16 for TikTok, 16:9 for others
-        height: 0, 
+        paddingBottom: video.platform === 'tiktok' ? '125%' : '56.25%',
+        height: 0,
         overflow: 'hidden',
-        background: '#000' // Black background for letterboxing
+        background: thumbnail ? 'transparent' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
       }}>
-        {renderEmbed()}
+        {thumbnail ? (
+          <img
+            src={thumbnail}
+            alt={video.title || 'Video thumbnail'}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
+          />
+        ) : (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '4rem'
+          }}>
+            {getPlatformIcon()}
+          </div>
+        )}
+        
+        {/* Play button overlay */}
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          borderRadius: '50%',
+          width: '80px',
+          height: '80px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '2rem',
+          color: 'white'
+        }}>
+          ▶
+        </div>
+
+        {/* Platform badge */}
+        <div style={{
+          position: 'absolute',
+          top: '1rem',
+          right: '1rem',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          color: 'white',
+          padding: '0.5rem 1rem',
+          borderRadius: '20px',
+          fontSize: '0.85rem',
+          fontWeight: '500',
+          textTransform: 'capitalize'
+        }}>
+          {video.platform}
+        </div>
       </div>
+      
       {video.title && (
         <div style={{ padding: '1rem' }}>
-          <h4 style={{ margin: 0 }}>{video.title}</h4>
+          <h4 style={{ margin: 0, fontSize: '1rem' }}>{video.title}</h4>
         </div>
       )}
     </div>
@@ -100,6 +259,18 @@ export default function DJEntertainment() {
   const [loadingPricing, setLoadingPricing] = useState(true);
   const [djProjects, setDjProjects] = useState<any[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(true);
+  const [selectedVideo, setSelectedVideo] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleVideoClick = (video: any) => {
+    setSelectedVideo(video);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => setSelectedVideo(null), 300); // Delay to allow fade out animation
+  };
 
   useEffect(() => {
     fetchPricingPackages();
@@ -354,7 +525,11 @@ export default function DJEntertainment() {
           ) : (
             <div className="video-grid-fixed">
               {djProjects.flatMap(project => project.videos).map((video: any) => (
-                <VideoEmbed key={video.id} video={video} />
+                <VideoEmbed 
+                  key={video.id} 
+                  video={video}
+                  onClick={() => handleVideoClick(video)}
+                />
               ))}
             </div>
           )}
@@ -366,6 +541,14 @@ export default function DJEntertainment() {
         description="Ready to book a DJ for your event? Contact us to discuss your needs and get a quote for your celebration."
       />
       <Footer />
+      
+      {selectedVideo && (
+        <VideoModal
+          video={selectedVideo}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        />
+      )}
     </main>
   );
 }
