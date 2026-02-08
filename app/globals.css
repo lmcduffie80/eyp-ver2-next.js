@@ -2325,17 +2325,17 @@ body.dashboard-page {
   align-items: start; /* Prevent stretching */
 }
 
-/* Tablet: 2 columns with auto-fill */
+/* Tablet: 3-4 columns */
 @media (min-width: 768px) {
   .video-grid-fixed {
-    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
   }
 }
 
-/* Desktop: larger columns for better visibility */
+/* Desktop: 4-5 columns */
 @media (min-width: 1024px) {
   .video-grid-fixed {
-    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
   }
 }
 
