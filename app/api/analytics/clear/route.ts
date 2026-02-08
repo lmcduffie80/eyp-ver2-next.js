@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/api-old/db/connection';
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 export async function DELETE(request: NextRequest) {
   try {
     // Check for admin authentication
