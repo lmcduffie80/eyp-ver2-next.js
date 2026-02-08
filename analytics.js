@@ -90,118 +90,45 @@ function getReferrerSource(referrer) {
     }
 }
 
-// Initialize analytics data structure
-function initializeAnalytics() {
-    if (!localStorage.getItem('analytics_data')) {
-        const initialData = {
-            visits: [],
-            pageViews: [],
-            sessions: {},
-            uniqueVisitors: new Set(),
-            lastReset: new Date().toISOString()
-        };
-        localStorage.setItem('analytics_data', JSON.stringify(initialData));
-    }
-}
-
-// Load analytics data
-function loadAnalyticsData() {
-    const data = JSON.parse(localStorage.getItem('analytics_data') || '{}');
-    // Convert uniqueVisitors Set to Array for JSON compatibility
-    if (data.uniqueVisitors && typeof data.uniqueVisitors === 'object' && !Array.isArray(data.uniqueVisitors)) {
-        data.uniqueVisitors = Array.from(Object.keys(data.uniqueVisitors));
-    } else if (!data.uniqueVisitors) {
-        data.uniqueVisitors = [];
-    }
-    return data;
-}
-
-// Save analytics data
-function saveAnalyticsData(data) {
-    // Convert uniqueVisitors array back to Set-like object for storage
-    if (Array.isArray(data.uniqueVisitors)) {
-        const uniqueSet = {};
-        data.uniqueVisitors.forEach(v => uniqueSet[v] = true);
-        data.uniqueVisitors = uniqueSet;
-    }
-    localStorage.setItem('analytics_data', JSON.stringify(data));
-}
-
-// Track page view
+// Track page view by sending to API
 function trackPageView() {
-    initializeAnalytics();
-    const analytics = loadAnalyticsData();
-    
     const visitorId = getVisitorId();
     const sessionId = getSessionId();
-    const page = window.location.pathname.split('/').pop() || 'index.html';
+    const page = window.location.pathname;
     const referrer = document.referrer || '';
     const referrerSource = getReferrerSource(referrer);
     const userAgent = navigator.userAgent;
     const deviceType = getDeviceType();
     const timestamp = new Date().toISOString();
-    const screenWidth = window.screen.width;
-    const screenHeight = window.screen.height;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
     
-    // Track unique visitor
-    if (!analytics.uniqueVisitors[visitorId]) {
-        analytics.uniqueVisitors[visitorId] = true;
+    // Skip tracking for admin pages
+    if (page.startsWith('/admin') || page.startsWith('/dj-dashboard')) {
+        return;
     }
     
-    // Create visit record
-    const visit = {
-        visitorId: visitorId,
-        sessionId: sessionId,
-        timestamp: timestamp,
-        page: page,
-        referrer: referrer,
-        referrerSource: referrerSource,
-        userAgent: userAgent,
-        deviceType: deviceType,
-        screenWidth: screenWidth,
-        screenHeight: screenHeight,
-        viewportWidth: viewportWidth,
-        viewportHeight: viewportHeight,
-        url: window.location.href
-    };
-    
-    analytics.visits.push(visit);
-    analytics.pageViews.push({
-        page: page,
-        timestamp: timestamp,
-        visitorId: visitorId,
-        sessionId: sessionId
+    // Send to API
+    fetch('/api/analytics/track', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            visitorId,
+            sessionId,
+            page,
+            referrer,
+            referrerSource,
+            deviceType,
+            userAgent,
+            timestamp
+        })
+    }).then(response => {
+        if (!response.ok) {
+            console.error('Analytics tracking failed:', response.statusText);
+        }
+    }).catch(error => {
+        console.error('Analytics tracking error:', error);
     });
-    
-    // Track session
-    if (!analytics.sessions[sessionId]) {
-        analytics.sessions[sessionId] = {
-            visitorId: visitorId,
-            startTime: timestamp,
-            pageViews: 0,
-            pages: [],
-            deviceType: deviceType,
-            referrerSource: referrerSource
-        };
-    }
-    
-    analytics.sessions[sessionId].pageViews++;
-    if (!analytics.sessions[sessionId].pages.includes(page)) {
-        analytics.sessions[sessionId].pages.push(page);
-    }
-    analytics.sessions[sessionId].lastActivity = timestamp;
-    
-    // Limit data size (keep last 10,000 visits)
-    if (analytics.visits.length > 10000) {
-        analytics.visits = analytics.visits.slice(-10000);
-    }
-    if (analytics.pageViews.length > 10000) {
-        analytics.pageViews = analytics.pageViews.slice(-10000);
-    }
-    
-    saveAnalyticsData(analytics);
     
     // Log for debugging (can be removed in production)
     console.log('Page view tracked:', {
@@ -211,22 +138,6 @@ function trackPageView() {
         referrerSource: referrerSource,
         deviceType: deviceType
     });
-}
-
-// Track time on page when user leaves
-function trackTimeOnPage() {
-    const sessionId = getSessionId();
-    const sessionStart = sessionStorage.getItem('eyp_session_start');
-    
-    if (sessionStart) {
-        const timeOnPage = Date.now() - new Date(sessionStart).getTime();
-        const analytics = loadAnalyticsData();
-        
-        if (analytics.sessions[sessionId]) {
-            analytics.sessions[sessionId].duration = (analytics.sessions[sessionId].duration || 0) + timeOnPage;
-            saveAnalyticsData(analytics);
-        }
-    }
 }
 
 // Initialize tracking on page load (only if cookie consent given)
@@ -256,17 +167,6 @@ if (document.readyState === 'loading') {
     setTimeout(initializeTracking, 100);
 }
 
-// Track time on page when leaving
-window.addEventListener('beforeunload', function() {
-    trackTimeOnPage();
-});
-
-// Track page visibility changes (when user switches tabs)
-document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-        trackTimeOnPage();
-    } else {
-        sessionStorage.setItem('eyp_session_start', new Date().toISOString());
-    }
-});
+// Note: Session duration tracking would require additional API endpoints
+// and more complex session management. This is simplified for initial implementation.
 

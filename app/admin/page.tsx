@@ -34,6 +34,11 @@ export default function AdminDashboard() {
   const [analyticsFilterTime, setAnalyticsFilterTime] = useState<string>('');
   const [analyticsFilterYear, setAnalyticsFilterYear] = useState<string>('');
   
+  // Website Analytics state
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsTimeRange, setAnalyticsTimeRange] = useState('30');
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+  
   // Photography state
   const [photoProjects, setPhotoProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
@@ -219,6 +224,54 @@ export default function AdminDashboard() {
       if (blockedDatesEl) blockedDatesEl.textContent = approvedCount.toString();
     }
   }, [blockedDates]);
+
+  // Fetch analytics data
+  const fetchAnalytics = async (days: string) => {
+    try {
+      setLoadingAnalytics(true);
+      const response = await fetch(`/api/analytics/stats?days=${days}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch analytics');
+      }
+      const data = await response.json();
+      setAnalyticsData(data);
+      setLoadingAnalytics(false);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      setLoadingAnalytics(false);
+    }
+  };
+
+  // Clear analytics data
+  const clearAnalytics = async () => {
+    try {
+      const response = await fetch('/api/analytics/clear', {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to clear analytics');
+      }
+      const result = await response.json();
+      alert(result.message || 'Analytics data cleared successfully');
+      // Refresh data
+      fetchAnalytics(analyticsTimeRange);
+    } catch (error) {
+      console.error('Error clearing analytics:', error);
+      alert('Failed to clear analytics data');
+    }
+  };
+
+  // Auto-refresh analytics when on analytics tab
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      fetchAnalytics(analyticsTimeRange);
+      // Refresh every 30 seconds
+      const interval = setInterval(() => {
+        fetchAnalytics(analyticsTimeRange);
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, analyticsTimeRange]);
 
   const switchTab = (tab: string) => {
     setActiveTab(tab);
@@ -4287,11 +4340,8 @@ export default function AdminDashboard() {
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <select 
                     id="analytics-time-range" 
-                    defaultValue="30" 
-                    onChange={() => {
-                      // Load analytics functionality will be added here
-                      console.log('Analytics time range changed');
-                    }}
+                    value={analyticsTimeRange}
+                    onChange={(e) => setAnalyticsTimeRange(e.target.value)}
                     style={{ padding: '0.5rem 1rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
                   >
                     <option value="7">Last 7 Days</option>
@@ -4303,8 +4353,7 @@ export default function AdminDashboard() {
                   <button 
                     onClick={() => {
                       if (confirm('Are you sure you want to clear all analytics data? This action cannot be undone.')) {
-                        // Clear analytics functionality will be added here
-                        console.log('Clear analytics data');
+                        clearAnalytics();
                       }
                     }}
                     style={{ padding: '0.5rem 1rem', background: 'var(--error-color)', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
@@ -4321,9 +4370,11 @@ export default function AdminDashboard() {
                     <span className="metric-label">Total Visits</span>
                     <span className="metric-icon">👥</span>
                   </div>
-                  <div className="metric-value" id="total-visits">0</div>
+                  <div className="metric-value" id="total-visits">
+                    {loadingAnalytics ? '...' : (analyticsData?.totalVisits || 0).toLocaleString()}
+                  </div>
                   <div className="metric-change positive">
-                    <span className="arrow">↑</span> +12.5% from last month
+                    <span className="arrow">↑</span> Real-time tracking
                   </div>
                 </div>
                 <div className="metric-card-modern">
@@ -4331,9 +4382,11 @@ export default function AdminDashboard() {
                     <span className="metric-label">Page Views</span>
                     <span className="metric-icon">📄</span>
                   </div>
-                  <div className="metric-value" id="total-page-views">0</div>
+                  <div className="metric-value" id="total-page-views">
+                    {loadingAnalytics ? '...' : (analyticsData?.totalPageViews || 0).toLocaleString()}
+                  </div>
                   <div className="metric-change positive">
-                    <span className="arrow">↑</span> +8.2% this week
+                    <span className="arrow">↑</span> Auto-refreshes
                   </div>
                 </div>
                 <div className="metric-card-modern">
@@ -4341,9 +4394,11 @@ export default function AdminDashboard() {
                     <span className="metric-label">Unique Visitors</span>
                     <span className="metric-icon">🎯</span>
                   </div>
-                  <div className="metric-value" id="unique-visitors">0</div>
+                  <div className="metric-value" id="unique-visitors">
+                    {loadingAnalytics ? '...' : (analyticsData?.uniqueVisitors || 0).toLocaleString()}
+                  </div>
                   <div className="metric-change positive">
-                    <span className="arrow">↑</span> +5.3% this week
+                    <span className="arrow">↑</span> Unique tracking
                   </div>
                 </div>
                 <div className="metric-card-modern">
@@ -4351,9 +4406,11 @@ export default function AdminDashboard() {
                     <span className="metric-label">Avg. Session</span>
                     <span className="metric-icon">⏱️</span>
                   </div>
-                  <div className="metric-value" id="avg-session-duration">0m</div>
+                  <div className="metric-value" id="avg-session-duration">
+                    {loadingAnalytics ? '...' : (analyticsData?.avgSessionDuration || '0m')}
+                  </div>
                   <div className="metric-change positive">
-                    <span className="arrow">↑</span> +2.4% from last month
+                    <span className="arrow">↑</span> Session data
                   </div>
                 </div>
               </div>
@@ -4363,13 +4420,63 @@ export default function AdminDashboard() {
                 <div style={{ background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
                   <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Visits Over Time</h3>
                   <div id="visits-chart" style={{ height: '300px', position: 'relative', padding: '1rem 0', width: '100%', minWidth: '400px' }}>
-                    {/* Line graph will be generated here */}
+                    {loadingAnalytics ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>Loading chart data...</div>
+                    ) : analyticsData?.visitsOverTime && analyticsData.visitsOverTime.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', height: '100%' }}>
+                        {analyticsData.visitsOverTime.slice(-14).map((item: any, index: number) => (
+                          <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <span style={{ width: '100px', fontSize: '0.85rem', color: '#666' }}>
+                              {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </span>
+                            <div style={{ flex: 1, background: '#e0e0e0', borderRadius: '4px', height: '20px', position: 'relative' }}>
+                              <div style={{ 
+                                background: 'var(--primary-color)', 
+                                borderRadius: '4px', 
+                                height: '100%', 
+                                width: `${Math.min((item.count / Math.max(...analyticsData.visitsOverTime.map((v: any) => v.count))) * 100, 100)}%`,
+                                transition: 'width 0.3s ease'
+                              }}></div>
+                            </div>
+                            <span style={{ width: '50px', textAlign: 'right', fontSize: '0.9rem', fontWeight: '600' }}>
+                              {item.count}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>No visit data available</div>
+                    )}
                   </div>
                 </div>
                 <div style={{ background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
                   <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Top Pages</h3>
                   <div id="top-pages-list">
-                    {/* Top pages will be listed here */}
+                    {loadingAnalytics ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>Loading...</div>
+                    ) : analyticsData?.topPages && analyticsData.topPages.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {analyticsData.topPages.slice(0, 10).map((item: any, index: number) => (
+                          <div key={index} style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            padding: '0.5rem',
+                            background: index % 2 === 0 ? '#f9f9f9' : 'transparent',
+                            borderRadius: '4px'
+                          }}>
+                            <span style={{ fontSize: '0.9rem', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {item.page || '/'}
+                            </span>
+                            <span style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--primary-color)', minWidth: '50px', textAlign: 'right' }}>
+                              {item.views} views
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>No page data available</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -4380,7 +4487,34 @@ export default function AdminDashboard() {
                 <div style={{ background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
                   <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Traffic Sources</h3>
                   <div id="traffic-sources-list">
-                    {/* Traffic sources will be listed here */}
+                    {loadingAnalytics ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>Loading...</div>
+                    ) : analyticsData?.trafficSources && analyticsData.trafficSources.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {analyticsData.trafficSources.map((item: any, index: number) => {
+                          const total = analyticsData.trafficSources.reduce((sum: number, s: any) => sum + s.count, 0);
+                          const percentage = total > 0 ? (item.count / total * 100).toFixed(1) : 0;
+                          return (
+                            <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                                <span style={{ color: '#333', fontWeight: '500' }}>{item.source}</span>
+                                <span style={{ color: '#666' }}>{item.count} ({percentage}%)</span>
+                              </div>
+                              <div style={{ background: '#e0e0e0', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                  background: 'var(--primary-color)', 
+                                  height: '100%', 
+                                  width: `${percentage}%`,
+                                  transition: 'width 0.3s ease'
+                                }}></div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>No traffic data available</div>
+                    )}
                   </div>
                 </div>
 
@@ -4388,7 +4522,41 @@ export default function AdminDashboard() {
                 <div style={{ background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
                   <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Device Types</h3>
                   <div id="device-types-list">
-                    {/* Device types will be listed here */}
+                    {loadingAnalytics ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>Loading...</div>
+                    ) : analyticsData?.deviceTypes && analyticsData.deviceTypes.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {analyticsData.deviceTypes.map((item: any, index: number) => {
+                          const total = analyticsData.deviceTypes.reduce((sum: number, d: any) => sum + d.count, 0);
+                          const percentage = total > 0 ? (item.count / total * 100).toFixed(1) : 0;
+                          const deviceIcons: any = {
+                            'Desktop': '💻',
+                            'Mobile': '📱',
+                            'Tablet': '📱'
+                          };
+                          return (
+                            <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                                <span style={{ color: '#333', fontWeight: '500' }}>
+                                  {deviceIcons[item.device] || '💻'} {item.device}
+                                </span>
+                                <span style={{ color: '#666' }}>{item.count} ({percentage}%)</span>
+                              </div>
+                              <div style={{ background: '#e0e0e0', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                  background: 'var(--primary-color)', 
+                                  height: '100%', 
+                                  width: `${percentage}%`,
+                                  transition: 'width 0.3s ease'
+                                }}></div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>No device data available</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -4397,7 +4565,54 @@ export default function AdminDashboard() {
               <div style={{ marginTop: '2rem', background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
                 <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Recent Activity</h3>
                 <div id="recent-activity-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                  {/* Recent activity will be listed here */}
+                  {loadingAnalytics ? (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>Loading...</div>
+                  ) : analyticsData?.recentActivity && analyticsData.recentActivity.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {analyticsData.recentActivity.map((item: any, index: number) => (
+                        <div key={index} style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: '150px 1fr 100px 80px 120px',
+                          gap: '1rem',
+                          padding: '0.75rem',
+                          background: index % 2 === 0 ? '#f9f9f9' : 'transparent',
+                          borderRadius: '4px',
+                          fontSize: '0.85rem',
+                          alignItems: 'center'
+                        }}>
+                          <span style={{ color: '#666', fontSize: '0.8rem' }}>
+                            {new Date(item.timestamp).toLocaleString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric', 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </span>
+                          <span style={{ color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {item.page}
+                          </span>
+                          <span style={{ color: '#666', fontSize: '0.8rem' }}>
+                            {item.source}
+                          </span>
+                          <span style={{ color: '#666', fontSize: '0.8rem' }}>
+                            {item.device}
+                          </span>
+                          <span style={{ 
+                            color: '#999', 
+                            fontSize: '0.75rem', 
+                            overflow: 'hidden', 
+                            textOverflow: 'ellipsis', 
+                            whiteSpace: 'nowrap',
+                            fontFamily: 'monospace'
+                          }}>
+                            {item.visitorId}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>No recent activity</div>
+                  )}
                 </div>
               </div>
             </div>
