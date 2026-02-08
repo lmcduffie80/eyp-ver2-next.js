@@ -3931,3 +3931,216 @@ body.dashboard-page {
     gap: 0.5rem;
   }
 }
+
+/* Photography Portfolio Manager - ShootProof Style Layout */
+.photography-manager {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 2rem;
+  min-height: 600px;
+}
+
+/* Projects Sidebar */
+.projects-panel {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+  overflow-y: auto;
+  max-height: 800px;
+}
+
+.projects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Project Items - Compact Cards */
+.project-item {
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.project-item:hover {
+  border-color: var(--accent-color);
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.project-item.active {
+  border-color: var(--primary-color);
+  background: #f0f7ff;
+}
+
+/* Project Cover - Small Thumbnail */
+.project-cover {
+  width: 60px;
+  height: 60px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.project-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.project-cover .no-cover {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+}
+
+/* Project Info */
+.project-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.project-info h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-info p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
+
+/* Delete Project Button */
+.delete-project-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.project-item:hover .delete-project-btn {
+  opacity: 1;
+}
+
+.delete-project-btn:hover {
+  background: #fee;
+  transform: scale(1.1);
+}
+
+/* Photos Panel - Main Area */
+.photos-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  overflow-y: auto;
+  max-height: 800px;
+}
+
+/* Upload Area */
+.upload-area {
+  margin-bottom: 2rem;
+}
+
+/* Photos Grid - Compact */
+.photos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.photo-item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f0f0f0;
+  aspect-ratio: 1;
+}
+
+.photo-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.photo-item:hover img {
+  transform: scale(1.05);
+}
+
+/* Delete Photo Button */
+.delete-photo-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+.photo-item:hover .delete-photo-btn {
+  opacity: 1;
+}
+
+.delete-photo-btn:hover {
+  background: #fee;
+  transform: scale(1.1);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .photography-manager {
+    grid-template-columns: 240px 1fr;
+    gap: 1.5rem;
+  }
+  
+  .photos-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .photography-manager {
+    grid-template-columns: 1fr;
+  }
+  
+  .projects-panel {
+    max-height: 300px;
+  }
+  
+  .photos-panel {
+    max-height: none;
+  }
+}
