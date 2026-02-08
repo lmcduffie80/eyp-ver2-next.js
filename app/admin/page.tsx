@@ -804,7 +804,7 @@ export default function AdminDashboard() {
   };
 
   // Helper function to create compressed image blob
-  const createCompressedImage = (file: File, maxWidth: number, quality: number): Promise<Blob> => {
+  const createCompressedImage = (file: File, maxWidth: number | null, quality: number): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const canvas = document.createElement('canvas');
@@ -814,7 +814,8 @@ export default function AdminDashboard() {
         let width = img.width;
         let height = img.height;
         
-        if (width > maxWidth) {
+        // Only resize if maxWidth is specified and image exceeds it
+        if (maxWidth !== null && width > maxWidth) {
           height = (height * maxWidth) / width;
           width = maxWidth;
         }
@@ -856,7 +857,7 @@ export default function AdminDashboard() {
           let thumbnailBlob;
           
           try {
-            fullImageBlob = await createCompressedImage(file, 2000, 0.85);
+            fullImageBlob = await createCompressedImage(file, null, 1.0);
             console.log(`✓ Compressed ${file.name} (${fullImageBlob.size} bytes)`);
           } catch (err) {
             console.error(`✗ Failed to compress ${file.name}:`, err);
