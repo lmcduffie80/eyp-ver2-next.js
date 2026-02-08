@@ -2,6 +2,12 @@
 // Force redeploy to pick up AWS environment variables - 2026-01-24
 const nextConfig = {
   reactStrictMode: true,
+  // Add experimental configuration for larger request bodies
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb', // Allow up to 50MB for API routes
+    },
+  },
   images: {
     remotePatterns: [
       {
