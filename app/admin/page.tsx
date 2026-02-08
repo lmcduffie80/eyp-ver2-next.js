@@ -4227,7 +4227,7 @@ export default function AdminDashboard() {
                                 <img 
                                   src={photo.thumbnail_url || photo.photo_url} 
                                   alt={photo.caption || 'Project photo'}
-                                  style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '8px' }}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                 />
                                 <button
                                   onClick={() => deletePhoto(photo.id)}
