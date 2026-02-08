@@ -46,7 +46,7 @@ function VideoEmbed({ video }: { video: any }) {
             className="tiktok-embed"
             cite={tiktokUrl}
             data-video-id={video.video_id}
-            style={{ maxWidth: '605px', minWidth: '325px', margin: '0 auto' }}
+            style={{ maxWidth: '100%', minWidth: '400px', margin: '0 auto' }}
           >
             <section>
               <a target="_blank" rel="noopener noreferrer" href={tiktokUrl}>View on TikTok</a>
