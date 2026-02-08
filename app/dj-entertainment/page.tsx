@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import Contact from '@/components/ContactWrapper';
@@ -17,7 +17,9 @@ function VideoModal({ video, isOpen, onClose }: { video: any; isOpen: boolean; o
       return () => {
         try {
           document.body.removeChild(script);
-        } catch {}
+        } catch {
+          // Ignore errors during cleanup - element may already be removed
+        }
       };
     }
   }, [isOpen, video.platform]);
@@ -126,12 +128,10 @@ function VideoModal({ video, isOpen, onClose }: { video: any; isOpen: boolean; o
 
 function VideoEmbed({ video, onClick }: { video: any; onClick: () => void }) {
   const [isHovering, setIsHovering] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Load TikTok script when hovering over TikTok videos
+  // Load TikTok script on mount for TikTok videos
   useEffect(() => {
-    if (showPreview && video.platform === 'tiktok') {
+    if (video.platform === 'tiktok') {
       const script = document.createElement('script');
       script.src = 'https://www.tiktok.com/embed.js';
       script.async = true;
@@ -139,68 +139,19 @@ function VideoEmbed({ video, onClick }: { video: any; onClick: () => void }) {
       return () => {
         try {
           document.body.removeChild(script);
-        } catch {}
+        } catch {
+          // Ignore errors during cleanup - element may already be removed
+        }
       };
     }
-  }, [showPreview, video.platform]);
-
-  const handleMouseEnter = () => {
-    setIsHovering(true);
-    // Delay preview to avoid accidental triggers
-    hoverTimeoutRef.current = setTimeout(() => {
-      setShowPreview(true);
-    }, 500); // 500ms delay
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-    setShowPreview(false);
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
-  };
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const getThumbnail = () => {
-    switch (video.platform) {
-      case 'youtube':
-        return `https://img.youtube.com/vi/${video.video_id}/maxresdefault.jpg`;
-      case 'tiktok':
-        return null; // Use placeholder
-      case 'instagram':
-        return null; // Use placeholder
-      default:
-        return null;
-    }
-  };
-
-  const getPlatformIcon = () => {
-    switch (video.platform) {
-      case 'youtube':
-        return '▶️';
-      case 'tiktok':
-        return '🎵';
-      case 'instagram':
-        return '📷';
-      default:
-        return '▶️';
-    }
-  };
+  }, [video.platform]);
 
   const renderPreview = () => {
     switch (video.platform) {
       case 'youtube':
         return (
           <iframe
-            src={`https://www.youtube.com/embed/${video.video_id}?autoplay=1&mute=0&controls=0&loop=1&playlist=${video.video_id}`}
+            src={`https://www.youtube.com/embed/${video.video_id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${video.video_id}`}
             title={video.title || 'Video preview'}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             style={{
@@ -262,13 +213,11 @@ function VideoEmbed({ video, onClick }: { video: any; onClick: () => void }) {
     }
   };
 
-  const thumbnail = getThumbnail();
-
   return (
     <div
       onClick={onClick}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
       style={{
         background: 'white',
         borderRadius: '12px',
@@ -284,65 +233,10 @@ function VideoEmbed({ video, onClick }: { video: any; onClick: () => void }) {
         paddingBottom: video.platform === 'tiktok' ? '125%' : '56.25%',
         height: 0,
         overflow: 'hidden',
-        background: thumbnail ? 'transparent' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        background: 'transparent'
       }}>
-        {showPreview ? (
-          // Show video preview on hover
-          renderPreview()
-        ) : (
-          // Show thumbnail when not hovering
-          <>
-            {thumbnail ? (
-              <img
-                src={thumbnail}
-                alt={video.title || 'Video thumbnail'}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover'
-                }}
-              />
-            ) : (
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '4rem'
-              }}>
-                {getPlatformIcon()}
-              </div>
-            )}
-            
-            {/* Play button overlay - hide when showing preview */}
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              backgroundColor: 'rgba(0, 0, 0, 0.7)',
-              borderRadius: '50%',
-              width: '80px',
-              height: '80px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '2rem',
-              color: 'white',
-              opacity: isHovering ? 0.8 : 1,
-              transition: 'opacity 0.2s'
-            }}>
-              ▶
-            </div>
-          </>
-        )}
+        {/* Always show video preview */}
+        {renderPreview()}
 
         {/* Platform badge */}
         <div style={{
