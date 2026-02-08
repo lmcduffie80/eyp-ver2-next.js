@@ -1,42 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useCSVImport } from '../hooks/useCSVImport';
-import { useInactivityTimeout } from '../hooks/useInactivityTimeout';
-import ImageLightbox from '@/components/ImageLightbox';
-import InactivityWarningModal from '@/components/InactivityWarningModal';
-
-// Force fresh deployment - Updated: 2026-01-23T00:00:00Z
 
 export default function AdminDashboard() {
-  // Authentication state
-  const [adminUsername, setAdminUsername] = useState('');
-  const [adminDisplayName, setAdminDisplayName] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authLoading, setAuthLoading] = useState(true);
-  const router = useRouter();
-  
   const [activeTab, setActiveTab] = useState('djs');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [bookings, setBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [blockedDates, setBlockedDates] = useState<any[]>([]);
-  
-  // Dashboard statistics state
-  const [dashboardStats, setDashboardStats] = useState({
-    totalProjects: 0,
-    completedProjects: 0,
-    futureBookings: 0,
-    blockedDatesCount: 0,
-    totalRevenue: 0,
-    djRevenue: 0,
-    revenue2025: 0,
-    revenue2026: 0,
-    completionRate: 0,
-    djRevenuePercentage: 0
-  });
   const [loadingBlockedDates, setLoadingBlockedDates] = useState(false);
   const [blockedDateFilter, setBlockedDateFilter] = useState('pending');
   const [userTab, setUserTab] = useState('create');
@@ -60,7 +33,11 @@ export default function AdminDashboard() {
   const [analyticsFilterDJ, setAnalyticsFilterDJ] = useState<string>('');
   const [analyticsFilterTime, setAnalyticsFilterTime] = useState<string>('');
   const [analyticsFilterYear, setAnalyticsFilterYear] = useState<string>('');
-  const [analyticsFilterStatus, setAnalyticsFilterStatus] = useState<string>('active');
+  
+  // Website Analytics state
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsTimeRange, setAnalyticsTimeRange] = useState('30');
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
   
   // Photography state
   const [photoProjects, setPhotoProjects] = useState<any[]>([]);
@@ -73,35 +50,6 @@ export default function AdminDashboard() {
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
   const [showProjectForm, setShowProjectForm] = useState(false);
-  
-  // Lightbox gallery state
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
-  const [lightboxStartIndex, setLightboxStartIndex] = useState(0);
-  const [lightboxTitle, setLightboxTitle] = useState('');
-  
-  // Photo modal state
-  const [photoModalOpen, setPhotoModalOpen] = useState(false);
-  const [modalProject, setModalProject] = useState<any | null>(null);
-  
-  // Video modal state
-  const [videoModalOpen, setVideoModalOpen] = useState(false);
-  const [modalVideoProject, setModalVideoProject] = useState<any | null>(null);
-  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
-  
-  // Helper to format date as YYYY-MM-DD in local timezone (avoids UTC conversion issues)
-  const formatDateLocal = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  // Helper to parse YYYY-MM-DD string as local date (not UTC)
-  const parseDateLocal = (dateStr: string): Date => {
-    const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
-    return new Date(year, month - 1, day);
-  };
   
   // Videography state
   const [videoProjects, setVideoProjects] = useState<any[]>([]);
@@ -121,6 +69,7 @@ export default function AdminDashboard() {
   const [loadingPricing, setLoadingPricing] = useState(false);
   const [savingPackage, setSavingPackage] = useState(false);
   const [editingPackage, setEditingPackage] = useState<any | null>(null);
+  const [showPackageForm, setShowPackageForm] = useState(false);
   const [packageForm, setPackageForm] = useState({
     package_name: '',
     price: '',
@@ -130,7 +79,6 @@ export default function AdminDashboard() {
   });
   const [newFeature, setNewFeature] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [pricingModalOpen, setPricingModalOpen] = useState(false);
   
   // Notes modal state
   const [notesModalOpen, setNotesModalOpen] = useState(false);
@@ -147,11 +95,6 @@ export default function AdminDashboard() {
   // Sort state for analytics table
   const [analyticsSortField, setAnalyticsSortField] = useState<'date' | 'dj' | 'project'>('date');
   const [analyticsSortDirection, setAnalyticsSortDirection] = useState<'asc' | 'desc'>('asc');
-  
-  // Analytics state
-  const [analyticsData, setAnalyticsData] = useState<any>(null);
-  const [analyticsTimeRange, setAnalyticsTimeRange] = useState<string>('30');
-  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   
   const { importing, status, importCSV} = useCSVImport();
 
@@ -186,39 +129,6 @@ export default function AdminDashboard() {
     return <span style={{ marginLeft: '0.25rem' }}>{direction === 'asc' ? '↑' : '↓'}</span>;
   };
 
-  // Authentication check - must be logged in to access admin dashboard
-  useEffect(() => {
-    const verifyAuth = async () => {
-      try {
-        // Check for admin session via API
-        const response = await fetch('/api/admin-verify');
-        const data = await response.json();
-        
-        if (data.authenticated) {
-          setIsAuthenticated(true);
-          setAdminUsername(data.user || '');
-          setAdminDisplayName(data.displayName || data.user || '');
-          
-          // Also store in localStorage for display purposes
-          localStorage.setItem('admin_user', data.user);
-          localStorage.setItem('admin_display_name', data.displayName);
-        } else {
-          // Not authenticated, redirect to login
-          console.log('Not authenticated, redirecting to login');
-          router.push('/admin-login');
-        }
-      } catch (error) {
-        console.error('Authentication check failed:', error);
-        // On error, redirect to login
-        router.push('/admin-login');
-      } finally {
-        setAuthLoading(false);
-      }
-    };
-    
-    verifyAuth();
-  }, [router]);
-
   useEffect(() => {
     // Prevent body scroll when dashboard is open
     document.body.style.overflow = 'hidden';
@@ -233,19 +143,6 @@ export default function AdminDashboard() {
     fetchBlockedDates();
   }, []);
 
-  // Click-away handler for dropdown menus
-  useEffect(() => {
-    const handleClickOutside = () => {
-      if ((window as any).openDropdownId) {
-        (window as any).openDropdownId = null;
-        setBookings([...bookings]);
-      }
-    };
-    
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [bookings]);
-
   // Calculate and update dashboard statistics when bookings change
   useEffect(() => {
     if (bookings.length > 0) {
@@ -256,11 +153,10 @@ export default function AdminDashboard() {
       const totalProjects = bookings.length;
       
       // Completed Projects (past dates)
-      const completed = bookings.filter(b => parseDateLocal(b.date) < today).length;
+      const completed = bookings.filter(b => new Date(b.date) < today).length;
       
-      // Future Bookings (count unique client-date combinations)
-      const futureBookingsFiltered = bookings.filter(b => parseDateLocal(b.date) >= today);
-      const futureBookings = new Set(futureBookingsFiltered.map(b => `${b.clientName || 'Unknown'}-${b.date}`)).size;
+      // Future Bookings
+      const futureBookings = bookings.filter(b => new Date(b.date) >= today).length;
       
       // Total Revenue
       const totalRevenue = bookings.reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0);
@@ -270,45 +166,112 @@ export default function AdminDashboard() {
       
       // Revenue by Year
       const revenue2025 = bookings
-        .filter(b => parseDateLocal(b.date).getFullYear() === 2025)
+        .filter(b => new Date(b.date).getFullYear() === 2025)
         .reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0);
       
       const revenue2026 = bookings
-        .filter(b => parseDateLocal(b.date).getFullYear() === 2026)
+        .filter(b => new Date(b.date).getFullYear() === 2026)
         .reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0);
       
       // Calculate percentages
       const completionRate = totalProjects > 0 ? ((completed / totalProjects) * 100) : 0;
       const djRevenuePercentage = totalRevenue > 0 ? ((djRevenue / totalRevenue) * 100) : 0;
       
-      // Update state instead of DOM manipulation
-      setDashboardStats({
-        totalProjects,
-        completedProjects: completed,
-        futureBookings,
-        blockedDatesCount: blockedDates.length,
-        totalRevenue,
-        djRevenue,
-        revenue2025,
-        revenue2026,
-        completionRate,
-        djRevenuePercentage
-      });
+      // Update DOM elements
+      const totalProjectsEl = document.getElementById('total-projects');
+      const completedProjectsEl = document.getElementById('completed-projects');
+      const futureBookingsEl = document.getElementById('future-bookings-projects');
+      const totalRevenueEl = document.getElementById('total-revenue');
+      const djRevenueEl = document.getElementById('dj-revenue');
+      const revenue2025El = document.getElementById('revenue-2025');
+      const revenue2026El = document.getElementById('revenue-2026');
+      
+      // Progress bar elements
+      const completedProgressBar = document.getElementById('completed-progress-bar');
+      const completedPercentage = document.getElementById('completed-percentage');
+      
+      // DJ revenue display and bar
+      const djRevenueDisplay = document.getElementById('dj-revenue-display');
+      const djRevenueBar = document.getElementById('dj-revenue-bar');
+      
+      if (totalProjectsEl) totalProjectsEl.textContent = totalProjects.toString();
+      if (completedProjectsEl) completedProjectsEl.textContent = completed.toString();
+      if (futureBookingsEl) futureBookingsEl.textContent = futureBookings.toString();
+      if (totalRevenueEl) totalRevenueEl.textContent = `$${(Number(totalRevenue) || 0).toFixed(2)}`;
+      if (djRevenueEl) djRevenueEl.textContent = `$${(Number(djRevenue) || 0).toFixed(2)}`;
+      if (revenue2025El) revenue2025El.textContent = `$${(Number(revenue2025) || 0).toFixed(2)}`;
+      if (revenue2026El) revenue2026El.textContent = `$${(Number(revenue2026) || 0).toFixed(2)}`;
+      
+      // Update progress bar for completed projects
+      if (completedProgressBar) completedProgressBar.style.width = `${completionRate}%`;
+      if (completedPercentage) completedPercentage.textContent = `${(Number(completionRate) || 0).toFixed(0)}% completion rate`;
+      
+      // Update DJ revenue display and bar
+      if (djRevenueDisplay) djRevenueDisplay.textContent = `$${(Number(djRevenue) || 0).toFixed(2)} (${(Number(djRevenuePercentage) || 0).toFixed(0)}%)`;
+      if (djRevenueBar) djRevenueBar.style.width = `${djRevenuePercentage}%`;
     }
   }, [bookings]);
 
   // Update blocked dates count when blocked dates change
   useEffect(() => {
-    // Count only approved blocked dates
-    const approvedCount = blockedDates.filter(bd => 
-      bd.status === 'approved' || !bd.status
-    ).length;
-    
-    setDashboardStats(prev => ({
-      ...prev,
-      blockedDatesCount: approvedCount
-    }));
+    if (blockedDates.length > 0) {
+      // Count only approved blocked dates
+      const approvedCount = blockedDates.filter(bd => 
+        bd.status === 'approved' || !bd.status
+      ).length;
+      
+      const blockedDatesEl = document.getElementById('blocked-dates-count');
+      if (blockedDatesEl) blockedDatesEl.textContent = approvedCount.toString();
+    }
   }, [blockedDates]);
+
+  // Fetch analytics data
+  const fetchAnalytics = async (days: string) => {
+    try {
+      setLoadingAnalytics(true);
+      const response = await fetch(`/api/analytics/stats?days=${days}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch analytics');
+      }
+      const data = await response.json();
+      setAnalyticsData(data);
+      setLoadingAnalytics(false);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      setLoadingAnalytics(false);
+    }
+  };
+
+  // Clear analytics data
+  const clearAnalytics = async () => {
+    try {
+      const response = await fetch('/api/analytics/clear', {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to clear analytics');
+      }
+      const result = await response.json();
+      alert(result.message || 'Analytics data cleared successfully');
+      // Refresh data
+      fetchAnalytics(analyticsTimeRange);
+    } catch (error) {
+      console.error('Error clearing analytics:', error);
+      alert('Failed to clear analytics data');
+    }
+  };
+
+  // Auto-refresh analytics when on analytics tab
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      fetchAnalytics(analyticsTimeRange);
+      // Refresh every 30 seconds
+      const interval = setInterval(() => {
+        fetchAnalytics(analyticsTimeRange);
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, analyticsTimeRange]);
 
   const switchTab = (tab: string) => {
     setActiveTab(tab);
@@ -363,27 +326,25 @@ export default function AdminDashboard() {
   };
 
   const getBookingsForDate = (date: Date) => {
-    const dateStr = formatDateLocal(date);
+    const dateStr = date.toISOString().split('T')[0];
     const filtered = calendarDJFilter 
       ? bookings.filter(b => b.djUser === calendarDJFilter)
       : bookings;
     
     return filtered.filter(b => {
-      // Extract date portion from booking.date string (might be YYYY-MM-DD or ISO format)
-      const bookingDateStr = b.date.split('T')[0];
-      return bookingDateStr === dateStr;
+      const bookingDate = new Date(b.date).toISOString().split('T')[0];
+      return bookingDate === dateStr;
     });
   };
 
   const getBlockedDatesForDate = (date: Date) => {
-    const dateStr = formatDateLocal(date);
+    const dateStr = date.toISOString().split('T')[0];
     const filtered = calendarDJFilter
       ? blockedDates.filter(bd => bd.djUser === calendarDJFilter)
       : blockedDates;
     
     return filtered.filter(bd => {
-      // Extract date portion from blocked date string
-      const blockedDateStr = bd.date.split('T')[0];
+      const blockedDateStr = new Date(bd.date).toISOString().split('T')[0];
       return blockedDateStr === dateStr;
     });
   };
@@ -578,7 +539,7 @@ export default function AdminDashboard() {
     if (!currentEditingBooking) return;
     
     const projectName = currentEditingBooking.eventType || 'Project';
-    const date = parseDateLocal(currentEditingBooking.date).toLocaleDateString();
+    const date = new Date(currentEditingBooking.date).toLocaleDateString();
     const dj = currentEditingBooking.djUser || 'Unassigned';
     const notes = modalNotes || '';
     
@@ -698,7 +659,7 @@ export default function AdminDashboard() {
     
     return Array.from(djMap.values()).map(dj => ({
       ...dj,
-      projectCount: new Set(dj.projects.map((b: any) => `${b.clientName || 'Unknown'}-${b.date}`)).size,
+      projectCount: dj.projects.length,
       dates: dj.dates.sort((a: Date, b: Date) => a.getTime() - b.getTime())
     }));
   };
@@ -830,254 +791,55 @@ export default function AdminDashboard() {
     }
   };
 
-  // Open project gallery in lightbox
-  const openProjectGallery = async (project: any, startIndex: number = 0) => {
-    try {
-      // Fetch photos for this specific project
-      const response = await fetch(`/api/photography/photos?project_id=${project.id}`);
-      
-      if (!response.ok) {
-        console.error('Failed to fetch project photos');
-        return;
-      }
-      
-      const result = await response.json();
-      const photos = result.data || [];
-      
-      // Check if project has any photos
-      if (photos.length === 0) {
-        alert('This project has no photos yet.');
-        return;
-      }
-      
-      // Update state with fetched photos
-      setProjectPhotos(photos);
-      
-      // Open lightbox with photos
-      const imageUrls = photos.map((photo: any) => photo.photo_url);
-      setLightboxImages(imageUrls);
-      setLightboxStartIndex(startIndex);
-      setLightboxTitle(project.project_name);
-      setLightboxOpen(true);
-      
-    } catch (error) {
-      console.error('Error fetching project photos:', error);
-      alert('Failed to load gallery. Please try again.');
-    }
-  };
-
-  // Open project in modal view
-  const openProjectModal = (project: any) => {
-    setModalProject(project);
-    setPhotoModalOpen(true);
-    if (project) {
-      fetchProjectPhotos(project.id);
-    }
-  };
-
-  // Open video project in modal view
-  const openVideoModal = (project: any) => {
-    console.log('[VIDEO MODAL] Opening for project:', project.id, project.project_name);
-    
-    // Reset state to avoid showing stale data
-    setProjectVideos([]);
-    setPlayingVideoId(null);
-    
-    // Set modal state
-    setModalVideoProject(project);
-    setVideoModalOpen(true);
-    
-    // Fetch videos for this project
-    if (project && project.id) {
-      console.log('[VIDEO MODAL] Fetching videos for project:', project.id);
-      fetchProjectVideos(project.id);
-    } else {
-      console.error('[VIDEO MODAL] No project ID provided');
-    }
-  };
-
-  // Helper function to check image dimensions
-  const checkImageDimensions = (file: File): Promise<{width: number, height: number}> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      const url = URL.createObjectURL(file);
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        resolve({ width: img.width, height: img.height });
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error('Failed to load image'));
-      };
-      img.src = url;
-    });
-  };
-
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0 || !selectedProject) return;
 
-    // Validate each file before uploading
-    try {
-      for (const file of Array.from(files)) {
-        // File size validation (10MB max)
-        if (file.size > 20 * 1024 * 1024) {
-          alert(`${file.name} is too large. Maximum file size is 20MB.`);
-          return;
-        }
-
-        // File type validation
-        if (!file.type.startsWith('image/')) {
-          alert(`${file.name} is not a valid image file.`);
-          return;
-        }
-
-        // Check image dimensions
-        const dimensions = await checkImageDimensions(file);
-        if (dimensions.width < 1200 || dimensions.height < 800) {
-          if (!confirm(`${file.name} is ${dimensions.width}x${dimensions.height}. Recommended minimum is 1200x800px. Upload anyway?`)) {
-            return;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error validating images:', error);
-      alert('Failed to validate images. Please try again.');
-      return;
-    }
-
     setUploadingPhotos(true);
     setUploadProgress(0);
     const totalFiles = files.length;
-    let successCount = 0;
-    let failCount = 0;
-    const filesArray = Array.from(files);
+    let uploadedCount = 0;
 
     try {
-      for (let i = 0; i < filesArray.length; i++) {
-        const file = filesArray[i];
+      for (const file of Array.from(files)) {
+        // Create FormData for server upload
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('project_id', selectedProject.id.toString());
+
+        // Upload to server (which uploads to S3)
+        const uploadResponse = await fetch('/api/photography/upload', {
+          method: 'POST',
+          body: formData
+        });
         
-        try {
-          console.log(`Uploading ${i + 1} of ${totalFiles}: ${file.name}`);
-          
-          // Step 1: Process the image (compress and create thumbnail)
-          const processFormData = new FormData();
-          processFormData.append('file', file);
+        const { photoURL, success, error } = await uploadResponse.json();
 
-          const processResponse = await fetch('/api/photography/process', {
-            method: 'POST',
-            body: processFormData
-          });
-
-          const processResult = await processResponse.json();
-
-          if (!processResult.success) {
-            console.error('Failed to process:', processResult.error);
-            alert(`Failed to process ${file.name}: ${processResult.error}`);
-            failCount++;
-            continue;
-          }
-
-          const { fullImage, thumbnail, metadata } = processResult;
-
-          // Step 2: Get presigned URLs for direct S3 upload
-          const fullImagePresignedResponse = await fetch('/api/photography/presigned-url', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              filename: file.name,
-              fileType: 'image/webp',
-              projectId: selectedProject.id.toString(),
-              isThumb: false
-            })
-          });
-
-          const fullImagePresigned = await fullImagePresignedResponse.json();
-
-          if (!fullImagePresigned.success) {
-            console.error('Failed to get presigned URL:', fullImagePresigned.error);
-            alert(`Failed to get upload URL for ${file.name}`);
-            failCount++;
-            continue;
-          }
-
-          // Step 3: Upload full image directly to S3
-          const fullImageBlob = await fetch(`data:image/webp;base64,${fullImage}`).then(r => r.blob());
-          const fullUploadResponse = await fetch(fullImagePresigned.presignedUrl, {
-            method: 'PUT',
-            body: fullImageBlob,
-            headers: {
-              'Content-Type': 'image/webp'
-            }
-          });
-
-          if (!fullUploadResponse.ok) {
-            console.error('Failed to upload full image to S3:', fullUploadResponse.statusText);
-            failCount++;
-            continue;
-          }
-
-          // Step 4: Get presigned URL for thumbnail
-          const thumbnailPresignedResponse = await fetch('/api/photography/presigned-url', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              filename: file.name,
-              fileType: 'image/webp',
-              projectId: selectedProject.id.toString(),
-              isThumb: true
-            })
-          });
-
-          const thumbnailPresigned = await thumbnailPresignedResponse.json();
-
-          if (thumbnailPresigned.success) {
-            // Step 5: Upload thumbnail directly to S3
-            const thumbnailBlob = await fetch(`data:image/webp;base64,${thumbnail}`).then(r => r.blob());
-            await fetch(thumbnailPresigned.presignedUrl, {
-              method: 'PUT',
-              body: thumbnailBlob,
-              headers: {
-                'Content-Type': 'image/webp'
-              }
-            });
-          }
-
-          // Step 6: Save photo metadata to database
-          await fetch('/api/photography/photos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              project_id: selectedProject.id,
-              photo_url: fullImagePresigned.publicUrl,
-              thumbnail_url: thumbnailPresigned.publicUrl || fullImagePresigned.publicUrl,
-              filename: file.name
-            })
-          });
-
-          successCount++;
-          setUploadProgress(Math.round(((successCount + failCount) / totalFiles) * 100));
-          
-          // No delay needed - direct S3 upload doesn't overwhelm Vercel
-          
-        } catch (fileError) {
-          console.error(`Error uploading ${file.name}:`, fileError);
-          failCount++;
-          setUploadProgress(Math.round(((successCount + failCount) / totalFiles) * 100));
+        if (!success) {
+          console.error('Failed to upload:', error);
+          alert(`Failed to upload ${file.name}: ${error}`);
           continue;
         }
+
+        // Save photo metadata to database
+        await fetch('/api/photography/photos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project_id: selectedProject.id,
+            photo_url: photoURL,
+            filename: file.name
+          })
+        });
+
+        uploadedCount++;
+        setUploadProgress(Math.round((uploadedCount / totalFiles) * 100));
       }
 
-      // Show summary
-      if (successCount > 0) {
-        const message = failCount > 0 
-          ? `Successfully uploaded ${successCount} photo(s). ${failCount} failed.`
-          : `All ${successCount} photo(s) uploaded successfully!`;
-        alert(message);
+      if (uploadedCount === totalFiles) {
+        alert('All photos uploaded successfully!');
         await fetchProjectPhotos(selectedProject.id);
         await fetchPhotoProjects();
-      } else if (failCount > 0) {
-        alert(`All ${failCount} upload(s) failed. Please try again.`);
       }
 
     } catch (error) {
@@ -1151,396 +913,6 @@ export default function AdminDashboard() {
     }
   }, [blockedDateFilter, activeTab]);
 
-  // Load analytics when analytics tab is active
-  useEffect(() => {
-    if (activeTab === 'analytics') {
-      loadAnalytics();
-    }
-  }, [activeTab, analyticsTimeRange]);
-
-  // ESC key handler for photo modal
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && photoModalOpen) {
-        setPhotoModalOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [photoModalOpen]);
-
-  // ESC key handler for video modal
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && videoModalOpen) {
-        setVideoModalOpen(false);
-        setPlayingVideoId(null);
-      }
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [videoModalOpen]);
-
-  // ESC key handler for pricing modal
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && pricingModalOpen) {
-        setPricingModalOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [pricingModalOpen]);
-
-  // Analytics Functions
-  const loadAnalytics = () => {
-    try {
-      setLoadingAnalytics(true);
-      
-      // Load analytics data from localStorage
-      const rawData = localStorage.getItem('analytics_data');
-      if (!rawData) {
-        setAnalyticsData({
-          visits: [],
-          pageViews: [],
-          sessions: {},
-          uniqueVisitors: []
-        });
-        setLoadingAnalytics(false);
-        return;
-      }
-
-      const data = JSON.parse(rawData);
-      
-      // Convert uniqueVisitors to array if it's an object
-      if (data.uniqueVisitors && typeof data.uniqueVisitors === 'object' && !Array.isArray(data.uniqueVisitors)) {
-        data.uniqueVisitors = Object.keys(data.uniqueVisitors);
-      } else if (!data.uniqueVisitors) {
-        data.uniqueVisitors = [];
-      }
-
-      // Filter by time range
-      const now = new Date();
-      const daysAgo = analyticsTimeRange === 'all' ? null : parseInt(analyticsTimeRange);
-      
-      if (daysAgo) {
-        const cutoffDate = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
-        data.visits = data.visits.filter((v: any) => new Date(v.timestamp) >= cutoffDate);
-        data.pageViews = data.pageViews.filter((p: any) => new Date(p.timestamp) >= cutoffDate);
-      }
-
-      setAnalyticsData(data);
-      
-      // Update the display
-      setTimeout(() => {
-        displayAnalytics(data);
-      }, 100);
-      
-    } catch (error) {
-      console.error('Error loading analytics:', error);
-      setAnalyticsData({
-        visits: [],
-        pageViews: [],
-        sessions: {},
-        uniqueVisitors: []
-      });
-    } finally {
-      setLoadingAnalytics(false);
-    }
-  };
-
-  const displayAnalytics = (data: any) => {
-    try {
-      // Calculate metrics
-      const totalVisits = data.visits?.length || 0;
-      const totalPageViews = data.pageViews?.length || 0;
-      const uniqueVisitors = data.uniqueVisitors?.length || 0;
-      
-      // Calculate average session duration
-      const sessions = Object.values(data.sessions || {}) as any[];
-      const avgDuration = sessions.length > 0
-        ? sessions.reduce((sum: number, s: any) => sum + (s.duration || 0), 0) / sessions.length
-        : 0;
-      const avgMinutes = Math.round(avgDuration / 60000);
-
-      // Update metric cards
-      const totalVisitsEl = document.getElementById('total-visits');
-      const totalPageViewsEl = document.getElementById('total-page-views');
-      const uniqueVisitorsEl = document.getElementById('unique-visitors');
-      const avgSessionEl = document.getElementById('avg-session-duration');
-
-      if (totalVisitsEl) totalVisitsEl.textContent = totalVisits.toLocaleString();
-      if (totalPageViewsEl) totalPageViewsEl.textContent = totalPageViews.toLocaleString();
-      if (uniqueVisitorsEl) uniqueVisitorsEl.textContent = uniqueVisitors.toLocaleString();
-      if (avgSessionEl) avgSessionEl.textContent = `${avgMinutes}m`;
-
-      // Display top pages
-      displayTopPages(data);
-      
-      // Display traffic sources
-      displayTrafficSources(data);
-      
-      // Display device types
-      displayDeviceTypes(data);
-      
-      // Display visits over time chart
-      displayVisitsChart(data);
-      
-      // Display recent activity
-      displayRecentActivity(data);
-      
-    } catch (error) {
-      console.error('Error displaying analytics:', error);
-    }
-  };
-
-  const displayTopPages = (data: any) => {
-    const topPagesEl = document.getElementById('top-pages-list');
-    if (!topPagesEl) return;
-
-    // Count page views by page
-    const pageCounts: { [key: string]: number } = {};
-    (data.pageViews || []).forEach((pv: any) => {
-      pageCounts[pv.page] = (pageCounts[pv.page] || 0) + 1;
-    });
-
-    // Sort and get top 5
-    const sortedPages = Object.entries(pageCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-
-    if (sortedPages.length === 0) {
-      topPagesEl.innerHTML = '<div class="analytics-empty-state"><div class="analytics-empty-state-icon">📄</div><div class="analytics-empty-state-text">No page data yet</div></div>';
-      return;
-    }
-
-    const maxViews = sortedPages[0][1];
-    topPagesEl.innerHTML = `
-      <div class="analytics-list">
-        ${sortedPages.map(([page, count]) => `
-          <div class="analytics-list-item">
-            <span class="analytics-list-item-label">${page}</span>
-            <div class="analytics-list-item-bar">
-              <div class="analytics-list-item-bar-fill" style="width: ${(count / maxViews) * 100}%"></div>
-            </div>
-            <span class="analytics-list-item-value">${count}</span>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  };
-
-  const displayTrafficSources = (data: any) => {
-    const trafficSourcesEl = document.getElementById('traffic-sources-list');
-    if (!trafficSourcesEl) return;
-
-    // Count by referrer source
-    const sourceCounts: { [key: string]: number } = {};
-    (data.visits || []).forEach((v: any) => {
-      const source = v.referrerSource || 'Direct';
-      sourceCounts[source] = (sourceCounts[source] || 0) + 1;
-    });
-
-    const sortedSources = Object.entries(sourceCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-
-    if (sortedSources.length === 0) {
-      trafficSourcesEl.innerHTML = '<div class="analytics-empty-state"><div class="analytics-empty-state-icon">🌐</div><div class="analytics-empty-state-text">No traffic data yet</div></div>';
-      return;
-    }
-
-    const maxCount = sortedSources[0][1];
-    trafficSourcesEl.innerHTML = `
-      <div class="analytics-list">
-        ${sortedSources.map(([source, count]) => `
-          <div class="analytics-list-item">
-            <span class="analytics-list-item-label">${source}</span>
-            <div class="analytics-list-item-bar">
-              <div class="analytics-list-item-bar-fill" style="width: ${(count / maxCount) * 100}%"></div>
-            </div>
-            <span class="analytics-list-item-value">${count}</span>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  };
-
-  const displayDeviceTypes = (data: any) => {
-    const deviceTypesEl = document.getElementById('device-types-list');
-    if (!deviceTypesEl) return;
-
-    // Count by device type
-    const deviceCounts: { [key: string]: number } = {};
-    (data.visits || []).forEach((v: any) => {
-      const device = v.deviceType || 'Unknown';
-      deviceCounts[device] = (deviceCounts[device] || 0) + 1;
-    });
-
-    const sortedDevices = Object.entries(deviceCounts)
-      .sort((a, b) => b[1] - a[1]);
-
-    if (sortedDevices.length === 0) {
-      deviceTypesEl.innerHTML = '<div class="analytics-empty-state"><div class="analytics-empty-state-icon">📱</div><div class="analytics-empty-state-text">No device data yet</div></div>';
-      return;
-    }
-
-    const maxCount = sortedDevices[0][1];
-    deviceTypesEl.innerHTML = `
-      <div class="analytics-list">
-        ${sortedDevices.map(([device, count]) => `
-          <div class="analytics-list-item">
-            <span class="analytics-list-item-label">${device}</span>
-            <div class="analytics-list-item-bar">
-              <div class="analytics-list-item-bar-fill" style="width: ${(count / maxCount) * 100}%"></div>
-            </div>
-            <span class="analytics-list-item-value">${count}</span>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  };
-
-  const displayVisitsChart = (data: any) => {
-    const chartEl = document.getElementById('visits-chart');
-    if (!chartEl) return;
-
-    const visits = data.visits || [];
-    if (visits.length === 0) {
-      chartEl.innerHTML = '<div class="analytics-empty-state"><div class="analytics-empty-state-icon">📊</div><div class="analytics-empty-state-text">No visit data yet</div></div>';
-      return;
-    }
-
-    // Group visits by date
-    const visitsByDate: { [key: string]: number } = {};
-    visits.forEach((v: any) => {
-      const date = new Date(v.timestamp).toLocaleDateString();
-      visitsByDate[date] = (visitsByDate[date] || 0) + 1;
-    });
-
-    // Sort dates and prepare chart data
-    const sortedDates = Object.entries(visitsByDate)
-      .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
-      .slice(-14); // Last 14 days
-
-    if (sortedDates.length === 0) {
-      chartEl.innerHTML = '<div class="analytics-empty-state"><div class="analytics-empty-state-icon">📊</div><div class="analytics-empty-state-text">No visit data yet</div></div>';
-      return;
-    }
-
-    const maxVisits = Math.max(...sortedDates.map(([, count]) => count));
-    const width = 800;
-    const height = 300;
-    const padding = { top: 20, right: 20, bottom: 40, left: 50 };
-    const chartWidth = width - padding.left - padding.right;
-    const chartHeight = height - padding.top - padding.bottom;
-
-    // Create SVG
-    const points = sortedDates.map(([date, count], i) => {
-      const x = padding.left + (i / (sortedDates.length - 1 || 1)) * chartWidth;
-      const y = padding.top + chartHeight - (count / maxVisits) * chartHeight;
-      return { x, y, date, count };
-    });
-
-    const pathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-    const areaData = `${pathData} L ${points[points.length - 1].x} ${height - padding.bottom} L ${padding.left} ${height - padding.bottom} Z`;
-
-    chartEl.innerHTML = `
-      <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" class="line-chart-svg">
-        <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:var(--accent-color);stop-opacity:0.3" />
-            <stop offset="100%" style="stop-color:var(--accent-color);stop-opacity:0.05" />
-          </linearGradient>
-        </defs>
-        
-        <!-- Grid lines -->
-        ${Array.from({ length: 5 }, (_, i) => {
-          const y = padding.top + (i * chartHeight / 4);
-          return `<line class="line-chart-grid" x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" />`;
-        }).join('')}
-        
-        <!-- Area -->
-        <path class="line-chart-area" d="${areaData}" />
-        
-        <!-- Line -->
-        <path class="line-chart-line" d="${pathData}" />
-        
-        <!-- Points -->
-        ${points.map(p => `
-          <circle class="line-chart-point" cx="${p.x}" cy="${p.y}" r="5">
-            <title>${p.date}: ${p.count} visits</title>
-          </circle>
-        `).join('')}
-        
-        <!-- Y-axis labels -->
-        ${Array.from({ length: 5 }, (_, i) => {
-          const value = Math.round((maxVisits * (4 - i)) / 4);
-          const y = padding.top + (i * chartHeight / 4);
-          return `<text class="line-chart-label" x="${padding.left - 10}" y="${y + 5}" text-anchor="end">${value}</text>`;
-        }).join('')}
-        
-        <!-- X-axis labels (every other date) -->
-        ${points.filter((_, i) => i % Math.ceil(points.length / 7) === 0).map(p => `
-          <text class="line-chart-label" x="${p.x}" y="${height - padding.bottom + 25}" text-anchor="middle" transform="rotate(-45 ${p.x} ${height - padding.bottom + 25})">${p.date.split('/').slice(0, 2).join('/')}</text>
-        `).join('')}
-      </svg>
-    `;
-  };
-
-  const displayRecentActivity = (data: any) => {
-    const activityEl = document.getElementById('recent-activity-list');
-    if (!activityEl) return;
-
-    const visits = (data.visits || []).slice(-20).reverse();
-    
-    if (visits.length === 0) {
-      activityEl.innerHTML = '<div class="analytics-empty-state"><div class="analytics-empty-state-icon">📝</div><div class="analytics-empty-state-text">No activity yet</div></div>';
-      return;
-    }
-
-    activityEl.innerHTML = `
-      <div class="activity-timeline">
-        ${visits.map((v: any) => {
-          const time = new Date(v.timestamp);
-          const timeStr = time.toLocaleString();
-          return `
-            <div class="activity-timeline-item">
-              <div class="activity-timeline-content">
-                Visitor from <strong>${v.referrerSource || 'Direct'}</strong> viewed <strong>${v.page}</strong>
-              </div>
-              <div class="activity-timeline-meta">
-                <span>🕐 ${timeStr}</span>
-                <span>📱 ${v.deviceType || 'Unknown'}</span>
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
-  };
-
-  const clearAnalyticsData = () => {
-    if (!confirm('Are you sure you want to clear all analytics data? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      localStorage.removeItem('analytics_data');
-      setAnalyticsData({
-        visits: [],
-        pageViews: [],
-        sessions: {},
-        uniqueVisitors: []
-      });
-      loadAnalytics();
-      alert('Analytics data cleared successfully!');
-    } catch (error) {
-      console.error('Error clearing analytics:', error);
-      alert('Failed to clear analytics data');
-    }
-  };
-
   // Videography Management Functions
   const fetchVideoProjects = async () => {
     try {
@@ -1562,15 +934,12 @@ export default function AdminDashboard() {
   const fetchProjectVideos = async (projectId: number) => {
     try {
       setLoadingVideos(true);
-      console.log('[VIDEO API] Fetching videos for project:', projectId);
       const response = await fetch(`/api/videography/videos?project_id=${projectId}`);
       if (response.ok) {
         const result = await response.json();
-        console.log('[VIDEO API] Received videos:', result.data?.length || 0, 'videos');
-        console.log('[VIDEO API] Videos data:', result.data);
         setProjectVideos(result.data || []);
       } else {
-        console.error('Failed to fetch project videos', response.status);
+        console.error('Failed to fetch project videos');
       }
     } catch (error) {
       console.error('Error fetching project videos:', error);
@@ -1604,8 +973,7 @@ export default function AdminDashboard() {
         setSelectedVideoProject(result.data);
       } else {
         const error = await response.json();
-        console.error('[CREATE PROJECT] Server error:', error);
-        alert(`Failed to create project: ${error.error}\n${error.details || ''}`);
+        alert(`Failed to create project: ${error.error}`);
       }
     } catch (error) {
       console.error('Error creating project:', error);
@@ -1619,8 +987,7 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Use modalVideoProject instead of selectedVideoProject
-    if (!modalVideoProject) {
+    if (!selectedVideoProject) {
       alert('Please select a project first');
       return;
     }
@@ -1630,7 +997,7 @@ export default function AdminDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          project_id: modalVideoProject.id,  // Changed from selectedVideoProject
+          project_id: selectedVideoProject.id,
           video_url: newVideoUrl,
           title: newVideoTitle || null
         })
@@ -1639,7 +1006,7 @@ export default function AdminDashboard() {
       if (response.ok) {
         setNewVideoUrl('');
         setNewVideoTitle('');
-        await fetchProjectVideos(modalVideoProject.id);  // Changed from selectedVideoProject
+        await fetchProjectVideos(selectedVideoProject.id);
         await fetchVideoProjects();
         alert('Video added successfully!');
       } else {
@@ -1671,31 +1038,6 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error deleting video:', error);
       alert('Failed to delete video');
-    }
-  };
-
-  const deleteVideoProject = async (projectId: number) => {
-    if (!confirm('Are you sure you want to delete this video project? All videos will be removed.')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/videography/projects?id=${projectId}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        if (selectedVideoProject?.id === projectId) {
-          setSelectedVideoProject(null);
-          setProjectVideos([]);
-        }
-        await fetchVideoProjects();
-      } else {
-        alert('Failed to delete video project');
-      }
-    } catch (error) {
-      console.error('Error deleting video project:', error);
-      alert('Failed to delete video project');
     }
   };
 
@@ -1739,9 +1081,8 @@ export default function AdminDashboard() {
       });
 
       if (response.ok) {
-        await fetchPricingPackages(pricingServiceTab);
         setSaveSuccess(true);
-        setPricingModalOpen(false);
+        setShowPackageForm(false);
         setEditingPackage(null);
         setPackageForm({
           package_name: '',
@@ -1750,6 +1091,7 @@ export default function AdminDashboard() {
           features: [],
           display_order: 0
         });
+        await fetchPricingPackages(pricingServiceTab);
         
         // Show success message briefly
         setTimeout(() => setSaveSuccess(false), 3000);
@@ -1774,7 +1116,7 @@ export default function AdminDashboard() {
       features: Array.isArray(pkg.features) ? pkg.features : [],
       display_order: pkg.display_order || 0
     });
-    setPricingModalOpen(true);
+    setShowPackageForm(true);
   };
 
   const deletePackage = async (id: number) => {
@@ -2151,53 +1493,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Inactivity timeout - auto logout after 30 seconds of inactivity
-  const {
-    showWarning,
-    countdown,
-    handleStayLoggedIn,
-    handleLogoutNow
-  } = useInactivityTimeout({
-    timeoutSeconds: 30,
-    warningSeconds: 30,
-    onTimeout: handleLogout,
-    enabled: isAuthenticated
-  });
-
-  // Show loading state while checking authentication
-  if (authLoading) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        background: '#f8f8f8'
-      }}>
-        <div style={{
-          textAlign: 'center',
-          padding: '2rem'
-        }}>
-          <div style={{
-            width: '50px',
-            height: '50px',
-            border: '4px solid #e0e0e0',
-            borderTop: '4px solid #ff6b35',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 1rem'
-          }} />
-          <p style={{ color: '#666', fontSize: '1.1rem' }}>Verifying authentication...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render dashboard if not authenticated (will redirect)
-  if (!isAuthenticated) {
-    return null;
-  }
-
   return (
     <div className={`dashboard-wrapper ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       {/* Sidebar Navigation - Modern Design */}
@@ -2368,7 +1663,7 @@ export default function AdminDashboard() {
             ☰
           </button>
           <div>
-            <h1>Welcome back, Admin <span style={{fontSize: '0.7em', color: '#10b981'}}>v2.0</span></h1>
+            <h1>Welcome back, Admin</h1>
             <p className="subtitle">Here's what's happening today.</p>
           </div>
           <div className="header-actions">
@@ -2402,7 +1697,7 @@ export default function AdminDashboard() {
                   </h3>
                   <span className="stat-info-icon" title="Click to view all projects">ℹ️</span>
                 </div>
-                <div className="stat-value">{dashboardStats.totalProjects}</div>
+                <div className="stat-value" id="total-projects">0</div>
               </div>
 
               {/* Completed Projects with Progress Bar */}
@@ -2414,23 +1709,23 @@ export default function AdminDashboard() {
                   </h3>
                   <span className="stat-info-icon" title="Click to filter completed projects">ℹ️</span>
                 </div>
-                <div className="stat-value">{dashboardStats.completedProjects}</div>
-                <div style={{ marginTop: '0.75rem' }}>
+                <div className="stat-value" id="completed-projects">0</div>
+                <div id="completed-progress-container" style={{ marginTop: '0.75rem' }}>
                   <div style={{ 
                     height: '6px',
                     background: '#e0e0e0',
                     borderRadius: '3px',
                     overflow: 'hidden'
                   }}>
-                    <div style={{
+                    <div id="completed-progress-bar" style={{
                       height: '100%',
                       background: 'linear-gradient(90deg, #10b981, #059669)',
-                      width: `${dashboardStats.completionRate}%`,
+                      width: '0%',
                       transition: 'width 0.3s ease'
                     }} />
                   </div>
-                  <small style={{ color: 'var(--text-light)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
-                    {dashboardStats.completionRate.toFixed(0)}% completion rate
+                  <small id="completed-percentage" style={{ color: 'var(--text-light)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                    0% completion rate
                   </small>
                 </div>
               </div>
@@ -2444,7 +1739,7 @@ export default function AdminDashboard() {
                   </h3>
                   <span className="stat-info-icon" title="Click to filter future bookings">ℹ️</span>
                 </div>
-                <div className="stat-value">{dashboardStats.futureBookings}</div>
+                <div className="stat-value" id="future-bookings-projects">0</div>
               </div>
 
               {/* Blocked Dates */}
@@ -2456,7 +1751,7 @@ export default function AdminDashboard() {
                   </h3>
                   <span className="stat-info-icon" title="Click to view all blocked dates">ℹ️</span>
                 </div>
-                <div className="stat-value">{dashboardStats.blockedDatesCount}</div>
+                <div className="stat-value" id="blocked-dates-count">0</div>
               </div>
 
               {/* Consolidated Revenue Overview Card - Spans 2 Columns */}
@@ -2470,23 +1765,19 @@ export default function AdminDashboard() {
                 </div>
                 
                 {/* Main Total Revenue */}
-                <div className="stat-value" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>
-                  ${dashboardStats.totalRevenue.toFixed(2)}
-                </div>
+                <div className="stat-value" id="total-revenue" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>$0.00</div>
                 
                 {/* DJ vs Company Revenue Split */}
                 <div style={{ margin: '1rem 0' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                     <span style={{ fontSize: '0.95rem', color: 'var(--text-light)' }}>DJ Payout</span>
-                    <span style={{ fontSize: '0.95rem', fontWeight: '600' }}>
-                      ${dashboardStats.djRevenue.toFixed(2)} ({dashboardStats.djRevenuePercentage.toFixed(0)}%)
-                    </span>
+                    <span id="dj-revenue-display" style={{ fontSize: '0.95rem', fontWeight: '600' }}>$0.00 (0%)</span>
                   </div>
                   <div style={{ height: '8px', background: '#e0e0e0', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ 
+                    <div id="dj-revenue-bar" style={{ 
                       height: '100%', 
                       background: 'linear-gradient(90deg, #3b82f6, #2563eb)',
-                      width: `${dashboardStats.djRevenuePercentage}%`,
+                      width: '0%',
                       transition: 'width 0.3s ease'
                     }} />
                   </div>
@@ -2496,16 +1787,17 @@ export default function AdminDashboard() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1.25rem' }}>
                   <div style={{ padding: '0.75rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginBottom: '0.25rem' }}>2025 Revenue</div>
-                    <div style={{ fontSize: '1.35rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>
-                      ${dashboardStats.revenue2025.toFixed(2)}
-                    </div>
+                    <div id="revenue-2025" style={{ fontSize: '1.35rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>$0.00</div>
                   </div>
                   <div style={{ padding: '0.75rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginBottom: '0.25rem' }}>2026 Revenue</div>
-                    <div style={{ fontSize: '1.35rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>
-                      ${dashboardStats.revenue2026.toFixed(2)}
-                    </div>
+                    <div id="revenue-2026" style={{ fontSize: '1.35rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>$0.00</div>
                   </div>
+                </div>
+                
+                {/* Hidden elements for backward compatibility */}
+                <div style={{ display: 'none' }}>
+                  <span id="dj-revenue">$0.00</span>
                 </div>
               </div>
             </div>
@@ -2642,12 +1934,13 @@ export default function AdminDashboard() {
                       </th>
                       <th>DJ Payout</th>
                       <th>Status</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loadingBookings ? (
                       <tr>
-                        <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
                           Loading upcoming projects...
                         </td>
                       </tr>
@@ -2657,7 +1950,7 @@ export default function AdminDashboard() {
                         today.setHours(0, 0, 0, 0);
                         const upcomingBookings = bookings
                           .filter(b => {
-                            const bookingDate = parseDateLocal(b.date);
+                            const bookingDate = new Date(b.date);
                             const isUpcoming = (b as any).status === 'upcoming' || !(b as any).status;
                             return bookingDate >= today && isUpcoming;
                           })
@@ -2665,7 +1958,7 @@ export default function AdminDashboard() {
                           .sort((a, b) => {
                             let comparison = 0;
                             if (upcomingSortField === 'date') {
-                              comparison = parseDateLocal(a.date).getTime() - parseDateLocal(b.date).getTime();
+                              comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
                             } else if (upcomingSortField === 'dj') {
                               comparison = (a.djUser || '').localeCompare(b.djUser || '');
                             } else if (upcomingSortField === 'revenue') {
@@ -2676,7 +1969,7 @@ export default function AdminDashboard() {
                         
                         return upcomingBookings.length === 0 ? (
                           <tr>
-                            <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                            <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
                               No upcoming projects scheduled
                             </td>
                           </tr>
@@ -2685,7 +1978,7 @@ export default function AdminDashboard() {
                             const bookingStatus = (booking as any).status || 'upcoming';
                             return (
                               <tr key={booking.id}>
-                                <td>{parseDateLocal(booking.date).toLocaleDateString()}</td>
+                                <td>{new Date(booking.date).toLocaleDateString()}</td>
                                 <td>{booking.djUser || 'N/A'}</td>
                                 <td>{booking.eventType || 'N/A'}</td>
                                 <td>{booking.location || 'N/A'}</td>
@@ -2695,6 +1988,24 @@ export default function AdminDashboard() {
                                   <span className={`status-badge ${bookingStatus}`}>
                                     {bookingStatus}
                                   </span>
+                                </td>
+                                <td>
+                                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button
+                                      onClick={() => updateBookingStatus(booking.id, 'completed')}
+                                      className="mark-complete-btn"
+                                      title="Mark as complete"
+                                    >
+                                      ✓ Complete
+                                    </button>
+                                    <button
+                                      onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                                      className="mark-cancelled-btn"
+                                      title="Mark as cancelled"
+                                    >
+                                      ✕ Cancel
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             );
@@ -2759,7 +2070,7 @@ export default function AdminDashboard() {
                                 #{booking.id} - {booking.djUser || 'N/A'}
                               </div>
                               <div className="order-email">
-                                {booking.eventType || 'N/A'} • {parseDateLocal(booking.date).toLocaleDateString()}
+                                {booking.eventType || 'N/A'} • {new Date(booking.date).toLocaleDateString()}
                               </div>
                               <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
                                 {booking.clientName || 'N/A'} • {booking.location || 'N/A'}
@@ -2937,25 +2248,10 @@ export default function AdminDashboard() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h2 style={{ margin: 0 }}>All Projects</h2>
                 <button 
-                  onClick={async () => {
-                    if (confirm('Are you sure you want to clear all booking projects? This will delete all DJ booking records and cannot be undone!')) {
-                      try {
-                        const response = await fetch('/api/admin/clear-all-projects', {
-                          method: 'DELETE'
-                        });
-                        
-                        if (response.ok) {
-                          alert('All booking projects cleared successfully');
-                          // Refresh bookings data
-                          fetchBookings();
-                        } else {
-                          const error = await response.json();
-                          alert(`Failed to clear projects: ${error.error}`);
-                        }
-                      } catch (error) {
-                        console.error('Error clearing projects:', error);
-                        alert('Failed to clear projects');
-                      }
+                  onClick={() => {
+                    if (confirm('Are you sure you want to clear all projects? This action cannot be undone.')) {
+                      // Clear all projects functionality will be added here
+                      console.log('Clear all projects');
                     }
                   }}
                   style={{ padding: '0.5rem 1rem', background: 'var(--error-color)', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 'bold' }}
@@ -2996,24 +2292,6 @@ export default function AdminDashboard() {
                   {Array.from(new Set(bookings.map(b => new Date(b.date).getFullYear()))).sort((a, b) => b - a).map(year => (
                     <option key={year} value={year}>{year}</option>
                   ))}
-                </select>
-                <select
-                  value={analyticsFilterStatus}
-                  onChange={(e) => setAnalyticsFilterStatus(e.target.value)}
-                  style={{
-                    padding: '0.6rem',
-                    borderRadius: '6px',
-                    border: '1px solid var(--border-color)',
-                    background: 'white',
-                    cursor: 'pointer',
-                    fontSize: '0.95rem'
-                  }}
-                >
-                  <option value="active">Active Only</option>
-                  <option value="all">All Statuses</option>
-                  <option value="completed">Completed Only</option>
-                  <option value="cancelled">Cancelled Only</option>
-                  <option value="upcoming">Upcoming Only</option>
                 </select>
               </div>
               
@@ -3087,20 +2365,19 @@ export default function AdminDashboard() {
                       >
                         DJ Payout
                       </th>
-                      <th>Status</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody id="all-bookings-container">
                     {loadingBookings ? (
                       <tr>
-                        <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
                           Loading bookings...
                         </td>
                       </tr>
                     ) : bookings.length === 0 ? (
                       <tr>
-                        <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
+                        <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-light)' }}>
                           No bookings found. Import a CSV file to add bookings.
                         </td>
                       </tr>
@@ -3118,7 +2395,7 @@ export default function AdminDashboard() {
                           
                           // Time Period Filter
                           if (analyticsFilterTime) {
-                            const bookingDate = parseDateLocal(booking.date);
+                            const bookingDate = new Date(booking.date);
                             bookingDate.setHours(0, 0, 0, 0);
                             
                             if (analyticsFilterTime === 'future' && bookingDate < today) {
@@ -3131,22 +2408,8 @@ export default function AdminDashboard() {
                           
                           // Year Filter
                           if (analyticsFilterYear) {
-                            const bookingYear = parseDateLocal(booking.date).getFullYear();
+                            const bookingYear = new Date(booking.date).getFullYear();
                             if (bookingYear !== parseInt(analyticsFilterYear)) {
-                              return false;
-                            }
-                          }
-                          
-                          // Status Filter
-                          if (analyticsFilterStatus !== 'all') {
-                            const bookingStatus = (booking as any).status || 'upcoming';
-                            
-                            if (analyticsFilterStatus === 'active') {
-                              // Active = upcoming projects (not completed or cancelled)
-                              if (bookingStatus === 'completed' || bookingStatus === 'cancelled') {
-                                return false;
-                              }
-                            } else if (analyticsFilterStatus !== bookingStatus) {
                               return false;
                             }
                           }
@@ -3158,7 +2421,7 @@ export default function AdminDashboard() {
                         const sortedBookings = [...filteredBookings].sort((a, b) => {
                           let comparison = 0;
                           if (analyticsSortField === 'date') {
-                            comparison = parseDateLocal(a.date).getTime() - parseDateLocal(b.date).getTime();
+                            comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
                           } else if (analyticsSortField === 'dj') {
                             comparison = (a.djUser || '').localeCompare(b.djUser || '');
                           } else if (analyticsSortField === 'project') {
@@ -3167,205 +2430,59 @@ export default function AdminDashboard() {
                           return analyticsSortDirection === 'asc' ? comparison : -comparison;
                         });
                         
-                        return sortedBookings.map((booking) => {
-                          const bookingStatus = (booking as any).status || 'upcoming';
-                          return (
-                          <tr key={booking.id}>
-                            <td>{parseDateLocal(booking.date).toLocaleDateString()}</td>
-                            <td>{booking.djUser || 'N/A'}</td>
-                            <td>{booking.eventType || 'N/A'}</td>
-                            <td>{booking.location || 'N/A'}</td>
-                            <td>${(Number(booking.totalRevenue) || 0).toFixed(2)}</td>
-                            <td>${(Number(booking.ccPayment) || 0).toFixed(2)}</td>
-                            <td>${(Number(booking.payout) || 0).toFixed(2)}</td>
-                            <td>
-                              <span 
-                                className={`status-badge status-${bookingStatus}`}
+                        return sortedBookings.map((booking) => (
+                        <tr key={booking.id}>
+                          <td>{new Date(booking.date).toLocaleDateString()}</td>
+                          <td>{booking.djUser || 'N/A'}</td>
+                          <td>{booking.eventType || 'N/A'}</td>
+                          <td>{booking.location || 'N/A'}</td>
+                          <td>${(Number(booking.totalRevenue) || 0).toFixed(2)}</td>
+                          <td>${(Number(booking.ccPayment) || 0).toFixed(2)}</td>
+                          <td>${(Number(booking.payout) || 0).toFixed(2)}</td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                              <button
+                                onClick={() => openNotesModal(booking)}
                                 style={{
                                   padding: '0.4rem 0.8rem',
-                                  borderRadius: '12px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '600',
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.5px',
-                                  display: 'inline-block',
-                                  ...(bookingStatus === 'completed' && {
-                                    background: '#dcfce7',
-                                    color: '#166534',
-                                    border: '1px solid #86efac'
-                                  }),
-                                  ...(bookingStatus === 'cancelled' && {
-                                    background: '#fee2e2',
-                                    color: '#991b1b',
-                                    border: '1px solid #fca5a5'
-                                  }),
-                                  ...(bookingStatus === 'upcoming' && {
-                                    background: '#dbeafe',
-                                    color: '#1e40af',
-                                    border: '1px solid #93c5fd'
-                                  })
+                                  background: 'var(--accent-color)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '5px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.85rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem'
                                 }}
+                                title="Add or edit project notes"
                               >
-                                {bookingStatus}
-                              </span>
-                            </td>
-                            <td>
-                              <div style={{ position: 'relative' }}>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const currentOpenId = (window as any).openDropdownId;
-                                    if (currentOpenId === booking.id) {
-                                      (window as any).openDropdownId = null;
-                                    } else {
-                                      (window as any).openDropdownId = booking.id;
-                                    }
-                                    // Force re-render by triggering state update
-                                    setBookings([...bookings]);
-                                  }}
-                                  style={{
-                                    padding: '0.5rem 1rem',
-                                    background: '#f3f4f6',
-                                    border: '1px solid #d1d5db',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    fontSize: '0.875rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    fontWeight: '500'
-                                  }}
-                                  title="Actions"
-                                >
-                                  Actions
-                                  <span style={{ fontSize: '0.7rem' }}>▼</span>
-                                </button>
-                                
-                                {(window as any).openDropdownId === booking.id && (
-                                  <div
-                                    style={{
-                                      position: 'absolute',
-                                      top: '100%',
-                                      right: 0,
-                                      marginTop: '0.25rem',
-                                      background: 'white',
-                                      border: '1px solid #e5e7eb',
-                                      borderRadius: '8px',
-                                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                                      minWidth: '160px',
-                                      zIndex: 1000,
-                                      overflow: 'hidden'
-                                    }}
-                                  >
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        updateBookingStatus(booking.id, 'completed');
-                                        (window as any).openDropdownId = null;
-                                      }}
-                                      style={{
-                                        width: '100%',
-                                        padding: '0.75rem 1rem',
-                                        background: 'transparent',
-                                        border: 'none',
-                                        textAlign: 'left',
-                                        cursor: 'pointer',
-                                        fontSize: '0.875rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.5rem'
-                                      }}
-                                      onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
-                                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                    >
-                                      <span style={{ color: '#10b981' }}>✓</span> Mark Complete
-                                    </button>
-                                    
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        updateBookingStatus(booking.id, 'cancelled');
-                                        (window as any).openDropdownId = null;
-                                      }}
-                                      style={{
-                                        width: '100%',
-                                        padding: '0.75rem 1rem',
-                                        background: 'transparent',
-                                        border: 'none',
-                                        textAlign: 'left',
-                                        cursor: 'pointer',
-                                        fontSize: '0.875rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.5rem'
-                                      }}
-                                      onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
-                                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                    >
-                                      <span style={{ color: '#ef4444' }}>✕</span> Cancel Project
-                                    </button>
-                                    
-                                    <div style={{ borderTop: '1px solid #e5e7eb', margin: '0.25rem 0' }} />
-                                    
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openNotesModal(booking);
-                                        (window as any).openDropdownId = null;
-                                      }}
-                                      style={{
-                                        width: '100%',
-                                        padding: '0.75rem 1rem',
-                                        background: 'transparent',
-                                        border: 'none',
-                                        textAlign: 'left',
-                                        cursor: 'pointer',
-                                        fontSize: '0.875rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.5rem'
-                                      }}
-                                      onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
-                                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                    >
-                                      {booking.notes ? '📝 Edit Notes' : '📝 Add Notes'}
-                                    </button>
-                                    
-                                    <div style={{ borderTop: '1px solid #e5e7eb', margin: '0.25rem 0' }} />
-                                    
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (confirm('Are you sure you want to delete this booking?')) {
-                                          console.log('Delete booking:', booking.id);
-                                        }
-                                        (window as any).openDropdownId = null;
-                                      }}
-                                      style={{
-                                        width: '100%',
-                                        padding: '0.75rem 1rem',
-                                        background: 'transparent',
-                                        border: 'none',
-                                        textAlign: 'left',
-                                        cursor: 'pointer',
-                                        fontSize: '0.875rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.5rem',
-                                        color: '#ef4444'
-                                      }}
-                                      onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
-                                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                    >
-                                      🗑️ Delete
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                          );
-                        });
+                                {booking.notes && <span>📝</span>}
+                                <span>{booking.notes ? 'Edit Notes' : 'Add Notes'}</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm('Are you sure you want to delete this booking?')) {
+                                    console.log('Delete booking:', booking.id);
+                                  }
+                                }}
+                                style={{
+                                  padding: '0.4rem 0.8rem',
+                                  fontSize: '0.85rem',
+                                  background: 'var(--error-color)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '5px',
+                                  cursor: 'pointer'
+                                }}
+                                title="Delete project"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        ));
                       })()
                     )}
                   </tbody>
@@ -3454,7 +2571,7 @@ export default function AdminDashboard() {
                       Date:
                     </div>
                     <div>
-                      {currentEditingBooking?.date ? parseDateLocal(currentEditingBooking.date).toLocaleDateString() : 'N/A'}
+                      {currentEditingBooking?.date ? new Date(currentEditingBooking.date).toLocaleDateString() : 'N/A'}
                     </div>
                   </div>
                   
@@ -3977,197 +3094,214 @@ export default function AdminDashboard() {
               )}
 
               {/* Add New Package Button */}
-              <button 
-                onClick={() => {
-                  setEditingPackage(null);
-                  setPackageForm({
-                    package_name: '',
-                    price: '',
-                    description: '',
-                    features: [],
-                    display_order: 0
-                  });
-                  setPricingModalOpen(true);
-                }}
-                className="cta-button" 
-                style={{ marginBottom: '2rem' }}
-              >
-                + Add New Package
-              </button>
+              {!showPackageForm && (
+                <button 
+                  onClick={() => {
+                    setEditingPackage(null);
+                    setPackageForm({
+                      package_name: '',
+                      price: '',
+                      description: '',
+                      features: [],
+                      display_order: 0
+                    });
+                    setShowPackageForm(true);
+                  }}
+                  className="cta-button" 
+                  style={{ marginBottom: '2rem' }}
+                >
+                  + Add New Package
+                </button>
+              )}
 
-              {/* Pricing Package Modal */}
-              {pricingModalOpen && (
-                <div className="pricing-modal-overlay" onClick={() => setPricingModalOpen(false)}>
-                  <div className="pricing-modal-container" onClick={(e) => e.stopPropagation()}>
-                    <div className="pricing-modal-header">
-                      <h3>{editingPackage ? 'Edit Package' : 'Create New Package'}</h3>
-                      <button 
-                        className="pricing-modal-close"
-                        onClick={() => setPricingModalOpen(false)}
-                      >
-                        ×
-                      </button>
+              {/* Package Form */}
+              {showPackageForm && (
+                <div style={{ 
+                  marginBottom: '2rem', 
+                  padding: '1.5rem', 
+                  border: '2px solid var(--primary-color)', 
+                  borderRadius: '8px', 
+                  background: '#f9f9f9' 
+                }}>
+                  <h3 style={{ marginBottom: '1rem' }}>
+                    {editingPackage ? 'Edit Package' : 'Create New Package'}
+                  </h3>
+                  
+                  <div style={{ display: 'grid', gap: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                        Package Name *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Ceremony Package, Premium Package"
+                        value={packageForm.package_name}
+                        onChange={(e) => setPackageForm({ ...packageForm, package_name: e.target.value })}
+                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                      />
                     </div>
-                    
-                    <div className="pricing-modal-content">
-                      <div style={{ display: 'grid', gap: '1rem' }}>
-                        <div>
-                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                            Package Name *
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="e.g., Ceremony Package, Premium Package"
-                            value={packageForm.package_name}
-                            onChange={(e) => setPackageForm({ ...packageForm, package_name: e.target.value })}
-                            style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
-                          />
-                        </div>
 
-                        <div>
-                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                            Price (USD) *
-                          </label>
-                          <input
-                            type="number"
-                            placeholder="e.g., 1800"
-                            value={packageForm.price}
-                            onChange={(e) => setPackageForm({ ...packageForm, price: e.target.value })}
-                            style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
-                          />
-                        </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                        Price (USD) *
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="e.g., 1800"
+                        value={packageForm.price}
+                        onChange={(e) => setPackageForm({ ...packageForm, price: e.target.value })}
+                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                      />
+                    </div>
 
-                        <div>
-                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                            Description
-                          </label>
-                          <textarea
-                            placeholder="Brief description of the package"
-                            value={packageForm.description}
-                            onChange={(e) => setPackageForm({ ...packageForm, description: e.target.value })}
-                            rows={3}
-                            style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
-                          />
-                        </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                        Description
+                      </label>
+                      <textarea
+                        placeholder="Brief description of the package"
+                        value={packageForm.description}
+                        onChange={(e) => setPackageForm({ ...packageForm, description: e.target.value })}
+                        rows={3}
+                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                      />
+                    </div>
 
-                        <div>
-                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                            Features / What's Included
-                          </label>
-                          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                            <input
-                              type="text"
-                              placeholder="Add a feature"
-                              value={newFeature}
-                              onChange={(e) => setNewFeature(e.target.value)}
-                              onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  addFeatureToForm();
-                                }
-                              }}
-                              style={{ flexGrow: 1, padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
-                            />
-                            <button 
-                              onClick={addFeatureToForm}
-                              className="cta-button"
-                              type="button"
-                            >
-                              Add
-                            </button>
-                          </div>
-                          
-                          {packageForm.features.length > 0 && (
-                            <ul style={{ 
-                              listStyle: 'none', 
-                              padding: 0, 
-                              background: 'white', 
-                              borderRadius: '5px', 
-                              border: '1px solid #e0e0e0' 
-                            }}>
-                              {packageForm.features.map((feature, index) => (
-                                <li 
-                                  key={index}
-                                  style={{ 
-                                    padding: '0.75rem', 
-                                    display: 'flex', 
-                                    justifyContent: 'space-between', 
-                                    alignItems: 'center',
-                                    borderBottom: index < packageForm.features.length - 1 ? '1px solid #e0e0e0' : 'none'
-                                  }}
-                                >
-                                  <span>✓ {feature}</span>
-                                  <button
-                                    onClick={() => removeFeatureFromForm(index)}
-                                    style={{
-                                      background: '#ff4444',
-                                      color: 'white',
-                                      border: 'none',
-                                      borderRadius: '3px',
-                                      padding: '0.25rem 0.5rem',
-                                      cursor: 'pointer'
-                                    }}
-                                  >
-                                    Remove
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-
-                        <div>
-                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                            Display Order
-                          </label>
-                          <input
-                            type="number"
-                            placeholder="0"
-                            value={packageForm.display_order}
-                            onChange={(e) => setPackageForm({ ...packageForm, display_order: parseInt(e.target.value) || 0 })}
-                            style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
-                          />
-                          <small style={{ color: 'var(--text-light)' }}>Lower numbers appear first</small>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                        Features / What's Included
+                      </label>
+                      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                        <input
+                          type="text"
+                          placeholder="Add a feature"
+                          value={newFeature}
+                          onChange={(e) => setNewFeature(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addFeatureToForm();
+                            }
+                          }}
+                          style={{ flexGrow: 1, padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                        />
                         <button 
-                          onClick={createOrUpdatePackage} 
+                          onClick={addFeatureToForm}
                           className="cta-button"
-                          disabled={savingPackage || !packageForm.package_name || !packageForm.price}
-                          style={{
-                            opacity: (savingPackage || !packageForm.package_name || !packageForm.price) ? 0.6 : 1,
-                            cursor: (savingPackage || !packageForm.package_name || !packageForm.price) ? 'not-allowed' : 'pointer'
-                          }}
+                          type="button"
                         >
-                          {savingPackage ? 'Saving...' : (editingPackage ? 'Save Changes' : 'Save Package')}
-                        </button>
-                        <button 
-                          onClick={() => setPricingModalOpen(false)}
-                          className="secondary-button"
-                          disabled={savingPackage}
-                          style={{
-                            opacity: savingPackage ? 0.6 : 1,
-                            cursor: savingPackage ? 'not-allowed' : 'pointer'
-                          }}
-                        >
-                          Cancel
+                          Add
                         </button>
                       </div>
                       
-                      {(!packageForm.package_name || !packageForm.price) && (
-                        <p style={{ 
-                          color: '#ff6b6b', 
-                          fontSize: '0.9rem', 
-                          marginTop: '0.5rem',
-                          fontStyle: 'italic'
+                      {packageForm.features.length > 0 && (
+                        <ul style={{ 
+                          listStyle: 'none', 
+                          padding: 0, 
+                          background: 'white', 
+                          borderRadius: '5px', 
+                          border: '1px solid #e0e0e0' 
                         }}>
-                          * Package name and price are required
-                        </p>
+                          {packageForm.features.map((feature, index) => (
+                            <li 
+                              key={index}
+                              style={{ 
+                                padding: '0.75rem', 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                alignItems: 'center',
+                                borderBottom: index < packageForm.features.length - 1 ? '1px solid #e0e0e0' : 'none'
+                              }}
+                            >
+                              <span>✓ {feature}</span>
+                              <button
+                                onClick={() => removeFeatureFromForm(index)}
+                                style={{
+                                  background: '#ff4444',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '3px',
+                                  padding: '0.25rem 0.5rem',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Remove
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
                       )}
                     </div>
+
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                        Display Order
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={packageForm.display_order}
+                        onChange={(e) => setPackageForm({ ...packageForm, display_order: parseInt(e.target.value) || 0 })}
+                        style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '5px' }}
+                      />
+                      <small style={{ color: 'var(--text-light)' }}>Lower numbers appear first</small>
+                    </div>
                   </div>
+
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                    <button 
+                      onClick={createOrUpdatePackage} 
+                      className="cta-button"
+                      disabled={savingPackage || !packageForm.package_name || !packageForm.price}
+                      style={{
+                        opacity: (savingPackage || !packageForm.package_name || !packageForm.price) ? 0.6 : 1,
+                        cursor: (savingPackage || !packageForm.package_name || !packageForm.price) ? 'not-allowed' : 'pointer',
+                        position: 'relative',
+                        minWidth: '150px'
+                      }}
+                    >
+                      {savingPackage ? (
+                        <>
+                          <span style={{ opacity: 0.7 }}>Saving...</span>
+                        </>
+                      ) : (
+                        editingPackage ? '💾 Save Changes' : '💾 Save Package'
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowPackageForm(false);
+                        setEditingPackage(null);
+                        setPackageForm({
+                          package_name: '',
+                          price: '',
+                          description: '',
+                          features: [],
+                          display_order: 0
+                        });
+                      }}
+                      className="secondary-button"
+                      disabled={savingPackage}
+                      style={{
+                        opacity: savingPackage ? 0.6 : 1,
+                        cursor: savingPackage ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  
+                  {/* Validation message */}
+                  {(!packageForm.package_name || !packageForm.price) && (
+                    <p style={{ 
+                      color: '#ff6b6b', 
+                      fontSize: '0.9rem', 
+                      marginTop: '0.5rem',
+                      fontStyle: 'italic'
+                    }}>
+                      * Package name and price are required
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -4686,285 +3820,254 @@ export default function AdminDashboard() {
                 Manage your photography projects and upload photos that will appear on the public photography page.
               </p>
 
-              {/* Modern Grid Layout */}
-              <div className="photography-manager-grid">
-                {/* Project Creation Header */}
-                <div className="projects-header">
-                  <h3 style={{ margin: 0 }}>Albums</h3>
-                  <button 
-                    onClick={() => setShowProjectForm(!showProjectForm)}
-                    className="btn-new-project"
-                  >
-                    {showProjectForm ? 'Cancel' : '+ New Album'}
-                  </button>
-                </div>
-
-                {/* Project Creation Form */}
-                {showProjectForm && (
-                  <div className="project-form-card">
-                    <div className="form-field-group">
-                      <label className="form-label">
-                        Album Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={newProjectName}
-                        onChange={(e) => setNewProjectName(e.target.value)}
-                        placeholder="e.g., Smith Wedding 2025"
-                        className="form-input"
-                      />
-                    </div>
-                    <div className="form-field-group">
-                      <label className="form-label">
-                        Description (Optional)
-                      </label>
-                      <textarea
-                        value={newProjectDescription}
-                        onChange={(e) => setNewProjectDescription(e.target.value)}
-                        placeholder="Brief description of this album..."
-                        rows={3}
-                        className="form-textarea"
-                      />
-                    </div>
-                    <button
-                      onClick={createProject}
-                      className="btn-create-project"
+              <div className="photography-manager">
+                {/* Projects Panel */}
+                <div className="projects-panel">
+                  <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0 }}>Projects</h3>
+                    <button 
+                      onClick={() => setShowProjectForm(!showProjectForm)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        background: 'var(--primary-color)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '0.95rem'
+                      }}
                     >
-                      Create Album
+                      {showProjectForm ? 'Cancel' : '+ New Project'}
                     </button>
                   </div>
-                )}
 
-                {/* Albums Grid */}
-                {loadingProjects ? (
-                  <div className="albums-loading">
-                    <div className="spinner"></div>
-                    <p>Loading albums...</p>
-                  </div>
-                ) : photoProjects.length === 0 ? (
-                  <div className="albums-empty">
-                    <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📸</div>
-                    <p>No albums yet. Create your first album to get started!</p>
-                  </div>
-                ) : (
-                  <div className="albums-grid">
-                    {photoProjects.map(project => (
-                      <div
-                        key={project.id}
-                        className="album-card"
+                  {showProjectForm && (
+                    <div className="project-form" style={{ 
+                      padding: '1.5rem', 
+                      background: '#f8f9fa', 
+                      borderRadius: '8px', 
+                      marginBottom: '1.5rem' 
+                    }}>
+                      <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                          Project Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={newProjectName}
+                          onChange={(e) => setNewProjectName(e.target.value)}
+                          placeholder="e.g., Smith Wedding 2025"
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            border: '2px solid #e0e0e0',
+                            borderRadius: '8px',
+                            fontSize: '0.95rem'
+                          }}
+                        />
+                      </div>
+                      <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                          Description (Optional)
+                        </label>
+                        <textarea
+                          value={newProjectDescription}
+                          onChange={(e) => setNewProjectDescription(e.target.value)}
+                          placeholder="Brief description of this project..."
+                          rows={3}
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            border: '2px solid #e0e0e0',
+                            borderRadius: '8px',
+                            fontSize: '0.95rem',
+                            resize: 'vertical'
+                          }}
+                        />
+                      </div>
+                      <button
+                        onClick={createProject}
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          background: 'var(--primary-color)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: '0.95rem'
+                        }}
                       >
-                        {/* Album Cover Image */}
-                        <div className="album-card-image-wrapper">
-                          {project.cover_photo_url ? (
-                            <img 
-                              src={project.cover_photo_url} 
-                              alt={project.project_name}
-                              className="album-card-image"
-                            />
-                          ) : (
-                            <div className="album-card-placeholder">
-                              <span style={{ fontSize: '4rem' }}>📸</span>
-                            </div>
-                          )}
-                          
-                          {/* Delete Button */}
+                        Create Project
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="projects-list">
+                    {loadingProjects ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                        Loading projects...
+                      </div>
+                    ) : photoProjects.length === 0 ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                        No projects yet. Create your first project to get started!
+                      </div>
+                    ) : (
+                      photoProjects.map(project => (
+                        <div
+                          key={project.id}
+                          className={`project-item ${selectedProject?.id === project.id ? 'active' : ''}`}
+                          onClick={() => setSelectedProject(project)}
+                        >
+                          <div className="project-cover">
+                            {project.cover_photo_url ? (
+                              <img src={project.cover_photo_url} alt={project.project_name} />
+                            ) : (
+                              <div className="no-cover">📸</div>
+                            )}
+                          </div>
+                          <div className="project-info">
+                            <h4>{project.project_name}</h4>
+                            <p>{project.photo_count || 0} photos</p>
+                          </div>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               deleteProject(project.id);
                             }}
-                            className="album-card-delete"
-                            title="Delete album"
+                            className="delete-project-btn"
+                            title="Delete project"
                           >
                             🗑️
                           </button>
                         </div>
-
-                        {/* Album Info & Actions Overlay */}
-                        <div className="album-card-overlay">
-                          <div className="album-card-info">
-                            <h4 className="album-card-title">{project.project_name}</h4>
-                            <p className="album-card-count">{project.photo_count || 0} photos</p>
-                          </div>
-                          
-                          {/* Action Buttons */}
-                          <div className="album-card-actions">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openProjectModal(project);
-                              }}
-                              className="album-action-btn primary"
-                            >
-                              Manage Photos
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openProjectGallery(project);
-                              }}
-                              className="album-action-btn secondary"
-                            >
-                              View Gallery
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
-                )}
+                </div>
+
+                {/* Photos Panel */}
+                <div className="photos-panel">
+                  {!selectedProject ? (
+                    <div style={{ 
+                      height: '100%', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      color: 'var(--text-light)',
+                      textAlign: 'center',
+                      padding: '2rem'
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📸</div>
+                        <p>Select a project from the left to view and upload photos</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <h3 style={{ margin: 0, marginBottom: '0.5rem' }}>{selectedProject.project_name}</h3>
+                        {selectedProject.description && (
+                          <p style={{ color: 'var(--text-light)', margin: 0 }}>{selectedProject.description}</p>
+                        )}
+                      </div>
+
+                      <div className="upload-area">
+                        <input
+                          type="file"
+                          id="photo-upload-input"
+                          multiple
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          style={{ display: 'none' }}
+                        />
+                        <label
+                          htmlFor="photo-upload-input"
+                          style={{
+                            display: 'block',
+                            padding: '3rem 2rem',
+                            border: '3px dashed #e0e0e0',
+                            borderRadius: '12px',
+                            textAlign: 'center',
+                            cursor: 'pointer',
+                            background: '#f8f9fa',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--primary-color)';
+                            e.currentTarget.style.background = '#f0f4ff';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.borderColor = '#e0e0e0';
+                            e.currentTarget.style.background = '#f8f9fa';
+                          }}
+                        >
+                          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📁</div>
+                          <p style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                            {uploadingPhotos ? `Uploading... ${uploadProgress}%` : 'Click to upload or drag photos here'}
+                          </p>
+                          <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>
+                            Supports: JPG, PNG, GIF, WEBP • Max 10MB per file
+                          </p>
+                        </label>
+                        {uploadingPhotos && (
+                          <div style={{ marginTop: '1rem' }}>
+                            <div style={{ 
+                              height: '8px', 
+                              background: '#e0e0e0', 
+                              borderRadius: '4px', 
+                              overflow: 'hidden' 
+                            }}>
+                              <div style={{ 
+                                height: '100%', 
+                                background: 'var(--primary-color)', 
+                                width: `${uploadProgress}%`,
+                                transition: 'width 0.3s ease'
+                              }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ marginTop: '2rem' }}>
+                        <h4 style={{ marginBottom: '1rem' }}>Photos ({projectPhotos.length})</h4>
+                        
+                        {loadingPhotos ? (
+                          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                            Loading photos...
+                          </div>
+                        ) : projectPhotos.length === 0 ? (
+                          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                            No photos yet. Upload your first photo!
+                          </div>
+                        ) : (
+                          <div className="photos-grid">
+                            {projectPhotos.map(photo => (
+                              <div key={photo.id} className="photo-item">
+                                <img 
+                                  src={photo.thumbnail_url || photo.photo_url} 
+                                  alt={photo.caption || 'Project photo'}
+                                  style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '8px' }}
+                                />
+                                <button
+                                  onClick={() => deletePhoto(photo.id)}
+                                  className="delete-photo-btn"
+                                  title="Delete photo"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-
-          {/* Photo Gallery Lightbox */}
-          <ImageLightbox
-            images={lightboxImages}
-            currentIndex={lightboxStartIndex}
-            isOpen={lightboxOpen}
-            onClose={() => setLightboxOpen(false)}
-            galleryTitle={lightboxTitle}
-          />
-
-          {/* Photo Management Modal */}
-          {photoModalOpen && modalProject && (
-            <div 
-              className="photo-modal-overlay"
-              onClick={() => setPhotoModalOpen(false)}
-            >
-              <div 
-                className="photo-modal-container"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Modal Header */}
-                <div className="photo-modal-header">
-                  <div>
-                    <h2 style={{ margin: 0, marginBottom: '0.5rem', fontSize: '1.75rem' }}>
-                      {modalProject.project_name}
-                    </h2>
-                    {modalProject.description && (
-                      <p style={{ margin: 0, color: 'var(--text-light)', fontSize: '0.95rem' }}>
-                        {modalProject.description}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setPhotoModalOpen(false)}
-                    className="photo-modal-close"
-                    aria-label="Close modal"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                {/* Modal Content */}
-                <div className="photo-modal-content">
-                  {/* Upload Area */}
-                  <div className="photo-modal-upload-section">
-                    <input
-                      type="file"
-                      id="modal-photo-upload-input"
-                      multiple
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      style={{ display: 'none' }}
-                    />
-                    <label
-                      htmlFor="modal-photo-upload-input"
-                      className="photo-modal-upload-label"
-                    >
-                      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📁</div>
-                      <p style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-                        {uploadingPhotos ? `Uploading... ${uploadProgress}%` : 'Click to upload or drag photos here'}
-                      </p>
-                      <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
-                        Supports: JPG, PNG, GIF, WEBP • Max 20MB per file
-                      </p>
-                      <p style={{ color: 'var(--text-light)', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
-                        <strong>Recommended:</strong> Minimum 1200x800px for best quality
-                      </p>
-                      <p style={{ color: '#4CAF50', fontSize: '0.8rem', fontStyle: 'italic' }}>
-                        Images will be automatically optimized for web display
-                      </p>
-                    </label>
-                    {uploadingPhotos && (
-                      <div style={{ marginTop: '1rem' }}>
-                        <div style={{ 
-                          height: '8px', 
-                          background: '#e0e0e0', 
-                          borderRadius: '4px', 
-                          overflow: 'hidden' 
-                        }}>
-                          <div style={{ 
-                            height: '100%', 
-                            background: 'var(--accent-color)', 
-                            width: `${uploadProgress}%`,
-                            transition: 'width 0.3s ease'
-                          }} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Photos Grid */}
-                  <div style={{ marginTop: '2rem' }}>
-                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>
-                      Photos ({projectPhotos.length})
-                    </h3>
-                    
-                    {loadingPhotos ? (
-                      <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-light)' }}>
-                        <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                        Loading photos...
-                      </div>
-                    ) : projectPhotos.length === 0 ? (
-                      <div className="photo-modal-empty-state">
-                        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📸</div>
-                        <p>No photos yet. Upload your first photo!</p>
-                      </div>
-                    ) : (
-                      <div className="photo-modal-grid">
-                        {projectPhotos.map((photo, index) => (
-                          <div 
-                            key={photo.id} 
-                            className="photo-modal-grid-item"
-                          >
-                            <img 
-                              src={photo.thumbnail_url || photo.photo_url} 
-                              alt={photo.caption || 'Project photo'}
-                              onClick={() => {
-                                const imageUrls = projectPhotos.map(p => p.photo_url);
-                                setLightboxImages(imageUrls);
-                                setLightboxStartIndex(index);
-                                setLightboxTitle(modalProject.project_name);
-                                setLightboxOpen(true);
-                              }}
-                              style={{ 
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover',
-                                cursor: 'pointer'
-                              }}
-                            />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deletePhoto(photo.id);
-                              }}
-                              className="photo-modal-delete-btn"
-                              title="Delete photo"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Videography Tab */}
           <div id="videography-tab" className={`tab-content ${activeTab === 'videography' ? 'active' : ''}`}>
@@ -4974,308 +4077,260 @@ export default function AdminDashboard() {
                 Manage your videography projects and add YouTube video links that will appear on the home page.
               </p>
               
-              {/* Modern Grid Layout */}
-              <div className="videography-manager-grid">
-                {/* Project Creation Header */}
-                <div className="projects-header">
-                  <h3 style={{ margin: 0 }}>Video Projects</h3>
-                  <button 
-                    onClick={() => setShowVideoProjectForm(!showVideoProjectForm)}
-                    className="btn-new-project"
-                  >
-                    {showVideoProjectForm ? 'Cancel' : '+ New Project'}
-                  </button>
-                </div>
-
-                {/* Project Creation Form */}
-                {showVideoProjectForm && (
-                  <div className="project-form-card">
-                    <div className="form-field-group">
-                      <label className="form-label">
-                        Project Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={newVideoProjectName}
-                        onChange={(e) => setNewVideoProjectName(e.target.value)}
-                        placeholder="e.g., Wedding Highlight Reels 2025"
-                        className="form-input"
-                      />
-                    </div>
-                    <div className="form-field-group">
-                      <label className="form-label">
-                        Description (Optional)
-                      </label>
-                      <textarea
-                        value={newVideoProjectDescription}
-                        onChange={(e) => setNewVideoProjectDescription(e.target.value)}
-                        placeholder="Brief description of this video project..."
-                        rows={3}
-                        className="form-textarea"
-                      />
-                    </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '2rem' }}>
+                {/* Projects Sidebar */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 style={{ margin: 0 }}>Projects</h3>
                     <button
-                      onClick={createVideoProject}
-                      className="btn-create-project"
+                      onClick={() => setShowVideoProjectForm(!showVideoProjectForm)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        background: 'var(--primary-color)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem'
+                      }}
                     >
-                      Create Project
+                      + New
                     </button>
                   </div>
-                )}
 
-                {/* Video Projects Grid */}
-                {loadingVideoProjects ? (
-                  <div className="albums-loading">
-                    <div className="spinner"></div>
-                    <p>Loading video projects...</p>
-                  </div>
-                ) : videoProjects.length === 0 ? (
-                  <div className="albums-empty">
-                    <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎬</div>
-                    <p>No video projects yet. Create your first project to get started!</p>
-                  </div>
-                ) : (
-                  <div className="video-projects-grid">
-                    {videoProjects.map(project => {
-                      // Use first_video_id from project data for cover image
-                      const coverImage = project.first_video_id 
-                        ? `https://img.youtube.com/vi/${project.first_video_id}/maxresdefault.jpg`
-                        : null;
-                      
-                      return (
+                  {showVideoProjectForm && (
+                    <div style={{ 
+                      padding: '1rem', 
+                      background: '#f8f9fa', 
+                      borderRadius: '8px',
+                      marginBottom: '1rem'
+                    }}>
+                      <input
+                        type="text"
+                        placeholder="Project name"
+                        value={newVideoProjectName}
+                        onChange={(e) => setNewVideoProjectName(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          marginBottom: '0.5rem',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '4px'
+                        }}
+                      />
+                      <textarea
+                        placeholder="Description (optional)"
+                        value={newVideoProjectDescription}
+                        onChange={(e) => setNewVideoProjectDescription(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          marginBottom: '0.5rem',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '4px',
+                          minHeight: '60px'
+                        }}
+                      />
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          onClick={createVideoProject}
+                          style={{
+                            flex: 1,
+                            padding: '0.5rem',
+                            background: 'var(--primary-color)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Create
+                        </button>
+                        <button
+                          onClick={() => setShowVideoProjectForm(false)}
+                          style={{
+                            flex: 1,
+                            padding: '0.5rem',
+                            background: '#e0e0e0',
+                            color: '#333',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {loadingVideoProjects ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                      Loading...
+                    </div>
+                  ) : videoProjects.length === 0 ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)', fontSize: '0.9rem' }}>
+                      No projects yet. Create your first project!
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {videoProjects.map(project => (
                         <div
                           key={project.id}
-                          className="video-project-card"
+                          onClick={() => setSelectedVideoProject(project)}
+                          style={{
+                            padding: '1rem',
+                            background: selectedVideoProject?.id === project.id ? '#e8f4ff' : 'white',
+                            border: selectedVideoProject?.id === project.id ? '2px solid var(--primary-color)' : '1px solid #e0e0e0',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
                         >
-                          {/* Video Project Cover */}
-                          <div 
-                            className="video-card-image-wrapper"
-                            onClick={() => {
-                              openVideoModal(project);
-                              if (project.first_video_id) {
-                                setPlayingVideoId(project.first_video_id);
-                              }
-                            }}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            {coverImage ? (
-                              <img 
-                                src={coverImage}
-                                alt={project.project_name}
-                                className="video-card-image"
-                                onError={(e) => {
-                                  // Fallback to medium quality if maxres fails
-                                  e.currentTarget.src = `https://img.youtube.com/vi/${project.first_video_id}/mqdefault.jpg`;
-                                }}
-                              />
-                            ) : (
-                              <div className="video-card-placeholder">
-                                <span style={{ fontSize: '4rem' }}>🎬</span>
-                              </div>
-                            )}
-                            
-                            {/* Delete Button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteVideoProject(project.id);
-                              }}
-                              className="video-card-delete"
-                              title="Delete project"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-
-                          {/* Video Project Info & Actions Overlay */}
-                          <div className="video-card-overlay">
-                            <div className="video-card-info">
-                              <h4 className="video-card-title">{project.project_name}</h4>
-                              <p className="video-card-count">{project.video_count || 0} videos</p>
-                            </div>
-                            
-                            {/* Action Button */}
-                            <div className="video-card-actions">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openVideoModal(project);
-                                }}
-                                className="video-action-btn primary"
-                              >
-                                Manage Videos
-                              </button>
-                            </div>
+                          <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{project.project_name}</div>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>
+                            {project.video_count || 0} videos
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Video Management Area */}
+                <div>
+                  {!selectedVideoProject ? (
+                    <div style={{ 
+                      padding: '4rem 2rem', 
+                      textAlign: 'center', 
+                      color: 'var(--text-light)',
+                      border: '2px dashed #e0e0e0',
+                      borderRadius: '8px'
+                    }}>
+                      <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>No project selected</p>
+                      <p style={{ fontSize: '0.9rem' }}>Select a project from the left or create a new one</p>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 style={{ marginBottom: '1rem' }}>{selectedVideoProject.project_name}</h3>
+                      
+                      {/* Add Video Form */}
+                      <div style={{ 
+                        padding: '1.5rem', 
+                        background: '#f8f9fa', 
+                        borderRadius: '8px',
+                        marginBottom: '2rem'
+                      }}>
+                        <h4 style={{ marginBottom: '1rem' }}>Add YouTube Video</h4>
+                        <input
+                          type="text"
+                          placeholder="YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
+                          value={newVideoUrl}
+                          onChange={(e) => setNewVideoUrl(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            marginBottom: '0.5rem',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '4px',
+                            fontSize: '0.95rem'
+                          }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Video title (optional)"
+                          value={newVideoTitle}
+                          onChange={(e) => setNewVideoTitle(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            marginBottom: '1rem',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '4px',
+                            fontSize: '0.95rem'
+                          }}
+                        />
+                        <button
+                          onClick={addVideo}
+                          style={{
+                            padding: '0.75rem 2rem',
+                            background: 'var(--primary-color)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '1rem',
+                            fontWeight: '500'
+                          }}
+                        >
+                          Add Video
+                        </button>
+                      </div>
+
+                      {/* Videos List */}
+                      <div>
+                        <h4 style={{ marginBottom: '1rem' }}>Videos ({projectVideos.length})</h4>
+                        
+                        {loadingVideos ? (
+                          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                            Loading videos...
+                          </div>
+                        ) : projectVideos.length === 0 ? (
+                          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>
+                            No videos yet. Add your first video!
+                          </div>
+                        ) : (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                            {projectVideos.map(video => (
+                              <div key={video.id} style={{ 
+                                border: '1px solid #e0e0e0', 
+                                borderRadius: '8px',
+                                overflow: 'hidden',
+                                background: 'white'
+                              }}>
+                                <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+                                  <img
+                                    src={`https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`}
+                                    alt={video.title || 'Video thumbnail'}
+                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                                  />
+                                </div>
+                                <div style={{ padding: '1rem' }}>
+                                  {video.title && (
+                                    <div style={{ fontWeight: '500', marginBottom: '0.5rem', fontSize: '0.95rem' }}>
+                                      {video.title}
+                                    </div>
+                                  )}
+                                  <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginBottom: '0.75rem' }}>
+                                    {new Date(video.created_at).toLocaleDateString()}
+                                  </div>
+                                  <button
+                                    onClick={() => deleteVideo(video.id)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '0.5rem',
+                                      background: '#dc2626',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      fontSize: '0.9rem'
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-
-          {/* Video Management Modal */}
-          {videoModalOpen && modalVideoProject && (
-            <div 
-              className="video-modal-overlay"
-              onClick={() => {
-                setVideoModalOpen(false);
-                setPlayingVideoId(null);
-              }}
-            >
-              <div 
-                className="video-modal-container"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Modal Header */}
-                <div className="video-modal-header">
-                  <div>
-                    <h2 style={{ margin: 0, marginBottom: '0.5rem', fontSize: '1.75rem' }}>
-                      {modalVideoProject.project_name}
-                    </h2>
-                    {modalVideoProject.description && (
-                      <p style={{ margin: 0, color: 'var(--text-light)', fontSize: '0.95rem' }}>
-                        {modalVideoProject.description}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => {
-                      setVideoModalOpen(false);
-                      setPlayingVideoId(null);
-                    }}
-                    className="video-modal-close"
-                    aria-label="Close modal"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                {/* Modal Content */}
-                <div className="video-modal-content">
-                  {/* Add Video Form */}
-                  <div className="video-modal-add-section">
-                    <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Add YouTube Video</h3>
-                    <div className="form-field-group">
-                      <input
-                        type="text"
-                        placeholder="YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
-                        value={newVideoUrl}
-                        onChange={(e) => setNewVideoUrl(e.target.value)}
-                        className="form-input"
-                      />
-                    </div>
-                    <div className="form-field-group">
-                      <input
-                        type="text"
-                        placeholder="Video title (optional)"
-                        value={newVideoTitle}
-                        onChange={(e) => setNewVideoTitle(e.target.value)}
-                        className="form-input"
-                      />
-                    </div>
-                    <button
-                      onClick={addVideo}
-                      className="btn-add-video"
-                    >
-                      Add Video
-                    </button>
-                  </div>
-
-                  {/* Videos Grid */}
-                  <div style={{ marginTop: '2.5rem' }}>
-                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>
-                      Videos ({projectVideos.length})
-                    </h3>
-                    
-                    {loadingVideos ? (
-                      <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-light)' }}>
-                        <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                        Loading videos...
-                      </div>
-                    ) : projectVideos.length === 0 ? (
-                      <div className="video-modal-empty-state">
-                        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎬</div>
-                        <p>No videos yet. Add your first video!</p>
-                      </div>
-                    ) : (
-                      <div className="video-modal-grid">
-                        {projectVideos.map((video) => (
-                          <div 
-                            key={video.id} 
-                            className="video-modal-grid-item"
-                          >
-                            {playingVideoId === video.video_id ? (
-                              // Show YouTube player
-                              <div className="video-modal-player-wrapper">
-                                <iframe
-                                  src={`https://www.youtube.com/embed/${video.video_id}?autoplay=1`}
-                                  title={video.title || 'Video'}
-                                  frameBorder="0"
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                  allowFullScreen
-                                  className="video-modal-player"
-                                />
-                                <button
-                                  onClick={() => setPlayingVideoId(null)}
-                                  className="video-player-close"
-                                  title="Close player"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ) : (
-                              // Show thumbnail
-                              <div 
-                                className="video-modal-thumbnail"
-                                onClick={() => setPlayingVideoId(video.video_id)}
-                              >
-                                <img
-                                  src={`https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`}
-                                  alt={video.title || 'Video thumbnail'}
-                                  style={{ 
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover'
-                                  }}
-                                  onError={(e) => {
-                                    e.currentTarget.src = `https://img.youtube.com/vi/${video.video_id}/default.jpg`;
-                                  }}
-                                />
-                                <div className="video-play-icon">▶</div>
-                              </div>
-                            )}
-                            <div className="video-modal-info">
-                              {video.title && (
-                                <div className="video-modal-title">
-                                  {video.title}
-                                </div>
-                              )}
-                              <div className="video-modal-date">
-                                {new Date(video.created_at).toLocaleDateString()}
-                              </div>
-                            </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteVideo(video.id);
-                              }}
-                              className="video-modal-delete-btn"
-                              title="Delete video"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Analytics Tab */}
           <div id="analytics-tab" className={`tab-content ${activeTab === 'analytics' ? 'active' : ''}`}>
@@ -5287,7 +4342,7 @@ export default function AdminDashboard() {
                     id="analytics-time-range" 
                     value={analyticsTimeRange}
                     onChange={(e) => setAnalyticsTimeRange(e.target.value)}
-                    style={{ padding: '0.5rem 1rem', border: '2px solid #e0e0e0', borderRadius: '5px', cursor: 'pointer' }}
+                    style={{ padding: '0.5rem 1rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
                   >
                     <option value="7">Last 7 Days</option>
                     <option value="30">Last 30 Days</option>
@@ -5296,10 +4351,12 @@ export default function AdminDashboard() {
                     <option value="all">All Time</option>
                   </select>
                   <button 
-                    onClick={clearAnalyticsData}
-                    style={{ padding: '0.5rem 1rem', background: 'var(--error-color)', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s ease' }}
-                    onMouseOver={(e) => e.currentTarget.style.background = '#c0392b'}
-                    onMouseOut={(e) => e.currentTarget.style.background = 'var(--error-color)'}
+                    onClick={() => {
+                      if (confirm('Are you sure you want to clear all analytics data? This action cannot be undone.')) {
+                        clearAnalytics();
+                      }
+                    }}
+                    style={{ padding: '0.5rem 1rem', background: 'var(--error-color)', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
                   >
                     Clear Data
                   </button>
@@ -5313,9 +4370,11 @@ export default function AdminDashboard() {
                     <span className="metric-label">Total Visits</span>
                     <span className="metric-icon">👥</span>
                   </div>
-                  <div className="metric-value" id="total-visits">0</div>
+                  <div className="metric-value" id="total-visits">
+                    {loadingAnalytics ? '...' : (analyticsData?.totalVisits || 0).toLocaleString()}
+                  </div>
                   <div className="metric-change positive">
-                    <span className="arrow">↑</span> +12.5% from last month
+                    <span className="arrow">↑</span> Real-time tracking
                   </div>
                 </div>
                 <div className="metric-card-modern">
@@ -5323,9 +4382,11 @@ export default function AdminDashboard() {
                     <span className="metric-label">Page Views</span>
                     <span className="metric-icon">📄</span>
                   </div>
-                  <div className="metric-value" id="total-page-views">0</div>
+                  <div className="metric-value" id="total-page-views">
+                    {loadingAnalytics ? '...' : (analyticsData?.totalPageViews || 0).toLocaleString()}
+                  </div>
                   <div className="metric-change positive">
-                    <span className="arrow">↑</span> +8.2% this week
+                    <span className="arrow">↑</span> Auto-refreshes
                   </div>
                 </div>
                 <div className="metric-card-modern">
@@ -5333,9 +4394,11 @@ export default function AdminDashboard() {
                     <span className="metric-label">Unique Visitors</span>
                     <span className="metric-icon">🎯</span>
                   </div>
-                  <div className="metric-value" id="unique-visitors">0</div>
+                  <div className="metric-value" id="unique-visitors">
+                    {loadingAnalytics ? '...' : (analyticsData?.uniqueVisitors || 0).toLocaleString()}
+                  </div>
                   <div className="metric-change positive">
-                    <span className="arrow">↑</span> +5.3% this week
+                    <span className="arrow">↑</span> Unique tracking
                   </div>
                 </div>
                 <div className="metric-card-modern">
@@ -5343,67 +4406,215 @@ export default function AdminDashboard() {
                     <span className="metric-label">Avg. Session</span>
                     <span className="metric-icon">⏱️</span>
                   </div>
-                  <div className="metric-value" id="avg-session-duration">0m</div>
+                  <div className="metric-value" id="avg-session-duration">
+                    {loadingAnalytics ? '...' : (analyticsData?.avgSessionDuration || '0m')}
+                  </div>
                   <div className="metric-change positive">
-                    <span className="arrow">↑</span> +2.4% from last month
+                    <span className="arrow">↑</span> Session data
                   </div>
                 </div>
               </div>
 
-              {/* Loading State */}
-              {loadingAnalytics && (
-                <div style={{ textAlign: 'center', padding: '3rem' }}>
-                  <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
-                  <p style={{ color: 'var(--text-light)' }}>Loading analytics data...</p>
-                </div>
-              )}
-
               {/* Analytics Charts Grid */}
-              {!loadingAnalytics && (
-                <>
-                  <div className="analytics-charts-grid-main" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
-                    <div className="analytics-chart-container">
-                      <h3>Visits Over Time</h3>
-                      <div id="visits-chart" style={{ height: '300px', position: 'relative', padding: '1rem 0', width: '100%', minWidth: '400px' }}>
-                        {/* Line graph will be generated here */}
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+                <div style={{ background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
+                  <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Visits Over Time</h3>
+                  <div id="visits-chart" style={{ height: '300px', position: 'relative', padding: '1rem 0', width: '100%', minWidth: '400px' }}>
+                    {loadingAnalytics ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>Loading chart data...</div>
+                    ) : analyticsData?.visitsOverTime && analyticsData.visitsOverTime.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', height: '100%' }}>
+                        {analyticsData.visitsOverTime.slice(-14).map((item: any, index: number) => (
+                          <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <span style={{ width: '100px', fontSize: '0.85rem', color: '#666' }}>
+                              {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </span>
+                            <div style={{ flex: 1, background: '#e0e0e0', borderRadius: '4px', height: '20px', position: 'relative' }}>
+                              <div style={{ 
+                                background: 'var(--primary-color)', 
+                                borderRadius: '4px', 
+                                height: '100%', 
+                                width: `${Math.min((item.count / Math.max(...analyticsData.visitsOverTime.map((v: any) => v.count))) * 100, 100)}%`,
+                                transition: 'width 0.3s ease'
+                              }}></div>
+                            </div>
+                            <span style={{ width: '50px', textAlign: 'right', fontSize: '0.9rem', fontWeight: '600' }}>
+                              {item.count}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                    <div className="analytics-chart-container">
-                      <h3>Top Pages</h3>
-                      <div id="top-pages-list">
-                        {/* Top pages will be listed here */}
-                      </div>
-                    </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>No visit data available</div>
+                    )}
                   </div>
-
-                  {/* Additional Analytics */}
-                  <div className="analytics-charts-grid-secondary" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                    {/* Traffic Sources */}
-                    <div className="analytics-chart-container">
-                      <h3>Traffic Sources</h3>
-                      <div id="traffic-sources-list">
-                        {/* Traffic sources will be listed here */}
+                </div>
+                <div style={{ background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
+                  <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Top Pages</h3>
+                  <div id="top-pages-list">
+                    {loadingAnalytics ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>Loading...</div>
+                    ) : analyticsData?.topPages && analyticsData.topPages.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {analyticsData.topPages.slice(0, 10).map((item: any, index: number) => (
+                          <div key={index} style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            padding: '0.5rem',
+                            background: index % 2 === 0 ? '#f9f9f9' : 'transparent',
+                            borderRadius: '4px'
+                          }}>
+                            <span style={{ fontSize: '0.9rem', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {item.page || '/'}
+                            </span>
+                            <span style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--primary-color)', minWidth: '50px', textAlign: 'right' }}>
+                              {item.views} views
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>No page data available</div>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-                    {/* Device Types */}
-                    <div className="analytics-chart-container">
-                      <h3>Device Types</h3>
-                      <div id="device-types-list">
-                        {/* Device types will be listed here */}
+              {/* Additional Analytics */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                {/* Traffic Sources */}
+                <div style={{ background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
+                  <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Traffic Sources</h3>
+                  <div id="traffic-sources-list">
+                    {loadingAnalytics ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>Loading...</div>
+                    ) : analyticsData?.trafficSources && analyticsData.trafficSources.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {analyticsData.trafficSources.map((item: any, index: number) => {
+                          const total = analyticsData.trafficSources.reduce((sum: number, s: any) => sum + s.count, 0);
+                          const percentage = total > 0 ? (item.count / total * 100).toFixed(1) : 0;
+                          return (
+                            <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                                <span style={{ color: '#333', fontWeight: '500' }}>{item.source}</span>
+                                <span style={{ color: '#666' }}>{item.count} ({percentage}%)</span>
+                              </div>
+                              <div style={{ background: '#e0e0e0', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                  background: 'var(--primary-color)', 
+                                  height: '100%', 
+                                  width: `${percentage}%`,
+                                  transition: 'width 0.3s ease'
+                                }}></div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>No traffic data available</div>
+                    )}
                   </div>
+                </div>
 
-                  {/* Recent Activity */}
-                  <div style={{ marginTop: '2rem' }} className="analytics-chart-container">
-                    <h3>Recent Activity</h3>
-                    <div id="recent-activity-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                      {/* Recent activity will be listed here */}
-                    </div>
+                {/* Device Types */}
+                <div style={{ background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
+                  <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Device Types</h3>
+                  <div id="device-types-list">
+                    {loadingAnalytics ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>Loading...</div>
+                    ) : analyticsData?.deviceTypes && analyticsData.deviceTypes.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {analyticsData.deviceTypes.map((item: any, index: number) => {
+                          const total = analyticsData.deviceTypes.reduce((sum: number, d: any) => sum + d.count, 0);
+                          const percentage = total > 0 ? (item.count / total * 100).toFixed(1) : 0;
+                          const deviceIcons: any = {
+                            'Desktop': '💻',
+                            'Mobile': '📱',
+                            'Tablet': '📱'
+                          };
+                          return (
+                            <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                                <span style={{ color: '#333', fontWeight: '500' }}>
+                                  {deviceIcons[item.device] || '💻'} {item.device}
+                                </span>
+                                <span style={{ color: '#666' }}>{item.count} ({percentage}%)</span>
+                              </div>
+                              <div style={{ background: '#e0e0e0', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                  background: 'var(--primary-color)', 
+                                  height: '100%', 
+                                  width: `${percentage}%`,
+                                  transition: 'width 0.3s ease'
+                                }}></div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>No device data available</div>
+                    )}
                   </div>
-                </>
-              )}
+                </div>
+              </div>
+
+              {/* Recent Activity */}
+              <div style={{ marginTop: '2rem', background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
+                <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Recent Activity</h3>
+                <div id="recent-activity-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                  {loadingAnalytics ? (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>Loading...</div>
+                  ) : analyticsData?.recentActivity && analyticsData.recentActivity.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {analyticsData.recentActivity.map((item: any, index: number) => (
+                        <div key={index} style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: '150px 1fr 100px 80px 120px',
+                          gap: '1rem',
+                          padding: '0.75rem',
+                          background: index % 2 === 0 ? '#f9f9f9' : 'transparent',
+                          borderRadius: '4px',
+                          fontSize: '0.85rem',
+                          alignItems: 'center'
+                        }}>
+                          <span style={{ color: '#666', fontSize: '0.8rem' }}>
+                            {new Date(item.timestamp).toLocaleString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric', 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </span>
+                          <span style={{ color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {item.page}
+                          </span>
+                          <span style={{ color: '#666', fontSize: '0.8rem' }}>
+                            {item.source}
+                          </span>
+                          <span style={{ color: '#666', fontSize: '0.8rem' }}>
+                            {item.device}
+                          </span>
+                          <span style={{ 
+                            color: '#999', 
+                            fontSize: '0.75rem', 
+                            overflow: 'hidden', 
+                            textOverflow: 'ellipsis', 
+                            whiteSpace: 'nowrap',
+                            fontFamily: 'monospace'
+                          }}>
+                            {item.visitorId}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>No recent activity</div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -5437,7 +4648,7 @@ export default function AdminDashboard() {
                     <input type="hidden" id="edit-original-username" value="" />
                     <input type="hidden" id="edit-original-usertype" value="" />
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
                       <div className="form-field">
                         <label>First Name *</label>
                         <input 
@@ -5794,18 +5005,6 @@ export default function AdminDashboard() {
       >
         <div id="toast-message" style={{ fontSize: '0.95rem', fontWeight: 500 }}></div>
       </div>
-      
-      {/* Build verification - Jan 23, 2026 */}
-      <div style={{display: 'none'}} data-build="2026-01-23-v2"></div>
-
-      {/* Inactivity Warning Modal */}
-      {showWarning && (
-        <InactivityWarningModal
-          countdown={countdown}
-          onStayLoggedIn={handleStayLoggedIn}
-          onLogoutNow={handleLogoutNow}
-        />
-      )}
     </div>
   );
 }
