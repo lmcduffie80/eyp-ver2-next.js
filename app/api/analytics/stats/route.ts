@@ -3,6 +3,8 @@ import sql, { getConnection } from '@/api-old/db/connection';
 import { cookies } from 'next/headers';
 import { normalizeRows } from '@/lib/db-utils';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Check for admin authentication
