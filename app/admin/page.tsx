@@ -803,28 +803,14 @@ export default function AdminDashboard() {
     }
   };
 
-  // Helper function to convert file to base64
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = (reader.result as string).split(',')[1]; // Remove data:image/... prefix
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
-  // Helper function to create thumbnail
-  const createThumbnail = (file: File, maxWidth: number): Promise<string> => {
+  // Helper function to create compressed image blob
+  const createCompressedImage = (file: File, maxWidth: number, quality: number): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
       img.onload = () => {
-        // Calculate new dimensions
         let width = img.width;
         let height = img.height;
         
@@ -833,25 +819,17 @@ export default function AdminDashboard() {
           width = maxWidth;
         }
         
-        // Set canvas size and draw image
         canvas.width = width;
         canvas.height = height;
         ctx?.drawImage(img, 0, 0, width, height);
         
-        // Convert to base64 (WebP format for efficiency)
         canvas.toBlob((blob) => {
           if (!blob) {
-            reject(new Error('Failed to create thumbnail'));
+            reject(new Error('Failed to create blob'));
             return;
           }
-          const reader = new FileReader();
-          reader.onload = () => {
-            const base64 = (reader.result as string).split(',')[1];
-            resolve(base64);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        }, 'image/webp', 0.8);
+          resolve(blob);
+        }, 'image/webp', quality);
       };
       
       img.onerror = reject;
@@ -873,91 +851,109 @@ export default function AdminDashboard() {
         try {
           console.log(`Processing ${file.name}...`);
           
-          // Convert image to base64 and create thumbnail
-          let fullImageBase64;
-          let thumbnailBase64;
+          // Create compressed WebP blobs
+          let fullImageBlob;
+          let thumbnailBlob;
           
           try {
-            fullImageBase64 = await fileToBase64(file);
-            console.log(`✓ Converted ${file.name} to base64 (${fullImageBase64.length} chars)`);
+            fullImageBlob = await createCompressedImage(file, 2000, 0.85);
+            console.log(`✓ Compressed ${file.name} (${fullImageBlob.size} bytes)`);
           } catch (err) {
-            console.error(`✗ Failed to convert ${file.name} to base64:`, err);
-            alert(`Failed to process ${file.name}: Could not read image file`);
+            console.error(`✗ Failed to compress ${file.name}:`, err);
+            alert(`Failed to process ${file.name}: Could not compress image`);
             continue;
           }
           
           try {
-            thumbnailBase64 = await createThumbnail(file, 400);
-            console.log(`✓ Created thumbnail for ${file.name} (${thumbnailBase64.length} chars)`);
+            thumbnailBlob = await createCompressedImage(file, 400, 0.8);
+            console.log(`✓ Created thumbnail for ${file.name} (${thumbnailBlob.size} bytes)`);
           } catch (err) {
             console.error(`✗ Failed to create thumbnail for ${file.name}:`, err);
             alert(`Failed to process ${file.name}: Could not create thumbnail`);
             continue;
           }
-          
-          console.log(`Converted ${file.name}:`, {
-            fullImageLength: fullImageBase64.length,
-            thumbnailLength: thumbnailBase64.length,
-            project_id: selectedProject.id.toString(),
-            filename: file.name
+
+          // Get presigned URL for full image
+          console.log(`Requesting presigned URL for ${file.name}...`);
+          const fullImagePresignedResponse = await fetch('/api/photography/presigned-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filename: file.name,
+              fileType: 'image/webp',
+              projectId: selectedProject.id.toString(),
+              isThumb: false
+            })
           });
           
-          // Create FormData with correct field names
-          const formData = new FormData();
-          formData.append('fullImage', fullImageBase64);
-          formData.append('thumbnail', thumbnailBase64);
-          formData.append('project_id', selectedProject.id.toString());
-          formData.append('filename', file.name);
-          
-          console.log('FormData fields:', Array.from(formData.keys()));
-
-          // Upload to server (which uploads to S3)
-          console.log(`Uploading ${file.name} to server...`);
-          let uploadResponse;
-          try {
-            uploadResponse = await fetch('/api/photography/upload', {
-              method: 'POST',
-              body: formData
-            });
-            console.log(`Server responded with status: ${uploadResponse.status}`);
-          } catch (err) {
-            console.error(`✗ Network error uploading ${file.name}:`, err);
-            alert(`Failed to upload ${file.name}: Network error`);
-            continue;
+          const fullImagePresignedData = await fullImagePresignedResponse.json();
+          if (!fullImagePresignedData.success) {
+            throw new Error(fullImagePresignedData.error);
           }
-          
-          const uploadResult = await uploadResponse.json();
-          console.log(`Upload result for ${file.name}:`, uploadResult);
 
-          if (!uploadResult.success) {
-            console.error('Failed to upload:', uploadResult.error);
-            alert(`Failed to upload ${file.name}: ${uploadResult.error || 'Unknown server error'}`);
-            continue;
+          // Get presigned URL for thumbnail
+          const thumbPresignedResponse = await fetch('/api/photography/presigned-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filename: file.name,
+              fileType: 'image/webp',
+              projectId: selectedProject.id.toString(),
+              isThumb: true
+            })
+          });
+          
+          const thumbPresignedData = await thumbPresignedResponse.json();
+          if (!thumbPresignedData.success) {
+            throw new Error(thumbPresignedData.error);
+          }
+
+          // Upload full image directly to S3
+          console.log(`Uploading ${file.name} to S3...`);
+          const fullImageUpload = await fetch(fullImagePresignedData.presignedUrl, {
+            method: 'PUT',
+            body: fullImageBlob,
+            headers: {
+              'Content-Type': 'image/webp'
+            }
+          });
+
+          if (!fullImageUpload.ok) {
+            throw new Error(`S3 upload failed: ${fullImageUpload.statusText}`);
+          }
+
+          // Upload thumbnail directly to S3
+          const thumbUpload = await fetch(thumbPresignedData.presignedUrl, {
+            method: 'PUT',
+            body: thumbnailBlob,
+            headers: {
+              'Content-Type': 'image/webp'
+            }
+          });
+
+          if (!thumbUpload.ok) {
+            throw new Error(`Thumbnail upload failed: ${thumbUpload.statusText}`);
           }
 
           console.log(`✓ ${file.name} uploaded to S3 successfully`);
 
           // Save photo metadata to database
           console.log(`Saving ${file.name} metadata to database...`);
-          try {
-            const dbResponse = await fetch('/api/photography/photos', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                project_id: selectedProject.id,
-                photo_url: uploadResult.photoURL,
-                thumbnail_url: uploadResult.thumbnailURL,
-                filename: file.name
-              })
-            });
-            
-            if (!dbResponse.ok) {
-              console.error(`✗ Failed to save ${file.name} to database`);
-            } else {
-              console.log(`✓ ${file.name} saved to database`);
-            }
-          } catch (err) {
-            console.error(`✗ Database error for ${file.name}:`, err);
+          const dbResponse = await fetch('/api/photography/photos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              project_id: selectedProject.id,
+              photo_url: fullImagePresignedData.publicUrl,
+              thumbnail_url: thumbPresignedData.publicUrl,
+              filename: file.name
+            })
+          });
+          
+          if (!dbResponse.ok) {
+            console.error(`✗ Failed to save ${file.name} to database`);
+          } else {
+            console.log(`✓ ${file.name} saved to database`);
           }
 
           uploadedCount++;
