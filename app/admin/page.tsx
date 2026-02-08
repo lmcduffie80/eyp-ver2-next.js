@@ -803,6 +803,62 @@ export default function AdminDashboard() {
     }
   };
 
+  // Helper function to convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(',')[1]; // Remove data:image/... prefix
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Helper function to create thumbnail
+  const createThumbnail = (file: File, maxWidth: number): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      img.onload = () => {
+        // Calculate new dimensions
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        // Set canvas size and draw image
+        canvas.width = width;
+        canvas.height = height;
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // Convert to base64 (WebP format for efficiency)
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Failed to create thumbnail'));
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64 = (reader.result as string).split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        }, 'image/webp', 0.8);
+      };
+      
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0 || !selectedProject) return;
@@ -814,10 +870,16 @@ export default function AdminDashboard() {
 
     try {
       for (const file of Array.from(files)) {
-        // Create FormData for server upload
+        // Convert image to base64 and create thumbnail
+        const fullImageBase64 = await fileToBase64(file);
+        const thumbnailBase64 = await createThumbnail(file, 400); // 400px max width
+        
+        // Create FormData with correct field names
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('fullImage', fullImageBase64);
+        formData.append('thumbnail', thumbnailBase64);
         formData.append('project_id', selectedProject.id.toString());
+        formData.append('filename', file.name);
 
         // Upload to server (which uploads to S3)
         const uploadResponse = await fetch('/api/photography/upload', {
@@ -825,11 +887,11 @@ export default function AdminDashboard() {
           body: formData
         });
         
-        const { photoURL, success, error } = await uploadResponse.json();
+        const uploadResult = await uploadResponse.json();
 
-        if (!success) {
-          console.error('Failed to upload:', error);
-          alert(`Failed to upload ${file.name}: ${error}`);
+        if (!uploadResult.success) {
+          console.error('Failed to upload:', uploadResult.error);
+          alert(`Failed to upload ${file.name}: ${uploadResult.error}`);
           continue;
         }
 
@@ -839,7 +901,8 @@ export default function AdminDashboard() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             project_id: selectedProject.id,
-            photo_url: photoURL,
+            photo_url: uploadResult.photoURL,
+            thumbnail_url: uploadResult.thumbnailURL,
             filename: file.name
           })
         });
@@ -856,7 +919,7 @@ export default function AdminDashboard() {
 
     } catch (error) {
       console.error('Error during photo upload:', error);
-      alert('Upload failed. Please check your AWS S3 configuration.');
+      alert('Upload failed. Please check your connection and try again.');
     } finally {
       setTimeout(() => {
         setUploadingPhotos(false);
