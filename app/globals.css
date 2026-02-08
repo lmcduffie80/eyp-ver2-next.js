@@ -2328,14 +2328,14 @@ body.dashboard-page {
 /* Tablet: 2 columns with auto-fill */
 @media (min-width: 768px) {
   .video-grid-fixed {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)) !important;
   }
 }
 
-/* Desktop: auto-fit based on content */
+/* Desktop: larger columns for better visibility */
 @media (min-width: 1024px) {
   .video-grid-fixed {
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)) !important;
   }
 }
 
