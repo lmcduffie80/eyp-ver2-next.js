@@ -32,7 +32,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { project_name, description, display_order = 0, is_featured = false, status = 'upcoming' } = body;
+    const { project_name, description, display_order = 0, is_featured = false } = body;
     
     if (!project_name) {
       return NextResponse.json({ 
@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
     }
     
     const result = await sql`
-      INSERT INTO photography_projects (project_name, description, display_order, is_featured, status)
-      VALUES (${project_name}, ${description || null}, ${display_order}, ${is_featured}, ${status})
+      INSERT INTO photography_projects (project_name, description, display_order, is_featured)
+      VALUES (${project_name}, ${description || null}, ${display_order}, ${is_featured})
       RETURNING *
     `;
     
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, project_name, description, cover_photo_url, display_order, is_featured, status } = body;
+    const { id, project_name, description, cover_photo_url, display_order, is_featured } = body;
     
     if (!id) {
       return NextResponse.json({ 
@@ -83,7 +83,6 @@ export async function PUT(request: NextRequest) {
         cover_photo_url = COALESCE(${cover_photo_url}, cover_photo_url),
         display_order = COALESCE(${display_order}, display_order),
         is_featured = COALESCE(${is_featured}, is_featured),
-        status = COALESCE(${status}, status),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${id}
       RETURNING *
