@@ -141,6 +141,12 @@ export default function AdminDashboard() {
     return <span style={{ marginLeft: '0.25rem' }}>{direction === 'asc' ? '↑' : '↓'}</span>;
   };
 
+  // Helper function to parse date strings as local dates (avoids timezone issues)
+  const parseLocalDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('-');
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  };
+
   useEffect(() => {
     // Prevent body scroll when dashboard is open
     document.body.style.overflow = 'hidden';
@@ -2734,7 +2740,7 @@ export default function AdminDashboard() {
                         
                         return sortedBookings.map((booking) => (
                         <tr key={booking.id}>
-                          <td>{new Date(booking.date).toLocaleDateString()}</td>
+                          <td>{parseLocalDate(booking.date).toLocaleDateString()}</td>
                           <td>{booking.djUser || 'N/A'}</td>
                           <td>{booking.eventType || 'N/A'}</td>
                           <td>{booking.location || 'N/A'}</td>
