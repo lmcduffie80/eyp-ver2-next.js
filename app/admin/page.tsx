@@ -674,7 +674,7 @@ export default function AdminDashboard() {
     
     // Get future bookings with 'upcoming' status
     const futureBookings = bookings.filter(b => {
-      const bookingDate = new Date(b.date);
+      const bookingDate = parseLocalDate(b.date);
       const isUpcoming = (b as any).status === 'upcoming' || !(b as any).status;
       return bookingDate >= today && isUpcoming;
     });
@@ -687,7 +687,7 @@ export default function AdminDashboard() {
         djMap.set(dj, { name: dj, projects: [], dates: [] });
       }
       djMap.get(dj).projects.push(booking);
-      djMap.get(dj).dates.push(new Date(booking.date));
+      djMap.get(dj).dates.push(parseLocalDate(booking.date));
     });
     
     return Array.from(djMap.values()).map(dj => ({
