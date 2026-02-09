@@ -2301,7 +2301,7 @@ export default function AdminDashboard() {
                             const bookingStatus = (booking as any).status || 'upcoming';
                             return (
                               <tr key={booking.id}>
-                                <td>{new Date(booking.date).toLocaleDateString()}</td>
+                                <td>{parseLocalDate(booking.date).toLocaleDateString()}</td>
                                 <td>{booking.djUser || 'N/A'}</td>
                                 <td>{booking.eventType || 'N/A'}</td>
                                 <td>{booking.location || 'N/A'}</td>
