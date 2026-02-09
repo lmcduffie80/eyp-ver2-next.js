@@ -143,8 +143,23 @@ export default function AdminDashboard() {
 
   // Helper function to parse date strings as local dates (avoids timezone issues)
   const parseLocalDate = (dateString: string) => {
-    const [year, month, day] = dateString.split('-');
-    return new Date(Number(year), Number(month) - 1, Number(day));
+    if (!dateString) return new Date();
+    
+    // Extract just the date part if it's an ISO timestamp
+    const datePart = dateString.split('T')[0];
+    const [year, month, day] = datePart.split('-');
+    
+    // Validate that we have valid numbers
+    const yearNum = Number(year);
+    const monthNum = Number(month);
+    const dayNum = Number(day);
+    
+    if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum)) {
+      console.error('Invalid date format:', dateString);
+      return new Date();
+    }
+    
+    return new Date(yearNum, monthNum - 1, dayNum);
   };
 
   useEffect(() => {
