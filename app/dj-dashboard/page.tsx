@@ -91,7 +91,19 @@ export default function DJDashboard() {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
-  
+
+  // Helper to parse date strings as local dates (avoids UTC timezone shift)
+  const parseLocalDate = (dateString: string) => {
+    if (!dateString) return new Date();
+    const datePart = dateString.split('T')[0];
+    const [year, month, day] = datePart.split('-');
+    const yearNum = Number(year);
+    const monthNum = Number(month);
+    const dayNum = Number(day);
+    if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum)) return new Date();
+    return new Date(yearNum, monthNum - 1, dayNum);
+  };
+
   // Expanded notes tracking
   const [expandedNoteId, setExpandedNoteId] = useState<number | null>(null);
 
@@ -360,7 +372,7 @@ export default function DJDashboard() {
     const clientName = booking.clientName || 'N/A';
     let date = 'No date';
     try {
-      date = booking.date ? new Date(booking.date).toLocaleDateString() : 'No date';
+      date = booking.date ? parseLocalDate(booking.date).toLocaleDateString() : 'No date';
     } catch (error) {
       console.error('Error formatting date for PDF:', error);
     }
@@ -704,7 +716,7 @@ export default function DJDashboard() {
             onMouseEnter={(e) => e.currentTarget.style.background = '#e55a2b'}
             onMouseLeave={(e) => e.currentTarget.style.background = '#ff6b35'}
           >
-            I'm Still Here
+            I&apos;m Still Here
           </button>
         </div>
       </div>
@@ -933,7 +945,7 @@ export default function DJDashboard() {
                       }}>
                         {(() => {
                           try {
-                            return new Date(nextBooking.date).toLocaleDateString('en-US', {
+                            return parseLocalDate(nextBooking.date).toLocaleDateString('en-US', {
                               month: 'short',
                               day: 'numeric',
                               year: 'numeric'
@@ -1142,7 +1154,7 @@ export default function DJDashboard() {
                           <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
                             {(() => {
                               try {
-                                return bd.date ? new Date(bd.date).toLocaleDateString() : 'No date';
+                                return bd.date ? parseLocalDate(bd.date).toLocaleDateString() : 'No date';
                               } catch (error) {
                                 console.error('Error formatting blocked date:', error);
                                 return 'Invalid date';
@@ -1290,7 +1302,7 @@ export default function DJDashboard() {
                             <div style={{ color: '#666', fontSize: '0.95rem' }}>
                               {(() => {
                                 try {
-                                  return booking.date ? new Date(booking.date).toLocaleDateString() : 'No date';
+                                  return booking.date ? parseLocalDate(booking.date).toLocaleDateString() : 'No date';
                                 } catch (error) {
                                   console.error('Error formatting booking date:', error);
                                   return 'Invalid date';
@@ -1613,7 +1625,7 @@ export default function DJDashboard() {
                     <div style={{ fontWeight: '500' }}>
                       {(() => {
                         try {
-                          return selectedBooking.date ? new Date(selectedBooking.date).toLocaleDateString() : 'No date';
+                          return selectedBooking.date ? parseLocalDate(selectedBooking.date).toLocaleDateString() : 'No date';
                         } catch (error) {
                           console.error('Error formatting modal date:', error);
                           return 'Invalid date';

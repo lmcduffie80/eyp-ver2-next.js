@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 
-// Import password utilities from old api structure
-const bcrypt = require('bcryptjs');
+import bcrypt from 'bcryptjs';
 
 function validatePasswordStrength(password: string): { valid: boolean; message: string } {
   if (password.length < 8) {

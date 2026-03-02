@@ -74,7 +74,7 @@ export function useCSVImport() {
       updateStatus('Parsing CSV', 'Parsing CSV file content...', 'info');
 
       // Remove BOM if present
-      let csv = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+      const csv = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
 
       // Handle different line endings (Windows \r\n, Mac \r, Unix \n)
       const lines = csv.split(/\r?\n|\r/).filter((line) => line.trim());

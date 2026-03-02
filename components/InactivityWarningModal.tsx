@@ -21,7 +21,7 @@ export default function InactivityWarningModal({
           <div className="inactivity-modal-icon">⚠️</div>
           <h2 className="inactivity-modal-title">Session Timeout Warning</h2>
           <p className="inactivity-modal-message">
-            You've been inactive for 30 seconds.
+            You&apos;ve been inactive for 30 seconds.
           </p>
           {countdown > 10 ? (
             <div className="inactivity-message">

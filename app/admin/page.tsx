@@ -1987,7 +1987,7 @@ export default function AdminDashboard() {
           </button>
           <div>
             <h1>Welcome back, Admin</h1>
-            <p className="subtitle">Here's what's happening today.</p>
+            <p className="subtitle">Here&apos;s what&apos;s happening today.</p>
           </div>
           <div className="header-actions">
             <div style={{ textAlign: 'right', marginRight: '1rem' }}>
@@ -2710,7 +2710,7 @@ export default function AdminDashboard() {
                         today.setHours(0, 0, 0, 0);
                         
                         // Filter bookings based on analytics filters
-                        let filteredBookings = bookings.filter(booking => {
+                        const filteredBookings = bookings.filter(booking => {
                           // DJ Filter
                           if (analyticsFilterDJ && booking.djUser !== analyticsFilterDJ) {
                             return false;
@@ -3492,7 +3492,7 @@ export default function AdminDashboard() {
 
                     <div>
                       <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        Features / What's Included
+                        Features / What&apos;s Included
                       </label>
                       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
                         <input
