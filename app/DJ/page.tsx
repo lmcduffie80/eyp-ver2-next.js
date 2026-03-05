@@ -44,52 +44,21 @@ export default function DJPortal() {
     setIsLoading(true);
 
     try {
-      // First try localStorage for development
-      const existingUsers = JSON.parse(localStorage.getItem('dj_users') || '[]');
-      const user = existingUsers.find(
-        (u: any) => (u.username === loginUsername || u.email === loginUsername) && u.password === loginPassword
-      );
-
-      if (user) {
-        // Set authentication data (localStorage fallback for development)
-        const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
-        const tokenExpiry = Date.now() + SESSION_TIMEOUT;
-        
-        // Compute normalized display name
-        const displayName = (user.first_name && user.last_name)
-          ? `${user.first_name} ${user.last_name}`
-          : user.username;
-        
-        localStorage.setItem('dj_token', 'dev_token_' + Date.now());
-        localStorage.setItem('dj_user', user.username);
-        localStorage.setItem('dj_display_name', displayName);
-        localStorage.setItem('dj_token_expiry', tokenExpiry.toString());
-        localStorage.setItem('dj_last_activity', Date.now().toString());
-        
-        router.push('/dj-dashboard');
-        return;
-      }
-
-      // Try API call if localStorage fails
       const response = await fetch('/api/dj-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          username: loginUsername, 
-          password: loginPassword 
+        body: JSON.stringify({
+          username: loginUsername,
+          password: loginPassword
         })
       });
 
       const data = await response.json();
 
       if (data.success) {
-        // Set authentication data
-        localStorage.setItem('dj_token', data.token);
-        localStorage.setItem('dj_user', data.user);
+        // Session is stored in an HttpOnly cookie by the server.
+        // Store display name in localStorage for UI use only (not for auth).
         localStorage.setItem('dj_display_name', data.displayName || data.user);
-        localStorage.setItem('dj_token_expiry', data.tokenExpiry?.toString() || (Date.now() + 30 * 60 * 1000).toString());
-        localStorage.setItem('dj_last_activity', Date.now().toString());
-        
         router.push('/dj-dashboard');
       } else {
         setErrorMessage(data.message || 'Invalid username or password.');
@@ -129,43 +98,31 @@ export default function DJPortal() {
     setIsLoading(true);
 
     try {
-      // Check if username or email already exists
-      const existingUsers = JSON.parse(localStorage.getItem('dj_users') || '[]');
-      const userExists = existingUsers.find(
-        (u: any) => u.username === signupUsername || u.email === signupEmail
-      );
+      const response = await fetch('/api/dj-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: signupUsername,
+          email: signupEmail,
+          password: signupPassword
+        })
+      });
 
-      if (userExists) {
-        setErrorMessage('Username or email already exists.');
-        setIsLoading(false);
-        return;
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccessMessage('Account created successfully! Please sign in.');
+        setSignupUsername('');
+        setSignupEmail('');
+        setSignupPassword('');
+        setConfirmPassword('');
+        setTimeout(() => {
+          setIsSignupMode(false);
+          clearMessages();
+        }, 2000);
+      } else {
+        setErrorMessage(data.message || 'Failed to create account. Please try again.');
       }
-
-      // Create new user (localStorage for development)
-      const newUser = {
-        username: signupUsername,
-        email: signupEmail,
-        password: signupPassword,
-        createdAt: new Date().toISOString()
-      };
-
-      existingUsers.push(newUser);
-      localStorage.setItem('dj_users', JSON.stringify(existingUsers));
-
-      // Show success message and switch to login
-      setSuccessMessage('Account created successfully! Please sign in.');
-      
-      // Clear signup form
-      setSignupUsername('');
-      setSignupEmail('');
-      setSignupPassword('');
-      setConfirmPassword('');
-
-      // Switch to login mode after 2 seconds
-      setTimeout(() => {
-        setIsSignupMode(false);
-        clearMessages();
-      }, 2000);
     } catch {
       setErrorMessage('Failed to create account. Please try again.');
     } finally {

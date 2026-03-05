@@ -4,34 +4,31 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check if accessing admin routes (but not the login page)
+  // Protect admin routes (excluding the login page itself)
   const isAdminRoute = pathname.startsWith('/admin') && !pathname.startsWith('/admin-login');
-  
-  if (isAdminRoute) {
-    // Check for admin session cookie
-    const adminSession = request.cookies.get('admin_session');
-    const adminUserId = request.cookies.get('admin_user_id');
 
-    // If no session, redirect to login
-    if (!adminSession || !adminUserId) {
+  if (isAdminRoute) {
+    const adminSession = request.cookies.get('admin_session');
+    if (!adminSession?.value) {
       const loginUrl = new URL('/admin-login', request.url);
       return NextResponse.redirect(loginUrl);
     }
   }
 
-  // Check if accessing DJ dashboard routes (but not the DJ login page)
-  const isDJRoute = pathname.startsWith('/dj-dashboard') || pathname.startsWith('/DJ');
-  
-  if (isDJRoute) {
-    // Note: DJ dashboard uses localStorage token, not cookies
-    // Cannot verify server-side - client-side check in component is sufficient
-    // This middleware just ensures consistency
+  // Protect DJ dashboard routes (excluding the DJ login page)
+  const isDJDashboardRoute = pathname.startsWith('/dj-dashboard');
+
+  if (isDJDashboardRoute) {
+    const djSession = request.cookies.get('dj_session');
+    if (!djSession?.value) {
+      const loginUrl = new URL('/DJ', request.url);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   return NextResponse.next();
 }
 
-// Configure which routes to run middleware on
 export const config = {
   matcher: [
     '/admin/:path*',

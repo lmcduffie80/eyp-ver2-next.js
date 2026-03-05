@@ -1,29 +1,38 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { randomBytes, createHash } from 'crypto';
 import sql from '@/api-old/db/connection';
 import { comparePassword } from '@/api-old/utils/password';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+
+export const dynamic = 'force-dynamic';
+
+const SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting
+    const ip = getClientIp(request);
+    const { allowed, retryAfter } = checkRateLimit(ip);
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, message: `Too many login attempts. Try again in ${retryAfter} seconds.` },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { username, password } = body;
 
-    // Validate input
     if (!username || !password) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Username and password are required'
-        },
+        { success: false, message: 'Username and password are required' },
         { status: 400 }
       );
     }
 
-    // Normalize username (strip leading @ if present)
-    const normalizedUsername = username.startsWith('@') 
-      ? username.substring(1) 
-      : username;
+    const normalizedUsername = username.startsWith('@') ? username.substring(1) : username;
 
-    // Query database for user by username or email (case-insensitive)
     const result = await sql`
       SELECT * FROM users 
       WHERE (LOWER(username) = LOWER(${normalizedUsername}) OR LOWER(email) = LOWER(${normalizedUsername}))
@@ -31,69 +40,70 @@ export async function POST(request: Request) {
       LIMIT 1
     `;
 
-    // Check if user exists
     if (result.rows.length === 0) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Invalid username or password'
-        },
+        { success: false, message: 'Invalid username or password' },
         { status: 401 }
       );
     }
 
     const user = result.rows[0];
-
-    // Verify password using bcrypt
     const passwordMatch = await comparePassword(password, user.password);
 
     if (!passwordMatch) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Invalid username or password'
-        },
+        { success: false, message: 'Invalid username or password' },
         { status: 401 }
       );
     }
 
-    // Generate a simple token (in production, use JWT)
-    const token = `dj_token_${user.id}_${Date.now()}`;
+    // Generate cryptographically random session token
+    const rawToken = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
 
-    // Compute normalized display name for API queries (matches booking storage format)
-    const normalizedName = (user.first_name && user.last_name) 
-      ? `${user.first_name} ${user.last_name}` 
+    // Store hashed token in DB
+    await sql`
+      INSERT INTO user_sessions (user_id, token_hash, user_type, expires_at)
+      VALUES (${user.id}, ${tokenHash}, 'dj', ${expiresAt.toISOString()})
+    `;
+
+    // Set raw token in HttpOnly cookie — never returned in response body
+    const cookieStore = await cookies();
+    cookieStore.set('dj_session', rawToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: SESSION_DURATION_MS / 1000,
+      path: '/'
+    });
+
+    const displayName = (user.first_name && user.last_name)
+      ? `${user.first_name} ${user.last_name}`
       : user.username;
 
-    // Return success with user info and token
     return NextResponse.json(
       {
         success: true,
-        token: token,
         user: user.username,
-        displayName: normalizedName,
+        displayName,
         userId: user.id,
         firstName: user.first_name,
         lastName: user.last_name,
-        email: user.email,
-        tokenExpiry: Date.now() + (30 * 60 * 1000) // 30 minutes
+        email: user.email
       },
       { status: 200 }
     );
 
   } catch (error) {
-    console.error('DJ Login error:', error);
+    console.error('DJ login error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'An error occurred during login'
-      },
+      { success: false, message: 'An error occurred during login' },
       { status: 500 }
     );
   }
 }
 
-// Handle OPTIONS for CORS
 export async function OPTIONS() {
   return NextResponse.json({}, { status: 200 });
 }

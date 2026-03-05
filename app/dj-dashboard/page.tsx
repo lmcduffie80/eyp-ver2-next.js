@@ -108,35 +108,33 @@ export default function DJDashboard() {
   const [expandedNoteId, setExpandedNoteId] = useState<number | null>(null);
 
   useEffect(() => {
-    // Check if DJ is authenticated from main login
-    const storedUsername = localStorage.getItem('dj_user');
-    const storedToken = localStorage.getItem('dj_token');
-    
-    // FALLBACK: Use username if dj_display_name is missing (for backward compatibility)
-    // The API will normalize any username variation (will, Will, Will Luke, etc.)
-    const storedDisplayName = localStorage.getItem('dj_display_name') || storedUsername;
-    
-    console.log('=== DJ Dashboard Auth Check ===');
-    console.log('storedUsername:', storedUsername);
-    console.log('storedDisplayName:', storedDisplayName);
-    console.log('storedToken:', storedToken ? 'EXISTS' : 'MISSING');
-    
-    if (storedUsername && storedToken && storedDisplayName) {
-      setDjUsername(storedUsername);
-      setDjDisplayName(storedDisplayName);
-      setIsAuthenticated(true);
-      setIsCheckingAuth(false);
-      
-      // Fetch reviews using username (matches how reviews are assigned)
-      // Fetch bookings/blocked dates using display name (matches database format)
-      fetchReviews(storedUsername);
-      fetchBookings(storedDisplayName);
-      fetchBlockedDates(storedDisplayName);
-    } else {
-      // Redirect to main login if not authenticated
-      setIsCheckingAuth(false);
-      window.location.href = '/DJ';
-    }
+    // Verify session server-side via HttpOnly cookie
+    fetch('/api/dj-verify')
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated) {
+          const username = data.user;
+          const displayName = data.displayName || data.user;
+
+          setDjUsername(username);
+          setDjDisplayName(displayName);
+          // Keep display name in localStorage for UI use only
+          localStorage.setItem('dj_display_name', displayName);
+          setIsAuthenticated(true);
+          setIsCheckingAuth(false);
+
+          fetchReviews(username);
+          fetchBookings(displayName);
+          fetchBlockedDates(displayName);
+        } else {
+          setIsCheckingAuth(false);
+          window.location.href = '/DJ';
+        }
+      })
+      .catch(() => {
+        setIsCheckingAuth(false);
+        window.location.href = '/DJ';
+      });
   }, []);
 
   // Activity tracking and auto-logout
@@ -148,8 +146,6 @@ export default function DJDashboard() {
     let countdownInterval: ReturnType<typeof setInterval>;
 
     const updateLastActivity = () => {
-      const now = Date.now().toString();
-      localStorage.setItem('dj_last_activity', now);
       setShowInactivityWarning(false);
       resetInactivityTimer();
     };
@@ -206,21 +202,23 @@ export default function DJDashboard() {
     };
   }, [isAuthenticated, INACTIVITY_TIMEOUT, WARNING_TIME]);
 
-  // Session token expiration check
+  // Periodic server-side session check (every 5 minutes)
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Check token expiration every 5 seconds
-    const expiryCheckInterval = setInterval(() => {
-      const tokenExpiry = localStorage.getItem('dj_token_expiry');
-      if (tokenExpiry && Date.now() > parseInt(tokenExpiry)) {
-        console.log('Session expired - logging out');
-        alert('Your session has expired. Please log in again.');
-        handleLogout();
+    const sessionCheckInterval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/dj-verify');
+        if (!res.ok) {
+          alert('Your session has expired. Please log in again.');
+          handleLogout();
+        }
+      } catch {
+        // Network error — don't force logout
       }
-    }, 5000);
+    }, 5 * 60 * 1000);
 
-    return () => clearInterval(expiryCheckInterval);
+    return () => clearInterval(sessionCheckInterval);
   }, [isAuthenticated]);
 
   const fetchReviews = async (username: string) => {
@@ -313,13 +311,13 @@ export default function DJDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('dj_user');
-    localStorage.removeItem('dj_token');
-    localStorage.removeItem('dj_token_expiry');
-    localStorage.removeItem('dj_last_activity');
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/dj-logout', { method: 'POST' });
+    } catch {
+      // Continue with redirect even if API call fails
+    }
     localStorage.removeItem('dj_display_name');
-    setIsCheckingAuth(true);
     window.location.href = '/DJ';
   };
 

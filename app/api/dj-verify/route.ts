@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('admin_session');
+    const sessionCookie = cookieStore.get('dj_session');
 
     if (!sessionCookie?.value) {
       return NextResponse.json(
@@ -21,17 +21,17 @@ export async function GET() {
     const tokenHash = createHash('sha256').update(sessionCookie.value).digest('hex');
 
     const result = await sql`
-      SELECT s.id AS session_id, u.id, u.username, u.email, u.first_name, u.last_name, u.is_super_user, u.user_type
+      SELECT s.id AS session_id, u.id, u.username, u.email, u.first_name, u.last_name, u.user_type
       FROM user_sessions s
       JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = ${tokenHash}
-        AND s.user_type = 'admin'
+        AND s.user_type = 'dj'
         AND s.expires_at > NOW()
       LIMIT 1
     `;
 
     if (result.rows.length === 0) {
-      cookieStore.delete('admin_session');
+      cookieStore.delete('dj_session');
       return NextResponse.json(
         { success: false, message: 'Session invalid or expired', authenticated: false },
         { status: 401 }
@@ -58,14 +58,13 @@ export async function GET() {
         userId: user.id,
         firstName: user.first_name,
         lastName: user.last_name,
-        email: user.email,
-        isSuperUser: user.is_super_user || false
+        email: user.email
       },
       { status: 200 }
     );
 
   } catch (error) {
-    console.error('Admin verification error:', error);
+    console.error('DJ verification error:', error);
     return NextResponse.json(
       { success: false, message: 'Verification failed', authenticated: false },
       { status: 500 }
