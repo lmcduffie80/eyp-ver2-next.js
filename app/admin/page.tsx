@@ -7,6 +7,9 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('djs');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [dashboardGroupCollapsed, setDashboardGroupCollapsed] = useState(false);
+  const [managementGroupCollapsed, setManagementGroupCollapsed] = useState(false);
+  const [adminDisplayName, setAdminDisplayName] = useState('Admin');
   const [bookings, setBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [blockedDates, setBlockedDates] = useState<any[]>([]);
@@ -168,6 +171,14 @@ export default function AdminDashboard() {
     return () => {
       document.body.style.overflow = 'unset';
     };
+  }, []);
+
+  useEffect(() => {
+    // Load admin display name from localStorage
+    const displayName = localStorage.getItem('admin_display_name');
+    if (displayName) {
+      setAdminDisplayName(displayName);
+    }
   }, []);
 
   useEffect(() => {
@@ -1875,25 +1886,50 @@ export default function AdminDashboard() {
         
         {/* Navigation Groups */}
         <div className="sidebar-nav-group">
-          <div className="nav-group-title">Dashboard</div>
-          <a 
-            className={`sidebar-nav-link ${activeTab === 'djs' ? 'active' : ''}`}
-            onClick={() => switchTab('djs')}
+          <div
+            className="nav-group-title clickable"
+            onClick={() => setDashboardGroupCollapsed(!dashboardGroupCollapsed)}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
           >
-            <span className="nav-icon">🏠</span>
-            <span>Home</span>
-          </a>
-          <a 
-            className={`sidebar-nav-link ${activeTab === 'analytics' ? 'active' : ''}`}
-            onClick={() => switchTab('analytics')}
-          >
-            <span className="nav-icon">📊</span>
-            <span>Analytics</span>
-          </a>
+            <span>Dashboard</span>
+            <span style={{ transition: 'transform 0.3s', transform: dashboardGroupCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
+          </div>
+          <div style={{
+            maxHeight: dashboardGroupCollapsed ? '0' : '500px',
+            overflow: 'hidden',
+            transition: 'max-height 0.3s ease-in-out'
+          }}>
+            <a
+              className={`sidebar-nav-link ${activeTab === 'djs' ? 'active' : ''}`}
+              onClick={() => switchTab('djs')}
+            >
+              <span className="nav-icon">🏠</span>
+              <span>Home</span>
+            </a>
+            <a
+              className={`sidebar-nav-link ${activeTab === 'analytics' ? 'active' : ''}`}
+              onClick={() => switchTab('analytics')}
+            >
+              <span className="nav-icon">📊</span>
+              <span>Analytics</span>
+            </a>
+          </div>
         </div>
 
         <div className="sidebar-nav-group">
-          <div className="nav-group-title">Management</div>
+          <div
+            className="nav-group-title clickable"
+            onClick={() => setManagementGroupCollapsed(!managementGroupCollapsed)}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <span>Management</span>
+            <span style={{ transition: 'transform 0.3s', transform: managementGroupCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
+          </div>
+          <div style={{
+            maxHeight: managementGroupCollapsed ? '0' : '2000px',
+            overflow: 'hidden',
+            transition: 'max-height 0.3s ease-in-out'
+          }}>
           <a 
             className={`sidebar-nav-link ${activeTab === 'bookings' ? 'active' : ''}`}
             onClick={() => switchTab('bookings')}
@@ -1957,13 +1993,14 @@ export default function AdminDashboard() {
             <span className="nav-icon">🚫</span>
             <span>Blocked Dates</span>
           </a>
+          </div>
         </div>
 
         {/* User Profile at Bottom */}
         <div className="sidebar-user-profile">
-          <div className="user-avatar">A</div>
+          <div className="user-avatar">{adminDisplayName.charAt(0).toUpperCase()}</div>
           <div className="user-info">
-            <div className="user-name">Admin</div>
+            <div className="user-name">{adminDisplayName}</div>
             <div className="user-role">Super Admin</div>
           </div>
         </div>
@@ -1986,14 +2023,10 @@ export default function AdminDashboard() {
             ☰
           </button>
           <div>
-            <h1>Welcome back, Admin</h1>
+            <h1>Welcome back, {adminDisplayName}</h1>
             <p className="subtitle">Here&apos;s what&apos;s happening today.</p>
           </div>
           <div className="header-actions">
-            <div style={{ textAlign: 'right', marginRight: '1rem' }}>
-              <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Administrator</div>
-              <div id="admin-name" style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Admin</div>
-            </div>
             <button className="logout-btn" onClick={handleLogout}>
               Logout
             </button>
