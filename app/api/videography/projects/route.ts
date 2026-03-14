@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConnection } from '@/api-old/db/connection';
+import { cookies } from 'next/headers';
 
 // GET all videography projects
 export async function GET() {
@@ -47,11 +48,22 @@ export async function GET() {
 // POST create new videography project
 export async function POST(request: NextRequest) {
   let client;
-  
+
   try {
+    // Check for admin authentication
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('admin_user_id')?.value;
+
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized - Admin access required'
+      }, { status: 401 });
+    }
+
     const body = await request.json();
     const { project_name, description } = body;
-    
+
     if (!project_name) {
       return NextResponse.json({
         success: false,
@@ -107,15 +119,26 @@ export async function POST(request: NextRequest) {
 // DELETE a videography project
 export async function DELETE(request: NextRequest) {
   let client;
-  
+
   try {
+    // Check for admin authentication
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('admin_user_id')?.value;
+
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized - Admin access required'
+      }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Project ID is required' 
+      return NextResponse.json({
+        success: false,
+        error: 'Project ID is required'
       }, { status: 400 });
     }
     

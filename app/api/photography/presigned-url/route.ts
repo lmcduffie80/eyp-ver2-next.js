@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { cookies } from 'next/headers';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -8,12 +9,23 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check for admin authentication
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('admin_user_id')?.value;
+
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized - Admin access required'
+      }, { status: 401 });
+    }
+
     const { filename, fileType, projectId, isThumb } = await request.json();
-    
+
     if (!filename || !fileType || !projectId) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Missing required fields' 
+      return NextResponse.json({
+        success: false,
+        error: 'Missing required fields'
       }, { status: 400 });
     }
 

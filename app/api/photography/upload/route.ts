@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { cookies } from 'next/headers';
 
 // Configure route to accept larger payloads
 export const runtime = 'nodejs';
@@ -8,17 +9,28 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check for admin authentication
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('admin_user_id')?.value;
+
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized - Admin access required'
+      }, { status: 401 });
+    }
+
     // Parse form data
     const formData = await request.formData();
     const fullImageBase64 = formData.get('fullImage') as string;
     const thumbnailBase64 = formData.get('thumbnail') as string;
     const project_id = formData.get('project_id') as string;
     const filename = formData.get('filename') as string;
-    
+
     if (!fullImageBase64 || !thumbnailBase64 || !project_id || !filename) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Full image, thumbnail, project_id, and filename are required' 
+      return NextResponse.json({
+        success: false,
+        error: 'Full image, thumbnail, project_id, and filename are required'
       }, { status: 400 });
     }
     

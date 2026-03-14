@@ -32,8 +32,12 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         {children}
-        <Script 
-          src="/analytics.js" 
+        <Script
+          src="/cookie-consent.js"
+          strategy="afterInteractive"
+        />
+        <Script
+          src="/analytics.js"
           strategy="afterInteractive"
         />
       </body>

@@ -5191,6 +5191,53 @@ export default function AdminDashboard() {
                     )}
                   </div>
                 </div>
+
+                {/* Browser Types */}
+                <div style={{ background: 'var(--bg-light)', padding: '1.5rem', borderRadius: '10px' }}>
+                  <h3 style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>Browser Types</h3>
+                  <div id="browser-types-list">
+                    {loadingAnalytics ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>Loading...</div>
+                    ) : analyticsData?.browserTypes && analyticsData.browserTypes.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {analyticsData.browserTypes.map((item: any, index: number) => {
+                          const total = analyticsData.browserTypes.reduce((sum: number, b: any) => sum + b.count, 0);
+                          const percentage = total > 0 ? (item.count / total * 100).toFixed(1) : 0;
+                          const browserIcons: any = {
+                            'Chrome': '🌐',
+                            'Safari': '🧭',
+                            'Firefox': '🦊',
+                            'Edge': '🌊',
+                            'Opera': '🎭',
+                            'Internet Explorer': '🗂️',
+                            'Other': '🌍',
+                            'Unknown': '❓'
+                          };
+                          return (
+                            <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                                <span style={{ color: '#333', fontWeight: '500' }}>
+                                  {browserIcons[item.browser] || '🌐'} {item.browser}
+                                </span>
+                                <span style={{ color: '#666' }}>{item.count} ({percentage}%)</span>
+                              </div>
+                              <div style={{ background: '#e0e0e0', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+                                <div style={{
+                                  background: 'var(--primary-color)',
+                                  height: '100%',
+                                  width: `${percentage}%`,
+                                  transition: 'width 0.3s ease'
+                                }}></div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>No browser data available</div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Recent Activity */}

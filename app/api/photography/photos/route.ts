@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '../../../../api-old/db/connection.js';
+import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,13 +38,24 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check for admin authentication
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('admin_user_id')?.value;
+
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized - Admin access required'
+      }, { status: 401 });
+    }
+
     const body = await request.json();
     const { project_id, photo_url, thumbnail_url, caption, display_order = 0 } = body;
-    
+
     if (!project_id || !photo_url) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Project ID and photo URL are required' 
+      return NextResponse.json({
+        success: false,
+        error: 'Project ID and photo URL are required'
       }, { status: 400 });
     }
     
@@ -78,13 +90,24 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Check for admin authentication
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('admin_user_id')?.value;
+
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized - Admin access required'
+      }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, caption, display_order } = body;
-    
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Photo ID is required' 
+      return NextResponse.json({
+        success: false,
+        error: 'Photo ID is required'
       }, { status: 400 });
     }
     
@@ -122,13 +145,24 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Check for admin authentication
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('admin_user_id')?.value;
+
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized - Admin access required'
+      }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Photo ID is required' 
+      return NextResponse.json({
+        success: false,
+        error: 'Photo ID is required'
       }, { status: 400 });
     }
     

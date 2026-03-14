@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConnection } from '@/api-old/db/connection';
+import { cookies } from 'next/headers';
 
 // Extract YouTube video ID from various URL formats
 function extractYouTubeVideoId(url: string): string | null {
@@ -68,11 +69,22 @@ export async function GET(request: NextRequest) {
 // POST create new video
 export async function POST(request: NextRequest) {
   let client;
-  
+
   try {
+    // Check for admin authentication
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('admin_user_id')?.value;
+
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized - Admin access required'
+      }, { status: 401 });
+    }
+
     const body = await request.json();
     const { project_id, video_url, title, description } = body;
-    
+
     if (!project_id || !video_url) {
       return NextResponse.json({
         success: false,
@@ -137,11 +149,22 @@ export async function POST(request: NextRequest) {
 // DELETE remove a video
 export async function DELETE(request: NextRequest) {
   let client;
-  
+
   try {
+    // Check for admin authentication
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('admin_user_id')?.value;
+
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized - Admin access required'
+      }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
+
     if (!id) {
       return NextResponse.json({
         success: false,
