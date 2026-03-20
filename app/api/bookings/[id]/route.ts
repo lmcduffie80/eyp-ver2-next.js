@@ -60,7 +60,7 @@ export async function PUT(
   try {
     // Check for admin authentication
     const cookieStore = await cookies();
-    const userId = cookieStore.get('admin_user_id')?.value;
+    const userId = cookieStore.get('admin_session')?.value;
 
     if (!userId) {
       return NextResponse.json({
@@ -182,7 +182,7 @@ export async function DELETE(
   try {
     // Check for admin authentication
     const cookieStore = await cookies();
-    const userId = cookieStore.get('admin_user_id')?.value;
+    const userId = cookieStore.get('admin_session')?.value;
 
     if (!userId) {
       return NextResponse.json({
