@@ -19,21 +19,23 @@ export async function GET(request: NextRequest) {
     // Create a map for quick lookup
     const djNameMap = new Map();
     djUsers.forEach((dj: any) => {
-      const normalizedName = (dj.first_name && dj.last_name)
-        ? `${dj.first_name} ${dj.last_name}`
+      const firstName = (dj.first_name || '').trim();
+      const lastName = (dj.last_name || '').trim();
+      const normalizedName = (firstName && lastName)
+        ? `${firstName} ${lastName}`
         : dj.username;
 
       // Map all possible variations to the normalized name
-      if (dj.first_name && dj.last_name) {
-        const fullName = `${dj.first_name} ${dj.last_name}`;
+      if (firstName && lastName) {
+        const fullName = `${firstName} ${lastName}`;
         djNameMap.set(fullName.toLowerCase(), normalizedName);
-        djNameMap.set(`${dj.last_name} ${dj.first_name}`.toLowerCase(), normalizedName);
+        djNameMap.set(`${lastName} ${firstName}`.toLowerCase(), normalizedName);
       }
-      if (dj.first_name) {
-        djNameMap.set(dj.first_name.toLowerCase(), normalizedName);
+      if (firstName) {
+        djNameMap.set(firstName.toLowerCase(), normalizedName);
       }
-      if (dj.last_name) {
-        djNameMap.set(dj.last_name.toLowerCase(), normalizedName);
+      if (lastName) {
+        djNameMap.set(lastName.toLowerCase(), normalizedName);
       }
       if (dj.username) {
         djNameMap.set(dj.username.toLowerCase(), normalizedName);
