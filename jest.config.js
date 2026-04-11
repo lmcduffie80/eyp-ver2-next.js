@@ -11,6 +11,9 @@ const customJestConfig = {
   testEnvironment: 'jest-environment-jsdom',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
+    // Stub out CSS/image imports to avoid transform overhead
+    '\\.(css|less|scss|sass)$': '<rootDir>/__mocks__/fileMock.js',
+    '\\.(jpg|jpeg|png|gif|svg|webp)$': '<rootDir>/__mocks__/fileMock.js',
   },
   testMatch: [
     '**/__tests__/**/*.[jt]s?(x)',
@@ -23,6 +26,8 @@ const customJestConfig = {
     '!**/node_modules/**',
     '!**/.next/**',
   ],
+  // Limit workers to avoid memory exhaustion
+  maxWorkers: 1,
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
