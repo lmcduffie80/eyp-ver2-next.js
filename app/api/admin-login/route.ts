@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     cookieStore.set('admin_session', rawToken, {
       httpOnly: true,
       secure: true,
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: SESSION_DURATION_MS / 1000,
       path: '/'
     });

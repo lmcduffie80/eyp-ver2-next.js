@@ -2,11 +2,14 @@ import { NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 import { cookies } from 'next/headers';
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   try {
     // CRITICAL: Check for admin authentication
     const cookieStore = await cookies();
     const userId = cookieStore.get('admin_session')?.value;
+
+    console.log('[clear-all-projects] Cookie header:', request.headers.get('cookie')?.substring(0, 100));
+    console.log('[clear-all-projects] admin_session present:', !!userId);
 
     if (!userId) {
       return NextResponse.json(
