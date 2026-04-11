@@ -370,7 +370,7 @@ export function useCSVImport() {
           'Clearing existing bookings...',
           'info'
         );
-        const clearRes = await fetch('/api/admin/clear-all-projects', { method: 'DELETE' });
+        const clearRes = await fetch('/api/admin/clear-all-projects', { method: 'DELETE', credentials: 'include' });
         if (!clearRes.ok) throw new Error('Failed to clear existing bookings');
 
         // Then create new bookings
