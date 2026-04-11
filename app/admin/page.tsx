@@ -3,6 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useCSVImport } from '../hooks/useCSVImport';
 
+// Always send cookies with admin API requests
+const adminFetch = (url: string, options: RequestInit = {}) =>
+  fetch(url, { ...options, credentials: 'include' });
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('djs');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -181,7 +185,7 @@ export default function AdminDashboard() {
     // Verify admin session on mount - redirect to login if not authenticated
     const verifySession = async () => {
       try {
-        const res = await fetch('/api/admin-verify', { credentials: 'include' });
+        const res = await adminFetch('/api/admin-verify', { credentials: 'include' });
         if (!res.ok) {
           window.location.href = '/admin-login';
           return;
@@ -297,7 +301,7 @@ export default function AdminDashboard() {
   const fetchAnalytics = async (days: string) => {
     try {
       setLoadingAnalytics(true);
-      const response = await fetch(`/api/analytics/stats?days=${days}`);
+      const response = await adminFetch(`/api/analytics/stats?days=${days}`);
       if (!response.ok) {
         throw new Error('Failed to fetch analytics');
       }
@@ -313,7 +317,7 @@ export default function AdminDashboard() {
   // Clear analytics data
   const clearAnalytics = async () => {
     try {
-      const response = await fetch('/api/analytics/clear', {
+      const response = await adminFetch('/api/analytics/clear', {
         method: 'DELETE'
       });
       if (!response.ok) {
@@ -453,7 +457,7 @@ export default function AdminDashboard() {
   const fetchBookings = async () => {
     try {
       setLoadingBookings(true);
-      const response = await fetch('/api/bookings');
+      const response = await adminFetch('/api/bookings');
       if (response.ok) {
         const data = await response.json();
         setBookings(data.success ? data.data : []);
@@ -472,7 +476,7 @@ export default function AdminDashboard() {
   const fetchArchivedBookings = async () => {
     try {
       setLoadingArchived(true);
-      const response = await fetch('/api/bookings?archived=true');
+      const response = await adminFetch('/api/bookings?archived=true');
       if (response.ok) {
         const data = await response.json();
         setArchivedBookings(data.success ? data.data : []);
@@ -490,9 +494,10 @@ export default function AdminDashboard() {
   const archiveBooking = async (id: number) => {
     if (!confirm('Move this booking to the archive?')) return;
     try {
-      const response = await fetch(`/api/bookings/${id}`, {
+      const response = await adminFetch(`/api/bookings/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ archived: true })
       });
       if (response.ok) {
@@ -508,9 +513,10 @@ export default function AdminDashboard() {
 
   const restoreBooking = async (id: number) => {
     try {
-      const response = await fetch(`/api/bookings/${id}`, {
+      const response = await adminFetch(`/api/bookings/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ archived: false })
       });
       if (response.ok) {
@@ -527,7 +533,7 @@ export default function AdminDashboard() {
   const permanentlyDeleteBooking = async (id: number) => {
     if (!confirm('PERMANENTLY delete this booking? This cannot be undone.')) return;
     try {
-      const response = await fetch(`/api/bookings/${id}`, { method: 'DELETE' });
+      const response = await adminFetch(`/api/bookings/${id}`, { method: 'DELETE', credentials: 'include' });
       if (response.ok) {
         setArchivedBookings(prev => prev.filter(b => b.id !== id));
       } else {
@@ -541,7 +547,7 @@ export default function AdminDashboard() {
   const fetchBlockedDates = async () => {
     setLoadingBlockedDates(true);
     try {
-      const response = await fetch('/api/blocked-dates');
+      const response = await adminFetch('/api/blocked-dates');
       if (response.ok) {
         const data = await response.json();
         setBlockedDates(data.success ? data.data : []);
@@ -560,9 +566,10 @@ export default function AdminDashboard() {
   // Approve blocked date request
   const approveBlockedDate = async (id: number) => {
     try {
-      const response = await fetch(`/api/blocked-dates/${id}`, {
+      const response = await adminFetch(`/api/blocked-dates/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ status: 'approved' })
       });
 
@@ -582,9 +589,10 @@ export default function AdminDashboard() {
   const rejectBlockedDate = async (id: number) => {
     const reason = prompt('Reason for rejection (optional):');
     try {
-      const response = await fetch(`/api/blocked-dates/${id}`, {
+      const response = await adminFetch(`/api/blocked-dates/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ status: 'rejected', reason: reason || '' })
       });
 
@@ -607,8 +615,9 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch(`/api/blocked-dates/${id}`, {
-        method: 'DELETE'
+      const response = await adminFetch(`/api/blocked-dates/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -648,9 +657,10 @@ export default function AdminDashboard() {
     if (!currentEditingBooking) return;
     
     try {
-      const response = await fetch(`/api/bookings/${currentEditingBooking.id}`, {
+      const response = await adminFetch(`/api/bookings/${currentEditingBooking.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ notes: modalNotes })
       });
       
@@ -805,7 +815,7 @@ export default function AdminDashboard() {
   const updateBookingStatus = async (bookingId: number, newStatus: string) => {
     try {
       // Get the current booking data first
-      const bookingResponse = await fetch(`/api/bookings/${bookingId}`);
+      const bookingResponse = await adminFetch(`/api/bookings/${bookingId}`);
       if (!bookingResponse.ok) {
         throw new Error('Failed to fetch booking');
       }
@@ -813,9 +823,10 @@ export default function AdminDashboard() {
       const booking = bookingData.data;
 
       // Update the booking with new status
-      const response = await fetch(`/api/bookings/${bookingId}`, {
+      const response = await adminFetch(`/api/bookings/${bookingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           ...booking,
           status: newStatus
@@ -839,7 +850,7 @@ export default function AdminDashboard() {
   const fetchPhotoProjects = async () => {
     try {
       setLoadingProjects(true);
-      const response = await fetch('/api/photography/projects');
+      const response = await adminFetch('/api/photography/projects');
       if (response.ok) {
         const result = await response.json();
         setPhotoProjects(result.data || []);
@@ -856,7 +867,7 @@ export default function AdminDashboard() {
   const fetchProjectPhotos = async (projectId: number) => {
     try {
       setLoadingPhotos(true);
-      const response = await fetch(`/api/photography/photos?project_id=${projectId}`);
+      const response = await adminFetch(`/api/photography/photos?project_id=${projectId}`);
       if (response.ok) {
         const result = await response.json();
         setProjectPhotos(result.data || []);
@@ -877,7 +888,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch('/api/photography/projects', {
+      const response = await adminFetch('/api/photography/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -909,7 +920,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch(`/api/photography/projects?id=${projectId}`, {
+      const response = await adminFetch(`/api/photography/projects?id=${projectId}`, {
         method: 'DELETE'
       });
 
@@ -1001,7 +1012,7 @@ export default function AdminDashboard() {
 
           // Get presigned URL for full image
           console.log(`Requesting presigned URL for ${file.name}...`);
-          const fullImagePresignedResponse = await fetch('/api/photography/presigned-url', {
+          const fullImagePresignedResponse = await adminFetch('/api/photography/presigned-url', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1018,7 +1029,7 @@ export default function AdminDashboard() {
           }
 
           // Get presigned URL for thumbnail
-          const thumbPresignedResponse = await fetch('/api/photography/presigned-url', {
+          const thumbPresignedResponse = await adminFetch('/api/photography/presigned-url', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1065,7 +1076,7 @@ export default function AdminDashboard() {
 
           // Save photo metadata to database
           console.log(`Saving ${file.name} metadata to database...`);
-          const dbResponse = await fetch('/api/photography/photos', {
+          const dbResponse = await adminFetch('/api/photography/photos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1119,7 +1130,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch(`/api/photography/photos?id=${photoId}`, {
+      const response = await adminFetch(`/api/photography/photos?id=${photoId}`, {
         method: 'DELETE'
       });
 
@@ -1185,7 +1196,7 @@ export default function AdminDashboard() {
   const fetchVideoProjects = async () => {
     try {
       setLoadingVideoProjects(true);
-      const response = await fetch('/api/videography/projects');
+      const response = await adminFetch('/api/videography/projects');
       if (response.ok) {
         const result = await response.json();
         setVideoProjects(result.data || []);
@@ -1202,7 +1213,7 @@ export default function AdminDashboard() {
   const fetchProjectVideos = async (projectId: number) => {
     try {
       setLoadingVideos(true);
-      const response = await fetch(`/api/videography/videos?project_id=${projectId}`);
+      const response = await adminFetch(`/api/videography/videos?project_id=${projectId}`);
       if (response.ok) {
         const result = await response.json();
         setProjectVideos(result.data || []);
@@ -1223,7 +1234,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch('/api/videography/projects', {
+      const response = await adminFetch('/api/videography/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1261,7 +1272,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch('/api/videography/videos', {
+      const response = await adminFetch('/api/videography/videos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1293,7 +1304,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch(`/api/videography/videos?id=${videoId}`, {
+      const response = await adminFetch(`/api/videography/videos?id=${videoId}`, {
         method: 'DELETE'
       });
 
@@ -1313,7 +1324,7 @@ export default function AdminDashboard() {
   const fetchDjProjects = async () => {
     try {
       setLoadingDjProjects(true);
-      const response = await fetch('/api/dj-entertainment/projects');
+      const response = await adminFetch('/api/dj-entertainment/projects');
       if (response.ok) {
         const result = await response.json();
         setDjProjects(result.data || []);
@@ -1330,7 +1341,7 @@ export default function AdminDashboard() {
   const fetchDjVideos = async (projectId: number) => {
     try {
       setLoadingDjVideos(true);
-      const response = await fetch(`/api/dj-entertainment/videos?project_id=${projectId}`);
+      const response = await adminFetch(`/api/dj-entertainment/videos?project_id=${projectId}`);
       if (response.ok) {
         const result = await response.json();
         setDjVideos(result.data || []);
@@ -1351,7 +1362,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch('/api/dj-entertainment/projects', {
+      const response = await adminFetch('/api/dj-entertainment/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1389,7 +1400,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch('/api/dj-entertainment/videos', {
+      const response = await adminFetch('/api/dj-entertainment/videos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1421,7 +1432,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch(`/api/dj-entertainment/videos?id=${videoId}`, {
+      const response = await adminFetch(`/api/dj-entertainment/videos?id=${videoId}`, {
         method: 'DELETE'
       });
 
@@ -1443,7 +1454,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch(`/api/dj-entertainment/projects?id=${projectId}`, {
+      const response = await adminFetch(`/api/dj-entertainment/projects?id=${projectId}`, {
         method: 'DELETE'
       });
 
@@ -1465,7 +1476,7 @@ export default function AdminDashboard() {
   const fetchPricingPackages = async (serviceType: 'photography' | 'videography' | 'dj') => {
     setLoadingPricing(true);
     try {
-      const response = await fetch(`/api/pricing/packages?service_type=${serviceType}`);
+      const response = await adminFetch(`/api/pricing/packages?service_type=${serviceType}`);
       const data = await response.json();
       if (data.success) {
         setPricingPackages(data.data || []);
@@ -1494,7 +1505,7 @@ export default function AdminDashboard() {
         ...(editingPackage && { id: editingPackage.id })
       };
 
-      const response = await fetch('/api/pricing/packages', {
+      const response = await adminFetch('/api/pricing/packages', {
         method: editingPackage ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -1545,7 +1556,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch(`/api/pricing/packages?id=${id}`, {
+      const response = await adminFetch(`/api/pricing/packages?id=${id}`, {
         method: 'DELETE'
       });
 
@@ -1586,7 +1597,7 @@ export default function AdminDashboard() {
       if (userSearch) params.append('search', userSearch);
       if (userTypeFilter) params.append('type', userTypeFilter);
       
-      const response = await fetch(`/api/users?${params.toString()}`);
+      const response = await adminFetch(`/api/users?${params.toString()}`);
       const data = await response.json();
       
       if (data.success) {
@@ -1601,7 +1612,7 @@ export default function AdminDashboard() {
 
   const createUser = async (formData: any) => {
     try {
-      const response = await fetch('/api/users', {
+      const response = await adminFetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -1626,7 +1637,7 @@ export default function AdminDashboard() {
 
   const updateUser = async (formData: any) => {
     try {
-      const response = await fetch('/api/users', {
+      const response = await adminFetch('/api/users', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -1656,7 +1667,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch(`/api/users?id=${userId}`, {
+      const response = await adminFetch(`/api/users?id=${userId}`, {
         method: 'DELETE'
       });
       
@@ -1782,7 +1793,7 @@ export default function AdminDashboard() {
       const params = new URLSearchParams();
       if (reviewStatusFilter) params.append('status', reviewStatusFilter);
       
-      const response = await fetch(`/api/reviews?${params.toString()}`);
+      const response = await adminFetch(`/api/reviews?${params.toString()}`);
       const data = await response.json();
       
       if (data.success) {
@@ -1797,7 +1808,7 @@ export default function AdminDashboard() {
 
   const approveReview = async (reviewId: number) => {
     try {
-      const response = await fetch('/api/reviews', {
+      const response = await adminFetch('/api/reviews', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: reviewId, status: 'approved' })
@@ -1819,7 +1830,7 @@ export default function AdminDashboard() {
 
   const rejectReview = async (reviewId: number) => {
     try {
-      const response = await fetch('/api/reviews', {
+      const response = await adminFetch('/api/reviews', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: reviewId, status: 'rejected' })
@@ -1845,7 +1856,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch(`/api/reviews?id=${reviewId}`, {
+      const response = await adminFetch(`/api/reviews?id=${reviewId}`, {
         method: 'DELETE'
       });
       
@@ -1878,7 +1889,7 @@ export default function AdminDashboard() {
       }
 
       // 1. Call logout API to clear server-side session
-      await fetch('/api/auth/logout', {
+      await adminFetch('/api/auth/logout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2708,7 +2719,7 @@ export default function AdminDashboard() {
                   onClick={async () => {
                     if (confirm('Are you sure you want to clear ALL projects? This cannot be undone.')) {
                       try {
-                        const res = await fetch('/api/admin/clear-all-projects', {
+                        const res = await adminFetch('/api/admin/clear-all-projects', {
                           method: 'DELETE',
                           credentials: 'include',
                         });
