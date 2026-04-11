@@ -15,6 +15,7 @@ export default function AdminDashboard() {
   const [archivedBookings, setArchivedBookings] = useState<any[]>([]);
   const [loadingArchived, setLoadingArchived] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
+  const [selectedCsvFile, setSelectedCsvFile] = useState<File | null>(null);
   const [blockedDates, setBlockedDates] = useState<any[]>([]);
   const [loadingBlockedDates, setLoadingBlockedDates] = useState(false);
   const [blockedDateFilter, setBlockedDateFilter] = useState('pending');
@@ -2580,37 +2581,25 @@ export default function AdminDashboard() {
                   type="file" 
                   id="csv-file-input" 
                   accept=".csv"
-                  onChange={async (e) => {
+                  onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) {
-                      await importCSV(file);
-                      e.target.value = ''; // Clear for next import
-                      // Refresh bookings after import
-                      await fetchBookings();
-                    }
+                    setSelectedCsvFile(file ?? null);
                   }}
                   style={{ padding: '0.5rem', border: '2px solid #e0e0e0', borderRadius: '5px' }}
                 />
                 <button 
                   className="btn btn-primary"
-                  onClick={() => {
-                    const fileInput = document.getElementById('csv-file-input') as HTMLInputElement;
-                    const file = fileInput?.files?.[0];
-                    
-                    if (!file) {
-                      // Trigger file picker instead of showing alert
+                  onClick={async () => {
+                    if (!selectedCsvFile) {
+                      const fileInput = document.getElementById('csv-file-input') as HTMLInputElement;
                       fileInput?.click();
                       return;
                     }
-                    
-                    // File already selected, import it
-                    importCSV(file).then(() => {
-                      if (fileInput) {
-                        fileInput.value = '';
-                      }
-                      // Refresh bookings after import
-                      fetchBookings();
-                    });
+                    await importCSV(selectedCsvFile);
+                    setSelectedCsvFile(null);
+                    const fileInput = document.getElementById('csv-file-input') as HTMLInputElement;
+                    if (fileInput) fileInput.value = '';
+                    await fetchBookings();
                   }}
                   disabled={importing}
                   style={{ 
@@ -2624,7 +2613,7 @@ export default function AdminDashboard() {
                     opacity: importing ? 0.6 : 1
                   }}
                 >
-                  {importing ? 'Importing...' : 'Import CSV'}
+                  {importing ? 'Importing...' : selectedCsvFile ? `Import "${selectedCsvFile.name}"` : 'Import CSV'}
                 </button>
               </div>
               {status.visible && (
