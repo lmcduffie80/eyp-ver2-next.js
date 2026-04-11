@@ -480,26 +480,6 @@ async function fetchAllDJs(): Promise<DJ[]> {
   }
 }
 
-async function fetchAllBookings(): Promise<Booking[]> {
-  try {
-    const response = await fetch('/api/bookings');
-    if (!response.ok) throw new Error('Failed to fetch bookings');
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching bookings:', error);
-    return [];
-  }
-}
-
-async function deleteBooking(id: number): Promise<void> {
-  const response = await fetch(`/api/bookings/${id}`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to delete booking ${id}`);
-  }
-}
-
 async function createBooking(booking: Booking): Promise<void> {
   const response = await fetch('/api/bookings', {
     method: 'POST',
