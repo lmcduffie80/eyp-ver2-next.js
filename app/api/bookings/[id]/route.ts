@@ -174,17 +174,73 @@ export async function PUT(
   }
 }
 
-// DELETE /api/bookings/[id] - Delete booking
+// PATCH /api/bookings/[id] - Archive or restore a booking
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get('admin_session')?.value;
+
+    if (!sessionToken) {
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized - Admin access required'
+      }, { status: 401 });
+    }
+
+    const { id } = params;
+    const body = await request.json();
+    const { archived } = body;
+
+    let result;
+    if (archived === true) {
+      result = await sql`
+        UPDATE bookings 
+        SET archived = TRUE, archived_at = NOW(), updated_at = CURRENT_TIMESTAMP
+        WHERE id = ${id}
+        RETURNING id
+      `;
+    } else {
+      result = await sql`
+        UPDATE bookings 
+        SET archived = FALSE, archived_at = NULL, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ${id}
+        RETURNING id
+      `;
+    }
+
+    if (result.rows.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Booking not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: archived ? 'Booking archived successfully' : 'Booking restored successfully'
+    });
+  } catch (error) {
+    console.error('Error in bookings PATCH [id]:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to update booking' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/bookings/[id] - Permanently delete booking (from archive only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check for admin authentication
     const cookieStore = await cookies();
-    const userId = cookieStore.get('admin_session')?.value;
+    const sessionToken = cookieStore.get('admin_session')?.value;
 
-    if (!userId) {
+    if (!sessionToken) {
       return NextResponse.json({
         success: false,
         error: 'Unauthorized - Admin access required'
@@ -206,7 +262,7 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'Booking deleted successfully'
+      message: 'Booking permanently deleted'
     });
   } catch (error) {
     console.error('Error in bookings DELETE [id]:', error);

@@ -58,29 +58,50 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const showArchived = searchParams.get('archived') === 'true';
+
     // Build dynamic query based on filters
     let result;
-    if (normalizedDjUser && status) {
+    if (showArchived) {
+      // Fetch archived bookings only
+      if (normalizedDjUser) {
+        result = await sql`
+          SELECT * FROM bookings 
+          WHERE dj_user = ${normalizedDjUser} AND archived = TRUE
+          ORDER BY archived_at DESC, id DESC
+        `;
+      } else {
+        result = await sql`
+          SELECT * FROM bookings 
+          WHERE archived = TRUE
+          ORDER BY archived_at DESC, id DESC
+        `;
+      }
+    } else if (normalizedDjUser && status) {
       result = await sql`
         SELECT * FROM bookings 
-        WHERE dj_user = ${normalizedDjUser} AND status = ${status} 
+        WHERE dj_user = ${normalizedDjUser} AND status = ${status}
+        AND (archived = FALSE OR archived IS NULL)
         ORDER BY date DESC, id DESC
       `;
     } else if (normalizedDjUser) {
       result = await sql`
         SELECT * FROM bookings 
-        WHERE dj_user = ${normalizedDjUser} 
+        WHERE dj_user = ${normalizedDjUser}
+        AND (archived = FALSE OR archived IS NULL)
         ORDER BY date DESC, id DESC
       `;
     } else if (status) {
       result = await sql`
         SELECT * FROM bookings 
-        WHERE status = ${status} 
+        WHERE status = ${status}
+        AND (archived = FALSE OR archived IS NULL)
         ORDER BY date DESC, id DESC
       `;
     } else {
       result = await sql`
         SELECT * FROM bookings 
+        WHERE (archived = FALSE OR archived IS NULL)
         ORDER BY date DESC, id DESC
       `;
     }
@@ -100,6 +121,8 @@ export async function GET(request: NextRequest) {
       ccPayment: row.cc_payment,
       payout: row.payout,
       status: row.status || 'upcoming',
+      archived: row.archived || false,
+      archivedAt: row.archived_at,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     }));

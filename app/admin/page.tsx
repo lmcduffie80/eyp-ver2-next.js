@@ -12,6 +12,9 @@ export default function AdminDashboard() {
   const [adminDisplayName, setAdminDisplayName] = useState('Admin');
   const [bookings, setBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
+  const [archivedBookings, setArchivedBookings] = useState<any[]>([]);
+  const [loadingArchived, setLoadingArchived] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
   const [blockedDates, setBlockedDates] = useState<any[]>([]);
   const [loadingBlockedDates, setLoadingBlockedDates] = useState(false);
   const [blockedDateFilter, setBlockedDateFilter] = useState('pending');
@@ -442,6 +445,75 @@ export default function AdminDashboard() {
       setBookings([]);
     } finally {
       setLoadingBookings(false);
+    }
+  };
+
+  const fetchArchivedBookings = async () => {
+    try {
+      setLoadingArchived(true);
+      const response = await fetch('/api/bookings?archived=true');
+      if (response.ok) {
+        const data = await response.json();
+        setArchivedBookings(data.success ? data.data : []);
+      } else {
+        setArchivedBookings([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch archived bookings:', error);
+      setArchivedBookings([]);
+    } finally {
+      setLoadingArchived(false);
+    }
+  };
+
+  const archiveBooking = async (id: number) => {
+    if (!confirm('Move this booking to the archive?')) return;
+    try {
+      const response = await fetch(`/api/bookings/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archived: true })
+      });
+      if (response.ok) {
+        setBookings(prev => prev.filter(b => b.id !== id));
+        if (showArchive) fetchArchivedBookings();
+      } else {
+        alert('Failed to archive booking. Please try again.');
+      }
+    } catch {
+      alert('Failed to archive booking. Please try again.');
+    }
+  };
+
+  const restoreBooking = async (id: number) => {
+    try {
+      const response = await fetch(`/api/bookings/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archived: false })
+      });
+      if (response.ok) {
+        setArchivedBookings(prev => prev.filter(b => b.id !== id));
+        fetchBookings();
+      } else {
+        alert('Failed to restore booking. Please try again.');
+      }
+    } catch {
+      alert('Failed to restore booking. Please try again.');
+    }
+  };
+
+  const permanentlyDeleteBooking = async (id: number) => {
+    if (!confirm('PERMANENTLY delete this booking? This cannot be undone.')) return;
+    try {
+      const response = await fetch(`/api/bookings/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        setArchivedBookings(prev => prev.filter(b => b.id !== id));
+      } else {
+        alert('Failed to delete booking. Please try again.');
+      }
+    } catch {
+      alert('Failed to delete booking. Please try again.');
     }
   };
 
@@ -2602,11 +2674,30 @@ export default function AdminDashboard() {
             
             <div className="section-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h2 style={{ margin: 0 }}>All Projects</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <h2 style={{ margin: 0 }}>All Projects</h2>
+                  <button
+                    onClick={() => {
+                      setShowArchive(!showArchive);
+                      if (!showArchive) fetchArchivedBookings();
+                    }}
+                    style={{
+                      padding: '0.4rem 0.9rem',
+                      background: showArchive ? '#6c757d' : '#f0f0f0',
+                      color: showArchive ? 'white' : '#333',
+                      border: '1px solid #ccc',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {showArchive ? '← Active Projects' : '🗄 View Archive'}
+                  </button>
+                </div>
                 <button 
                   onClick={() => {
                     if (confirm('Are you sure you want to clear all projects? This action cannot be undone.')) {
-                      // Clear all projects functionality will be added here
                       console.log('Clear all projects');
                     }
                   }}
@@ -2616,7 +2707,7 @@ export default function AdminDashboard() {
                   Clear All Projects
                 </button>
               </div>
-              <div className="filter-controls" style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              {!showArchive && <div className="filter-controls" style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <select 
                   id="booking-filter-dj"
                   value={analyticsFilterDJ}
@@ -2649,9 +2740,9 @@ export default function AdminDashboard() {
                     <option key={year} value={year}>{year}</option>
                   ))}
                 </select>
-              </div>
+              </div>}
               
-              <div style={{ overflowX: 'auto' }}>
+              {!showArchive && <div style={{ overflowX: 'auto' }}>
                 <table className="bookings-table" style={{ tableLayout: 'auto', width: '100%', minWidth: '900px' }}>
                   <thead>
                     <tr>
@@ -2817,11 +2908,7 @@ export default function AdminDashboard() {
                                 <span>{booking.notes ? 'Edit Notes' : 'Add Notes'}</span>
                               </button>
                               <button
-                                onClick={() => {
-                                  if (confirm('Are you sure you want to delete this booking?')) {
-                                    console.log('Delete booking:', booking.id);
-                                  }
-                                }}
+                                onClick={() => archiveBooking(booking.id)}
                                 style={{
                                   padding: '0.4rem 0.8rem',
                                   fontSize: '0.85rem',
@@ -2831,7 +2918,7 @@ export default function AdminDashboard() {
                                   borderRadius: '5px',
                                   cursor: 'pointer'
                                 }}
-                                title="Delete project"
+                                title="Move to archive"
                               >
                                 Delete
                               </button>
@@ -2843,7 +2930,81 @@ export default function AdminDashboard() {
                     )}
                   </tbody>
                 </table>
-              </div>
+              </div>}
+
+              {/* Archive Panel */}
+              {showArchive && (
+                <div>
+                  <p style={{ color: '#666', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                    Archived bookings are hidden from All Projects. You can restore them or permanently delete them here.
+                  </p>
+                  {loadingArchived ? (
+                    <p>Loading archive...</p>
+                  ) : archivedBookings.length === 0 ? (
+                    <p style={{ color: '#999', textAlign: 'center', padding: '2rem' }}>No archived bookings.</p>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="bookings-table" style={{ tableLayout: 'auto', width: '100%', minWidth: '900px' }}>
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>DJ</th>
+                            <th>Project</th>
+                            <th>Location</th>
+                            <th>Payment</th>
+                            <th>Archived On</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {archivedBookings.map(booking => (
+                            <tr key={booking.id} style={{ opacity: 0.8 }}>
+                              <td>{booking.date ? new Date(booking.date).toLocaleDateString() : '-'}</td>
+                              <td>{booking.djUser}</td>
+                              <td>{booking.eventType}</td>
+                              <td>{booking.location || '-'}</td>
+                              <td>{booking.totalRevenue ? `$${parseFloat(booking.totalRevenue).toFixed(2)}` : '-'}</td>
+                              <td>{booking.archivedAt ? new Date(booking.archivedAt).toLocaleDateString() : '-'}</td>
+                              <td>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <button
+                                    onClick={() => restoreBooking(booking.id)}
+                                    style={{
+                                      padding: '0.4rem 0.8rem',
+                                      fontSize: '0.85rem',
+                                      background: '#28a745',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '5px',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Restore
+                                  </button>
+                                  <button
+                                    onClick={() => permanentlyDeleteBooking(booking.id)}
+                                    style={{
+                                      padding: '0.4rem 0.8rem',
+                                      fontSize: '0.85rem',
+                                      background: '#dc3545',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '5px',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Delete Forever
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
