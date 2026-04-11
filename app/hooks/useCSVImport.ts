@@ -353,7 +353,7 @@ export function useCSVImport() {
           time: null,
           contactEmail: null,
           contactPhone: null,
-          notes: payout ? `Payout: ${payout}` : null,
+          notes: null,
         };
 
         newBookings.push(booking);
