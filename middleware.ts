@@ -4,17 +4,6 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Protect admin routes (excluding the login page and API routes)
-  const isAdminRoute = pathname.startsWith('/admin') && !pathname.startsWith('/admin-login') && !pathname.startsWith('/api/');
-
-  if (isAdminRoute) {
-    const adminSession = request.cookies.get('admin_session');
-    if (!adminSession?.value) {
-      const loginUrl = new URL('/admin-login', request.url);
-      return NextResponse.redirect(loginUrl);
-    }
-  }
-
   // Protect DJ dashboard routes (excluding the DJ login page)
   const isDJDashboardRoute = pathname.startsWith('/dj-dashboard');
 
@@ -31,8 +20,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/admin/:path*',
-    '/admin-login',
     '/dj-dashboard/:path*',
     '/DJ/:path*'
   ]

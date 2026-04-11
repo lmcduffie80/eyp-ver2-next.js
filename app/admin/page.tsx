@@ -178,6 +178,26 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
+    // Verify admin session on mount - redirect to login if not authenticated
+    const verifySession = async () => {
+      try {
+        const res = await fetch('/api/admin-verify', { credentials: 'include' });
+        if (!res.ok) {
+          window.location.href = '/admin-login';
+          return;
+        }
+        const data = await res.json();
+        if (!data.authenticated) {
+          window.location.href = '/admin-login';
+        }
+      } catch {
+        window.location.href = '/admin-login';
+      }
+    };
+    verifySession();
+  }, []);
+
+  useEffect(() => {
     // Load admin display name from localStorage
     const displayName = localStorage.getItem('admin_display_name');
     if (displayName) {
