@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { cookies } from 'next/headers';
 
+export const maxDuration = 60;
+
 // Configure route to accept larger payloads
 export const runtime = 'nodejs';
 export const maxDuration = 60; // 60 seconds max execution time
