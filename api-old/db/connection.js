@@ -2,7 +2,9 @@
 // This works with AWS RDS via Vercel using IAM authentication
 
 // Check which connection method to use
-const useVercelPostgres = !!process.env.POSTGRES_URL;
+// DATABASE_URL is the real Neon connection string (postgresql://...)
+// POSTGRES_URL may be an encoded @vercel/postgres token - not usable with raw pg Pool
+const useVercelPostgres = !!(process.env.DATABASE_URL || process.env.POSTGRES_URL);
 const useAWSSigner = !!(
     process.env.AWS_ROLE_ARN &&
     process.env.PGHOST &&
@@ -116,9 +118,11 @@ let pgPool = null;
 async function getPgPool() {
     if (!pgPool) {
         const { Pool } = await import("pg");
+        // Prefer DATABASE_URL (real Neon connection string) over POSTGRES_URL (may be encoded)
+        const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
         pgPool = new Pool({
-            connectionString: process.env.POSTGRES_URL,
-            ssl: process.env.POSTGRES_URL?.includes('neon.tech') ? { rejectUnauthorized: false } : undefined,
+            connectionString,
+            ssl: connectionString?.includes('neon.tech') ? { rejectUnauthorized: false } : undefined,
         });
     }
     return pgPool;
