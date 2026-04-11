@@ -2696,9 +2696,18 @@ export default function AdminDashboard() {
                   </button>
                 </div>
                 <button 
-                  onClick={() => {
-                    if (confirm('Are you sure you want to clear all projects? This action cannot be undone.')) {
-                      console.log('Clear all projects');
+                  onClick={async () => {
+                    if (confirm('Are you sure you want to clear ALL projects? This cannot be undone.')) {
+                      try {
+                        const res = await fetch('/api/admin/clear-all-projects', { method: 'DELETE' });
+                        if (res.ok) {
+                          await fetchBookings();
+                        } else {
+                          alert('Failed to clear projects. Please try again.');
+                        }
+                      } catch {
+                        alert('Failed to clear projects. Please try again.');
+                      }
                     }
                   }}
                   style={{ padding: '0.5rem 1rem', background: 'var(--error-color)', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 'bold' }}

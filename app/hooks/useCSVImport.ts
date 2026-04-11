@@ -363,25 +363,15 @@ export function useCSVImport() {
       try {
         // Helper function to add delay between API calls
         const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-        
-        // First, get all existing bookings and delete them
+
+        // Clear all existing bookings in one bulk operation
         updateStatus(
-          'Deleting Old Data',
-          `Deleting existing bookings...`,
+          'Clearing Old Data',
+          'Clearing existing bookings...',
           'info'
         );
-        const existingBookings = await fetchAllBookings();
-
-        for (let i = 0; i < existingBookings.length; i++) {
-          const booking = existingBookings[i];
-          if (booking.id) {
-            await deleteBooking(booking.id);
-            // Add small delay every 5 deletions to prevent cache warnings
-            if ((i + 1) % 5 === 0) {
-              await delay(100); // 100ms delay
-            }
-          }
-        }
+        const clearRes = await fetch('/api/admin/clear-all-projects', { method: 'DELETE' });
+        if (!clearRes.ok) throw new Error('Failed to clear existing bookings');
 
         // Then create new bookings
         updateStatus(
