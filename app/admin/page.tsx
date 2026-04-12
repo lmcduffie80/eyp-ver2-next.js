@@ -673,11 +673,12 @@ export default function AdminDashboard() {
         closeNotesModal();
         alert('Project notes saved successfully!');
       } else {
-        alert('Failed to save notes. Please try again.');
+        const errData = await response.json().catch(() => ({}));
+        alert(`Failed to save notes (${response.status}): ${errData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error saving notes:', error);
-      alert('Failed to save notes. Please try again.');
+      alert(`Failed to save notes: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
