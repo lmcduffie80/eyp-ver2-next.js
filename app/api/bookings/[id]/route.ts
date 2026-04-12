@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
-import { cookies } from 'next/headers';
 
 // GET /api/bookings/[id] - Get single booking
 export async function GET(
@@ -58,17 +57,6 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check for admin authentication
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('admin_session')?.value;
-
-    if (!userId) {
-      return NextResponse.json({
-        success: false,
-        error: 'Unauthorized - Admin access required'
-      }, { status: 401 });
-    }
-
     const { id } = params;
     const body = await request.json();
     const {
@@ -180,16 +168,6 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const cookieStore = await cookies();
-    const sessionToken = cookieStore.get('admin_session')?.value;
-
-    if (!sessionToken) {
-      return NextResponse.json({
-        success: false,
-        error: 'Unauthorized - Admin access required'
-      }, { status: 401 });
-    }
-
     const { id } = params;
     const body = await request.json();
     const { archived } = body;
@@ -237,16 +215,6 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const cookieStore = await cookies();
-    const sessionToken = cookieStore.get('admin_session')?.value;
-
-    if (!sessionToken) {
-      return NextResponse.json({
-        success: false,
-        error: 'Unauthorized - Admin access required'
-      }, { status: 401 });
-    }
-
     const { id } = params;
 
     const result = await sql`
