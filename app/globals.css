@@ -75,7 +75,7 @@ nav .container {
   height: 100px;
   width: auto;
   max-width: 450px;
-  filter: brightness(0) invert(1);
+  mix-blend-mode: multiply;
 }
 
 /* Animations */
