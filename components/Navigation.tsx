@@ -39,13 +39,13 @@ export default function Navigation() {
     >
       <div className="container">
         <Link href="/" className="logo" onClick={handleHomeClick}
-          style={{ background: 'white', borderRadius: '8px', padding: '6px 12px', display: 'inline-flex', alignItems: 'center' }}>
+          style={{ background: 'white', borderRadius: '8px', padding: '8px 16px', display: 'inline-flex', alignItems: 'center' }}>
           <Image
             src="/EYP Logo_New.png"
             alt="Externally Yours Productions, LLC"
-            width={400}
-            height={80}
-            style={{ height: '70px', width: 'auto', maxWidth: '350px', aspectRatio: 'auto', display: 'block' }}
+            width={507}
+            height={135}
+            style={{ height: '90px', width: 'auto', maxWidth: '340px', aspectRatio: 'auto', display: 'block' }}
             priority
             loading="eager"
             decoding="async"
