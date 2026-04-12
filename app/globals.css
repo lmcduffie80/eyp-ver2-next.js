@@ -72,10 +72,10 @@ nav .container {
 }
 
 .logo img {
-  height: 100px;
+  height: 70px;
   width: auto;
-  max-width: 450px;
-  mix-blend-mode: multiply;
+  max-width: 350px;
+  display: block;
 }
 
 /* Animations */
