@@ -221,14 +221,31 @@ export default function AdminDashboard() {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Total Projects
-      const totalProjects = bookings.length;
-      
-      // Completed Projects (past dates)
-      const completed = bookings.filter(b => new Date(b.date) < today).length;
-      
-      // Future Bookings
-      const futureBookings = bookings.filter(b => new Date(b.date) >= today).length;
+      // One real-world event can appear as multiple booking rows (one per
+      // service line item: DJ, Photography, Videography, Coordination), so
+      // counting bookings.length double-counts the same project. Group by
+      // (date + clientName) so a multi-service event collapses to one
+      // project. Rows with no client name fall back to their row id so
+      // they aren't silently merged with other no-name rows.
+      const projectKey = (b: any) => {
+        const name = (b.clientName || '').trim().toLowerCase();
+        return name ? `${b.date}|${name}` : `${b.date}|__row${b.id}__`;
+      };
+      const distinctProjectCount = (rows: any[]) =>
+        new Set(rows.map(projectKey)).size;
+
+      // Total Projects (distinct events, not raw rows)
+      const totalProjects = distinctProjectCount(bookings);
+
+      // Completed Projects (past dates, distinct events)
+      const completed = distinctProjectCount(
+        bookings.filter(b => new Date(b.date) < today)
+      );
+
+      // Future Bookings (distinct events)
+      const futureBookings = distinctProjectCount(
+        bookings.filter(b => new Date(b.date) >= today)
+      );
       
       // Total Revenue
       const totalRevenue = bookings.reduce((sum, b) => sum + (Number(b.totalRevenue) || 0), 0);
