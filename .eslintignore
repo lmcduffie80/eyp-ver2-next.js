@@ -4,7 +4,8 @@ out
 build
 coverage
 
-# macOS Finder / iCloud duplicates ("foo 2.tsx", "foo 3.ts", etc.)
+# macOS Finder / iCloud duplicates ("foo 2.tsx", "foo 14.ts", etc.)
+# Cover 1-3 digit copy indices for every JS/TS-adjacent extension we care about.
 **/* [0-9].tsx
 **/* [0-9].ts
 **/* [0-9].jsx
@@ -12,3 +13,23 @@ coverage
 **/* [0-9].mjs
 **/* [0-9].cjs
 **/* [0-9].css
+**/* [0-9].json
+**/* [0-9][0-9].tsx
+**/* [0-9][0-9].ts
+**/* [0-9][0-9].jsx
+**/* [0-9][0-9].js
+**/* [0-9][0-9].mjs
+**/* [0-9][0-9].cjs
+**/* [0-9][0-9].css
+**/* [0-9][0-9].json
+**/* [0-9][0-9][0-9].tsx
+**/* [0-9][0-9][0-9].ts
+**/* [0-9][0-9][0-9].jsx
+**/* [0-9][0-9][0-9].js
+**/* [0-9][0-9][0-9].mjs
+**/* [0-9][0-9][0-9].cjs
+
+# iCloud repair backups
+.git-icloud-backup-*
+.git.nosync
+node_modules.nosync

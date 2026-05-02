@@ -34,12 +34,22 @@ else
 fi
 
 DRY_RUN=0
-case "${1:-}" in
-  --dry-run|-n) DRY_RUN=1 ;;
-  -h|--help) grep '^# ' "$0" | sed 's/^# \?//'; exit 0 ;;
-  "") ;;
-  *) echo "Unknown flag: $1" >&2; exit 2 ;;
-esac
+NO_BACKUP=0
+SKIP_GC=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run|-n) DRY_RUN=1 ;;
+    # Skip the tar backup. Safe in practice: every .git/objects/* duplicate is
+    # losslessly recoverable from origin via `git fetch`, and every other
+    # duplicate is a stale copy of a file that still exists. iCloud-resident
+    # files take seconds-per-file to read, so the tar backup can take hours.
+    --no-backup) NO_BACKUP=1 ;;
+    --skip-gc)   SKIP_GC=1 ;;
+    -h|--help) grep '^# ' "$0" | sed 's/^# \?//'; exit 0 ;;
+    *) echo "Unknown flag: $1" >&2; exit 2 ;;
+  esac
+  shift
+done
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
@@ -66,8 +76,10 @@ printf '\n%s\n' "${C_DIM}── repairing $GIT_DIR ──${C_RST}"
 #   refs/heads/main 2, main 10, index 2, packed-refs 3, HEAD 4,
 #   objects/ab/cdef...12 7
 # i.e. any filename ending with " <digits>" or " <digits>.<ext>".
-TARGETS=$(find "$GIT_DIR" -type f \
-  \( -name "* [0-9]*" -o -name "* [0-9]*.*" \) \
+# We use `find -E ... -regex` (anchored to the whole path) instead of fnmatch
+# globs because globs can't anchor "right before the trailing extension".
+DUP_REGEX='.* [0-9]+(\.[A-Za-z0-9]+)?'
+TARGETS=$(find -E "$GIT_DIR" -type f -regex "$DUP_REGEX" \
   ! -path "*.icloud-backup-*" 2>/dev/null || true)
 
 COUNT=$(printf '%s' "$TARGETS" | grep -c . || true)
@@ -82,21 +94,27 @@ else
   fi
 
   if [ "$DRY_RUN" -eq 0 ]; then
-    BACKUP_TAR="$REPO_ROOT/.git-icloud-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
-    echo "$(prefix)${C_YEL}backing up${C_RST} to $BACKUP_TAR"
-    # One tar invocation is dramatically faster than 712 cp calls when iCloud
-    # is in the loop (each file open/close costs seconds on iCloud-synced
-    # storage). Filenames contain spaces, so use NUL-delimited input.
-    if ! printf '%s\n' "$TARGETS" | tr '\n' '\0' \
-      | (cd "$REPO_ROOT" && tar --null -czf "$BACKUP_TAR" -T - 2>/dev/null); then
-      echo "${C_YEL}WARN${C_RST}  tar backup may be incomplete; continuing"
+    if [ "$NO_BACKUP" -eq 0 ]; then
+      BACKUP_TAR="$REPO_ROOT/.git-icloud-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
+      echo "$(prefix)${C_YEL}backing up${C_RST} to $BACKUP_TAR"
+      # One tar invocation is dramatically faster than 712 cp calls when iCloud
+      # is in the loop (each file open/close costs seconds on iCloud-synced
+      # storage). Filenames contain spaces, so use NUL-delimited input.
+      if ! printf '%s\n' "$TARGETS" | tr '\n' '\0' \
+        | (cd "$REPO_ROOT" && tar --null -czf "$BACKUP_TAR" -T - 2>/dev/null); then
+        echo "${C_YEL}WARN${C_RST}  tar backup may be incomplete; continuing"
+      fi
+      backup_note=" (backup at $BACKUP_TAR)"
+    else
+      echo "${C_DIM}skipping backup (--no-backup)${C_RST}"
+      backup_note=""
     fi
 
     echo "$(prefix)${C_YEL}removing${C_RST} $COUNT duplicate file(s)"
     # Single xargs call instead of a per-file loop: again, much faster.
     printf '%s\n' "$TARGETS" | tr '\n' '\0' \
       | xargs -0 -n 50 rm -f --
-    echo "${C_GRN}done${C_RST}  removed $COUNT file(s) (backup at $BACKUP_TAR)"
+    echo "${C_GRN}done${C_RST}  removed $COUNT file(s)${backup_note}"
   fi
 fi
 
@@ -121,9 +139,13 @@ else
   exit 1
 fi
 
-printf '\n%s\n' "${C_DIM}── git gc ──${C_RST}"
-git gc --prune=now --quiet
-echo "${C_GRN}done${C_RST}  repacked and pruned"
+if [ "$SKIP_GC" -eq 0 ]; then
+  printf '\n%s\n' "${C_DIM}── git gc ──${C_RST}"
+  git gc --prune=now --quiet
+  echo "${C_GRN}done${C_RST}  repacked and pruned"
+else
+  echo "${C_DIM}skipping git gc (--skip-gc)${C_RST}"
+fi
 
 printf '\n%s\n' "${C_DIM}── repo state ──${C_RST}"
 HEAD_SHA=$(git rev-parse HEAD 2>&1)

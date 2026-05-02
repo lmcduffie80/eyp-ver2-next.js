@@ -13,8 +13,12 @@
 #
 # Notes:
 #   - Only deletes files matching the macOS Finder pattern ("foo 2.tsx",
-#     "foo 3", etc.) and only inside source dirs (app, components, lib, scripts).
-#     Wedding/Prom/Photography media folders are never touched.
+#     "foo 14.ts", "foo 3", etc.). Multi-digit copy indices are supported.
+#   - Scans source dirs, project root (non-recursive), public/, .githooks/,
+#     __tests__/, __mocks__/, hooks/, utils/. Wedding/Prom/Photography media
+#     folders are intentionally never touched (~16k dupes there are gitignored).
+#   - For .git/ corruption (bad refs, bad loose objects), use the dedicated
+#     scripts/repair-git-dupes.sh.
 #   - All target files are also covered by .gitignore (so none are tracked).
 set -uo pipefail
 
@@ -57,9 +61,25 @@ prefix() {
 
 if [ "$DO_DUPES" -eq 1 ]; then
   printf '\n%s\n' "${C_DIM}── macOS Finder duplicates ──${C_RST}"
-  # Only the source dirs. Never touch the photo asset folders at the workspace
-  # root; those have ~16K dupes and are already ignored by tooling.
-  TARGETS=$(find app components lib scripts -type f \( -name "* [0-9].*" -o -name "* [0-9]" \) 2>/dev/null || true)
+  # Match paths whose basename ends in " <digits>" or " <digits>.<ext>".
+  # We use `find -E ... -regex` (anchored to whole path) instead of fnmatch
+  # globs because globs can't anchor to "right before the trailing extension"
+  # and would falsely match originals like
+  # "Screenshot 2026-03-14 at 12.08.04 AM.png".
+  DUP_REGEX='.* [0-9]+(\.[A-Za-z0-9]+)?'
+  SRC_DIRS=()
+  for d in app components lib scripts __tests__ __mocks__ hooks utils public .githooks; do
+    [ -d "$d" ] && SRC_DIRS+=("$d")
+  done
+  if [ ${#SRC_DIRS[@]} -gt 0 ]; then
+    SRC_TARGETS=$(find -E "${SRC_DIRS[@]}" -type f -regex "$DUP_REGEX" 2>/dev/null || true)
+  else
+    SRC_TARGETS=""
+  fi
+  # Project-root scan: only one level deep so we don't recurse into the giant
+  # wedding/photo media folders (which have ~16k dupes by design).
+  ROOT_TARGETS=$(find -E . -maxdepth 1 -type f -regex "$DUP_REGEX" 2>/dev/null || true)
+  TARGETS=$(printf '%s\n%s\n' "$SRC_TARGETS" "$ROOT_TARGETS" | sed '/^$/d')
   COUNT=$(printf '%s' "$TARGETS" | grep -c . || true)
   if [ "$COUNT" -eq 0 ]; then
     echo "${C_GRN}OK${C_RST}    no duplicates to remove"

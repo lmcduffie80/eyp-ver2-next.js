@@ -33,13 +33,30 @@ info()  { printf '%s\n' "${C_DIM}info${C_RST}  $*"; }
 header(){ printf '\n%s\n' "${C_DIM}── $* ──${C_RST}"; }
 
 header "macOS Finder / iCloud duplicate files in source dirs"
-SRC_DIRS=(app components lib scripts middleware.ts)
-DUPE_LIST=$(find app components lib scripts -type f \( -name "* [0-9].*" -o -name "* [0-9]" \) 2>/dev/null || true)
+# Match paths whose basename ends in " <digits>" or " <digits>.<ext>".
+# We use `find -E ... -regex` (anchored to the whole path) instead of
+# fnmatch globs, because globs can't anchor to "right before the trailing
+# extension" and falsely flag originals like
+# "Screenshot 2026-03-14 at 12.08.04 AM.png" as duplicates.
+# Scan source trees recursively, root non-recursively (root would otherwise
+# descend into the giant wedding/photo media folders).
+DUP_REGEX='.* [0-9]+(\.[A-Za-z0-9]+)?'
+SRC_DIRS=()
+for d in app components lib scripts __tests__ __mocks__ hooks utils public .githooks; do
+  [ -d "$d" ] && SRC_DIRS+=("$d")
+done
+if [ ${#SRC_DIRS[@]} -gt 0 ]; then
+  SRC_LIST=$(find -E "${SRC_DIRS[@]}" -type f -regex "$DUP_REGEX" 2>/dev/null || true)
+else
+  SRC_LIST=""
+fi
+ROOT_LIST=$(find -E . -maxdepth 1 -type f -regex "$DUP_REGEX" 2>/dev/null || true)
+DUPE_LIST=$(printf '%s\n%s\n' "$SRC_LIST" "$ROOT_LIST" | sed '/^$/d')
 DUPE_COUNT=$(printf '%s' "$DUPE_LIST" | grep -c . || true)
 if [ "$DUPE_COUNT" -eq 0 ]; then
-  ok "no source-dir duplicates"
+  ok "no source-dir or root duplicates"
 else
-  fail "$DUPE_COUNT duplicate file(s) in app/, components/, lib/, scripts/"
+  fail "$DUPE_COUNT macOS Finder duplicate file(s) in source/root"
   printf '%s\n' "$DUPE_LIST" | head -10 | sed 's/^/      /'
   if [ "$DUPE_COUNT" -gt 10 ]; then
     info "...and $((DUPE_COUNT - 10)) more. Run: pnpm clean:dupes"
@@ -49,13 +66,48 @@ else
 fi
 
 header "Next.js duplicate-route hazards"
-# Look for sibling files like route.ts AND "route 2.ts" in the same folder.
-ROUTE_DUPES=$(find app -type f -name "route [0-9].ts" 2>/dev/null | wc -l | tr -d ' ')
+# Look for sibling files like route.ts AND "route 2.ts" / "route 14.ts" in the
+# same folder. The "route [0-9]*.ts" glob covers any number of digits.
+ROUTE_DUPES=$(find app -type f -name "route [0-9]*.ts" 2>/dev/null | wc -l | tr -d ' ')
 if [ "$ROUTE_DUPES" -eq 0 ]; then
   ok "no duplicate route.ts siblings"
 else
   fail "$ROUTE_DUPES duplicate route file(s) (e.g. 'route 2.ts'); Next.js will warn and may serve the wrong handler"
   info "Fix: pnpm clean:dupes"
+fi
+
+header ".git/ iCloud damage check"
+# Resolve the actual .git directory (could be a symlink to .git.nosync/).
+ACTUAL_GIT=".git"
+[ -L "$ACTUAL_GIT" ] && ACTUAL_GIT="$(readlink "$ACTUAL_GIT")"
+if [ -d "$ACTUAL_GIT" ]; then
+  GIT_BAD_REFS=$(find -E "$ACTUAL_GIT/refs" -type f -regex "$DUP_REGEX" 2>/dev/null | wc -l | tr -d ' ')
+  GIT_INDEX_DUPES=$(find -E "$ACTUAL_GIT" -maxdepth 1 -type f -regex "$DUP_REGEX" 2>/dev/null | wc -l | tr -d ' ')
+  GIT_BAD_OBJECTS=$(find -E "$ACTUAL_GIT/objects" -type f -regex "$DUP_REGEX" 2>/dev/null | wc -l | tr -d ' ')
+  GIT_BAD_LOGS=$(find -E "$ACTUAL_GIT/logs" -type f -regex "$DUP_REGEX" 2>/dev/null | wc -l | tr -d ' ')
+  TOTAL_GIT_DUPES=$((GIT_BAD_REFS + GIT_INDEX_DUPES + GIT_BAD_OBJECTS + GIT_BAD_LOGS))
+
+  if [ "$TOTAL_GIT_DUPES" -gt 0 ]; then
+    fail "$TOTAL_GIT_DUPES iCloud duplicate(s) inside $ACTUAL_GIT/ (refs:$GIT_BAD_REFS index/head:$GIT_INDEX_DUPES objects:$GIT_BAD_OBJECTS logs:$GIT_BAD_LOGS)"
+    info "Fix: bash scripts/repair-git-dupes.sh --no-backup"
+  elif [ ! -L .git ]; then
+    warn ".git is not iCloud-protected; iCloud will likely re-corrupt it"
+    info "Fix: bash scripts/exclude-from-icloud.sh"
+  else
+    ok ".git is healthy and iCloud-excluded (.git -> $ACTUAL_GIT)"
+  fi
+else
+  warn "no .git directory (not a git checkout?)"
+fi
+
+header "node_modules iCloud protection"
+if [ -L node_modules ]; then
+  ok "node_modules is iCloud-excluded (symlink to $(readlink node_modules))"
+elif [ -d node_modules ]; then
+  warn "node_modules is not iCloud-protected; iCloud may corrupt native binaries (.node) which causes silent build hangs"
+  info "Fix: bash scripts/exclude-from-icloud.sh"
+else
+  info "node_modules not present yet (will be created by pnpm install)"
 fi
 
 header "Orphan jest processes"

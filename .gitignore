@@ -43,6 +43,20 @@ next-env.d.ts
 # pnpm
 .pnpm-store/
 
-# macOS duplicate files (Finder/iCloud conflict copies: "route 2.ts", "page 3.tsx", etc.)
+# macOS duplicate files (Finder/iCloud conflict copies: "route 2.ts", "page 14.tsx", etc.)
+# gitignore character classes are single-char, so multi-digit suffixes need
+# their own patterns. Cover 1-3 digits in either position (with extension or
+# without).
 * [0-9].*
 * [0-9]
+* [0-9][0-9].*
+* [0-9][0-9]
+* [0-9][0-9][0-9].*
+* [0-9][0-9][0-9]
+
+# iCloud-induced .git/ corruption backups produced by scripts/repair-git-dupes.sh
+.git-icloud-backup-*
+
+# .nosync siblings (see scripts/exclude-from-icloud.sh)
+/.git.nosync
+/node_modules.nosync

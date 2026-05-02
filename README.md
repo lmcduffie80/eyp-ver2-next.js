@@ -86,3 +86,39 @@ pnpm clean:jest      # only fix jest (kill orphans + clear cache)
 
 A pre-commit hook (`.githooks/pre-commit`, auto-installed by `pnpm install`)
 also blocks any commit that would introduce a new `* N.ext` duplicate.
+
+### macOS / iCloud notes
+
+This repository lives in `~/Documents/GitHub/`, which iCloud Drive syncs by
+default. iCloud creates Finder-style copies (`main 10`, `next-swc.darwin-arm64 2.node`,
+etc.) inside `.git/` and `node_modules/`, which causes:
+
+- `fatal: bad object refs/heads/main 10` from Git
+- Silent build hangs when Next.js' SWC compiler tries to load a duplicated
+  native binary
+- `pnpm install` failures from corrupted package metadata
+
+To prevent this, `pnpm install` runs `scripts/exclude-from-icloud.sh` as part of
+the postinstall step, which renames `.git/` and `node_modules/` to
+`.git.nosync/` and `node_modules.nosync/` and symlinks them back. macOS / iCloud
+Drive ignore any path ending in `.nosync`. Git, pnpm, Next.js, and every other
+tool follow the symlinks transparently.
+
+If you ever see those `.nosync` directories in `ls -la`, that is correct and
+expected. Do not "fix" them.
+
+If `.git/` ever gets re-corrupted (for example after manually copying files
+from another machine), repair it with:
+
+```bash
+pnpm repair:git       # cleans .git/ duplicates, runs git fsck + git gc
+```
+
+`pnpm health` will warn you if `.git/` or `node_modules/` are NOT iCloud-protected
+or if duplicates have appeared inside them.
+
+To undo the symlinks (rare):
+
+```bash
+bash scripts/exclude-from-icloud.sh --revert
+```

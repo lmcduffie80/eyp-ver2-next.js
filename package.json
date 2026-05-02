@@ -16,7 +16,9 @@
     "clean:dupes": "bash scripts/clean.sh --dupes",
     "clean:jest": "bash scripts/clean.sh --jest",
     "clean:dry": "bash scripts/clean.sh --all --dry-run",
-    "postinstall": "bash scripts/install-git-hooks.sh"
+    "repair:git": "bash scripts/repair-git-dupes.sh --no-backup",
+    "exclude:icloud": "bash scripts/exclude-from-icloud.sh",
+    "postinstall": "bash scripts/install-git-hooks.sh && bash scripts/exclude-from-icloud.sh"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.972.0",
