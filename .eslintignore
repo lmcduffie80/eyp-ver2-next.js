@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+build
+coverage
+
+# macOS Finder / iCloud duplicates ("foo 2.tsx", "foo 3.ts", etc.)
+**/* [0-9].tsx
+**/* [0-9].ts
+**/* [0-9].jsx
+**/* [0-9].js
+**/* [0-9].mjs
+**/* [0-9].cjs
+**/* [0-9].css

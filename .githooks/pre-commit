@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit
+#
+# Block commits that introduce macOS Finder / iCloud duplicate files
+# ("foo 2.tsx", "page 3.ts", etc.). These files cause real bugs:
+# Next.js duplicate-route warnings, ESLint hangs, jest cache deadlocks.
+#
+# .gitignore already excludes them, but `git add -f` would bypass that.
+# This hook is the last line of defense.
+set -e
+
+OFFENDERS=$(git diff --cached --name-only --diff-filter=A | grep -E ' [0-9]+(\.[A-Za-z0-9]+)?$' || true)
+
+if [ -n "$OFFENDERS" ]; then
+  RED=$'\033[31m'; YEL=$'\033[33m'; RST=$'\033[0m'
+  echo "${RED}pre-commit: refusing to commit macOS Finder duplicates${RST}" >&2
+  echo "" >&2
+  echo "${YEL}The following staged files match the dupe pattern (' N.ext'):${RST}" >&2
+  echo "$OFFENDERS" | sed 's/^/    /' >&2
+  echo "" >&2
+  echo "These are usually iCloud/Finder copies of real source files. To fix:" >&2
+  echo "    git restore --staged <file>...    # unstage them" >&2
+  echo "    pnpm clean:dupes                  # remove from disk" >&2
+  echo "" >&2
+  echo "If you really meant to commit one of these, rename it without the trailing number." >&2
+  exit 1
+fi
+
+exit 0

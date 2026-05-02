@@ -19,6 +19,20 @@ const customJestConfig = {
     '**/__tests__/**/*.[jt]s?(x)',
     '**/?(*.)+(spec|test).[jt]s?(x)'
   ],
+  // Restrict file discovery to source/test dirs so jest doesn't walk
+  // the workspace's large media folders (Wedding/Prom/Photography/public, etc.)
+  roots: [
+    '<rootDir>/__tests__',
+    '<rootDir>/app',
+    '<rootDir>/components',
+    '<rootDir>/lib',
+  ],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/.next/',
+    // macOS Finder / iCloud duplicates ("foo 2.tsx", "foo 3.ts", etc.)
+    ' [0-9]\\.[jt]sx?$',
+  ],
   collectCoverageFrom: [
     'app/**/*.{js,jsx,ts,tsx}',
     'components/**/*.{js,jsx,ts,tsx}',

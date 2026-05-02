@@ -2718,7 +2718,7 @@ export default function AdminDashboard() {
                 </div>
                 <button 
                   onClick={async () => {
-                    if (confirm('Are you sure you want to clear ALL projects? This cannot be undone.')) {
+                    if (confirm('Clear all active projects? Archived projects will be kept. This cannot be undone.')) {
                       try {
                         const res = await adminFetch('/api/admin/clear-all-projects', {
                           method: 'DELETE',
@@ -2726,6 +2726,7 @@ export default function AdminDashboard() {
                         });
                         if (res.ok) {
                           await fetchBookings();
+                          if (showArchive) await fetchArchivedBookings();
                         } else {
                           const data = await res.json().catch(() => ({}));
                           alert(`Failed to clear projects: ${data.error || res.status}`);
@@ -2736,7 +2737,7 @@ export default function AdminDashboard() {
                     }
                   }}
                   style={{ padding: '0.5rem 1rem', background: 'var(--error-color)', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 'bold' }}
-                  title="Clear all projects"
+                  title="Clear all active projects (archive preserved)"
                 >
                   Clear All Projects
                 </button>

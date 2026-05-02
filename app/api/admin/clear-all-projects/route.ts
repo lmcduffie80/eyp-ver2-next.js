@@ -16,12 +16,16 @@ export async function DELETE() {
       );
     }
 
-    const result = await sql`DELETE FROM bookings`;
+    const result = await sql`
+      DELETE FROM bookings
+      WHERE archived = FALSE OR archived IS NULL
+    `;
     console.log('[clear-all-projects] Deleted rows:', result.rowCount);
 
     return NextResponse.json({
       success: true,
-      message: 'All booking projects cleared successfully'
+      message: 'Active bookings cleared. Archived bookings preserved.',
+      deleted: result.rowCount ?? 0
     });
   } catch (error) {
     console.error('[clear-all-projects] Error:', error);
