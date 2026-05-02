@@ -25,6 +25,31 @@ fi
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
+# Detect whether this checkout sits inside an iCloud-synced location so the
+# .git/node_modules iCloud-protection checks can be a no-op outside iCloud.
+# Mirrors the logic in scripts/exclude-from-icloud.sh.
+IS_ICLOUD_PATH=0
+if [ "$(uname)" = "Darwin" ]; then
+  ICLOUD_MIRROR="$HOME/Library/Mobile Documents/com~apple~CloudDocs"
+  DOCUMENTS_REAL="$( (cd "$HOME/Documents" 2>/dev/null && pwd -P) || echo "$HOME/Documents" )"
+  DESKTOP_REAL="$(   (cd "$HOME/Desktop"   2>/dev/null && pwd -P) || echo "$HOME/Desktop"   )"
+  REPO_REAL="$(pwd -P)"
+  case "$REPO_REAL" in
+    "$ICLOUD_MIRROR"*)  IS_ICLOUD_PATH=1 ;;
+    "$DOCUMENTS_REAL"*) [ "${DOCUMENTS_REAL#$ICLOUD_MIRROR}" != "$DOCUMENTS_REAL" ] && IS_ICLOUD_PATH=1 ;;
+    "$DESKTOP_REAL"*)   [ "${DESKTOP_REAL#$ICLOUD_MIRROR}"   != "$DESKTOP_REAL"   ] && IS_ICLOUD_PATH=1 ;;
+  esac
+  if [ "$IS_ICLOUD_PATH" -eq 0 ]; then
+    case "$REPO_REAL" in
+      "$HOME/Documents"*|"$HOME/Desktop"*)
+        case "$DOCUMENTS_REAL$DESKTOP_REAL" in
+          *com~apple~CloudDocs*) IS_ICLOUD_PATH=1 ;;
+        esac
+        ;;
+    esac
+  fi
+fi
+
 issues=0
 warn()  { printf '%s\n' "${C_YEL}WARN${C_RST}  $*"; issues=$((issues+1)); }
 fail()  { printf '%s\n' "${C_RED}FAIL${C_RST}  $*"; issues=$((issues+1)); }
@@ -90,6 +115,8 @@ if [ -d "$ACTUAL_GIT" ]; then
   if [ "$TOTAL_GIT_DUPES" -gt 0 ]; then
     fail "$TOTAL_GIT_DUPES iCloud duplicate(s) inside $ACTUAL_GIT/ (refs:$GIT_BAD_REFS index/head:$GIT_INDEX_DUPES objects:$GIT_BAD_OBJECTS logs:$GIT_BAD_LOGS)"
     info "Fix: bash scripts/repair-git-dupes.sh --no-backup"
+  elif [ "$IS_ICLOUD_PATH" -eq 0 ]; then
+    ok ".git is healthy (repo is outside iCloud Drive; protection not needed)"
   elif [ ! -L .git ]; then
     warn ".git is not iCloud-protected; iCloud will likely re-corrupt it"
     info "Fix: bash scripts/exclude-from-icloud.sh"
@@ -101,7 +128,13 @@ else
 fi
 
 header "node_modules iCloud protection"
-if [ -L node_modules ]; then
+if [ "$IS_ICLOUD_PATH" -eq 0 ]; then
+  if [ -d node_modules ] || [ -L node_modules ]; then
+    ok "node_modules OK (repo is outside iCloud Drive; protection not needed)"
+  else
+    info "node_modules not present yet (will be created by pnpm install)"
+  fi
+elif [ -L node_modules ]; then
   ok "node_modules is iCloud-excluded (symlink to $(readlink node_modules))"
 elif [ -d node_modules ]; then
   warn "node_modules is not iCloud-protected; iCloud may corrupt native binaries (.node) which causes silent build hangs"

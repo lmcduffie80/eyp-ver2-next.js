@@ -50,6 +50,56 @@ if [ -n "${CI:-}" ] || [ -n "${VERCEL:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; the
   exit 0
 fi
 
+# Skip when the project is not inside an iCloud-synced location. The .nosync
+# trick only matters where iCloud Drive is actively watching, and applying it
+# elsewhere just creates confusing symlinks. iCloud Drive's local mirror lives
+# at ~/Library/Mobile Documents/com~apple~CloudDocs/, with ~/Documents and
+# ~/Desktop optionally redirected there via the "Desktop & Documents Folders"
+# system setting.
+#
+# Detection: resolve the repo root's real path and check for either the iCloud
+# Drive mirror prefix or the "Desktop & Documents Folders" sync (which is
+# active when ~/Documents resolves into the iCloud mirror). Allow override via
+# FORCE_ICLOUD_PROTECTION=1 for paranoid setups, or SKIP_ICLOUD_PROTECTION=1
+# to opt out explicitly.
+ICLOUD_MIRROR="$HOME/Library/Mobile Documents/com~apple~CloudDocs"
+DOCUMENTS_REAL="$( (cd "$HOME/Documents" 2>/dev/null && pwd -P) || echo "$HOME/Documents" )"
+DESKTOP_REAL="$(   (cd "$HOME/Desktop"   2>/dev/null && pwd -P) || echo "$HOME/Desktop"   )"
+REPO_REAL="$(pwd -P)"
+
+is_icloud_path=0
+case "$REPO_REAL" in
+  "$ICLOUD_MIRROR"*)  is_icloud_path=1 ;;
+  "$DOCUMENTS_REAL"*) [ "${DOCUMENTS_REAL#$ICLOUD_MIRROR}" != "$DOCUMENTS_REAL" ] && is_icloud_path=1 ;;
+  "$DESKTOP_REAL"*)   [ "${DESKTOP_REAL#$ICLOUD_MIRROR}"   != "$DESKTOP_REAL"   ] && is_icloud_path=1 ;;
+esac
+
+# Also catch the Desktop & Documents Folders case where the user's literal
+# ~/Documents path exists but its real path is in the iCloud mirror.
+if [ "$is_icloud_path" -eq 0 ]; then
+  case "$REPO_REAL" in
+    "$HOME/Documents"*|"$HOME/Desktop"*)
+      case "$DOCUMENTS_REAL$DESKTOP_REAL" in
+        *com~apple~CloudDocs*) is_icloud_path=1 ;;
+      esac
+      ;;
+  esac
+fi
+
+# --revert is a cleanup operation, so it always runs (we want to undo
+# .nosync symlinks even at non-iCloud paths, where they were applied by
+# mistake by an older version of this script).
+if [ "$REVERT" -eq 0 ]; then
+  if [ -n "${SKIP_ICLOUD_PROTECTION:-}" ]; then
+    echo "${C_DIM}exclude-from-icloud: SKIP_ICLOUD_PROTECTION set, skipping${C_RST}"
+    exit 0
+  fi
+  if [ "$is_icloud_path" -eq 0 ] && [ -z "${FORCE_ICLOUD_PROTECTION:-}" ]; then
+    echo "${C_DIM}exclude-from-icloud: $REPO_REAL is not in iCloud Drive, skipping (set FORCE_ICLOUD_PROTECTION=1 to apply anyway)${C_RST}"
+    exit 0
+  fi
+fi
+
 prefix() {
   if [ "$DRY_RUN" -eq 1 ]; then
     printf '%s' "${C_DIM}[dry-run]${C_RST} "
