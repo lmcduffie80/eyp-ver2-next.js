@@ -234,17 +234,28 @@ export default function AdminDashboard() {
       const distinctProjectCount = (rows: any[]) =>
         new Set(rows.map(projectKey)).size;
 
-      // Total Projects (distinct events, not raw rows)
-      const totalProjects = distinctProjectCount(bookings);
-
-      // Completed Projects (past dates, distinct events)
-      const completed = distinctProjectCount(
-        bookings.filter(b => new Date(b.date) < today)
+      // DJ buckets
+      const djBookings = bookings.filter(b =>
+        ['Gavin', 'Will', 'Stephen'].includes(b.djUser)
+      );
+      const otherBookings = bookings.filter(b =>
+        ['Lee', 'Misty'].includes(b.djUser)
       );
 
-      // Future Bookings (distinct events)
+      // Total Projects — DJs only (Gavin, Will, Stephen)
+      const totalProjects = distinctProjectCount(djBookings);
+
+      // Other Projects — Lee & Misty
+      const otherProjects = distinctProjectCount(otherBookings);
+
+      // Completed Projects (past dates, distinct events) — DJs only
+      const completed = distinctProjectCount(
+        djBookings.filter(b => new Date(b.date) < today)
+      );
+
+      // Future Bookings (distinct events) — DJs only
       const futureBookings = distinctProjectCount(
-        bookings.filter(b => new Date(b.date) >= today)
+        djBookings.filter(b => new Date(b.date) >= today)
       );
       
       // Total Revenue
@@ -267,6 +278,9 @@ export default function AdminDashboard() {
       const djRevenuePercentage = totalRevenue > 0 ? ((djRevenue / totalRevenue) * 100) : 0;
       
       // Update DOM elements
+      const otherProjectsEl = document.getElementById('other-projects');
+      if (otherProjectsEl) otherProjectsEl.textContent = otherProjects.toString();
+
       const totalProjectsEl = document.getElementById('total-projects');
       const completedProjectsEl = document.getElementById('completed-projects');
       const futureBookingsEl = document.getElementById('future-bookings-projects');
@@ -2176,6 +2190,24 @@ export default function AdminDashboard() {
                   <span className="stat-info-icon" title="Click to view all projects">ℹ️</span>
                 </div>
                 <div className="stat-value" id="total-projects">0</div>
+                <small style={{ color: 'var(--text-light)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                  Gavin, Will &amp; Stephen
+                </small>
+              </div>
+
+              {/* Other Projects (Lee & Misty) */}
+              <div className="stat-card">
+                <div className="stat-card-header">
+                  <h3>
+                    <span className="stat-icon">🎤</span>
+                    Other Projects
+                  </h3>
+                  <span className="stat-info-icon" title="Projects assigned to Lee & Misty">ℹ️</span>
+                </div>
+                <div className="stat-value" id="other-projects">0</div>
+                <small style={{ color: 'var(--text-light)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                  Lee &amp; Misty
+                </small>
               </div>
 
               {/* Completed Projects with Progress Bar */}
