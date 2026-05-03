@@ -1,1 +1,8 @@
-{}
+{
+  "crons": [
+    {
+      "path": "/api/cron/smart-files-reminders",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}
