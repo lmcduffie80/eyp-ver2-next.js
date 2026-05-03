@@ -234,12 +234,18 @@ export default function AdminDashboard() {
       const distinctProjectCount = (rows: any[]) =>
         new Set(rows.map(projectKey)).size;
 
-      // DJ buckets
+      // DJ buckets — match by first name (case-insensitive) to handle
+      // full names ("Gavin Smith"), usernames, or first-name-only values
+      const matchesFirstName = (djUser: string, names: string[]) => {
+        if (!djUser) return false;
+        const lower = djUser.toLowerCase();
+        return names.some(n => lower.startsWith(n.toLowerCase()));
+      };
       const djBookings = bookings.filter(b =>
-        ['Gavin', 'Will', 'Stephen'].includes(b.djUser)
+        matchesFirstName(b.djUser, ['Gavin', 'Will', 'Stephen'])
       );
       const otherBookings = bookings.filter(b =>
-        ['Lee', 'Misty'].includes(b.djUser)
+        matchesFirstName(b.djUser, ['Lee', 'Misty'])
       );
 
       // Total Projects — DJs only (Gavin, Will, Stephen)
