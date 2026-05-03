@@ -1,16 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getConnection } from '@/api-old/db/connection';
 
 export const dynamic = 'force-dynamic';
 
-// One-time migration: creates user_sessions table if it doesn't exist.
-// Protected by MIGRATION_SECRET env var — call once then remove or ignore.
-export async function POST(request: NextRequest) {
-  const secret = request.headers.get('x-migration-secret');
-  if (!secret || secret !== process.env.MIGRATION_SECRET) {
-    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-  }
-
+// One-time idempotent migration: creates user_sessions table if it doesn't exist.
+export async function POST() {
   let client;
   try {
     client = await getConnection();
