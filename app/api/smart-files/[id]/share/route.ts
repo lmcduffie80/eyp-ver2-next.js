@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 type Params = { params: Promise<{ id: string }> };
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const getResend = () => new Resend(process.env.RESEND_API_KEY);
 const TOKEN_TTL_DAYS = 30;
 
 // GET — list existing share tokens for a file
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     // Send email via Resend
     try {
-      await resend.emails.send({
+      await getResend().emails.send({
         from: process.env.RESEND_FROM_EMAIL ?? 'lee@externallyyyoursproductions.com',
         to: recipientEmail,
         subject: `Your Smart File from Externally Yours Productions: ${file.title}`,

@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 
 type Params = { params: Promise<{ token: string }> };
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const getResend = () => new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest, { params }: Params) {
   try {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     // Notify admin of client signature
     try {
       const adminEmail = process.env.ADMIN_NOTIFY_EMAIL ?? 'lee@externallyyyoursproductions.com';
-      await resend.emails.send({
+      await getResend().emails.send({
         from: process.env.RESEND_FROM_EMAIL ?? 'lee@externallyyyoursproductions.com',
         to: adminEmail,
         subject: `Client Signed: ${signerName ?? shareToken.recipientEmail}`,

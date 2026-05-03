@@ -2,6 +2,7 @@
 // All DB access for Smart Files goes through here, using the existing sql helper.
 
 import sql from '@/api-old/db/connection';
+import { createHash } from 'crypto';
 import { normalizeRows, getSingleRow } from '@/lib/db-utils';
 import type {
   SmartFile,
@@ -15,6 +16,7 @@ import type {
   SfAuditEvent,
   SfQuestionnaireAnswer,
   SfShareToken,
+  SfComment,
   SfTheme,
   SfActorType,
   SfBlockContent,
@@ -160,6 +162,19 @@ function mapQaAnswer(row: Record<string, unknown>): SfQuestionnaireAnswer {
     questionKey: row.question_key as string,
     answer: typeof row.answer === 'string' ? JSON.parse(row.answer) : row.answer,
     updatedAt: String(row.updated_at),
+  };
+}
+
+function mapComment(row: Record<string, unknown>): SfComment {
+  return {
+    id: row.id as number,
+    fileId: row.file_id as number,
+    blockId: row.block_id != null ? (row.block_id as number) : undefined,
+    authorType: row.author_type as SfActorType,
+    authorId: row.author_id as string,
+    body: row.body as string,
+    resolved: !!(row.resolved),
+    createdAt: String(row.created_at),
   };
 }
 
@@ -762,6 +777,41 @@ export async function cloneFile(sourceId: number, opts: {
   }
 
   return (await getFileDetail(newFile.id))!;
+}
+
+// ─── Public token access ──────────────────────────────────────────────────────
+
+export async function getFileByToken(rawToken: string): Promise<SmartFileDetail | null> {
+  const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+  const shareToken = await getShareTokenByHash(tokenHash);
+  if (!shareToken) return null;
+  await touchShareToken(tokenHash);
+  return getFileDetail(shareToken.fileId);
+}
+
+// ─── Comments ─────────────────────────────────────────────────────────────────
+
+export async function getComments(fileId: number, blockId?: number): Promise<SfComment[]> {
+  const result = blockId != null
+    ? await sql`SELECT * FROM sf_comments WHERE file_id = ${fileId} AND block_id = ${blockId} ORDER BY created_at ASC`
+    : await sql`SELECT * FROM sf_comments WHERE file_id = ${fileId} ORDER BY created_at ASC`;
+  return normalizeRows(result).map(mapComment);
+}
+
+export async function addComment(data: {
+  fileId: number;
+  blockId?: number | null;
+  authorType: SfActorType;
+  authorName?: string;
+  body: string;
+}): Promise<SfComment> {
+  const authorId = data.authorName ?? 'anonymous';
+  const result = await sql`
+    INSERT INTO sf_comments (file_id, block_id, author_type, author_id, body)
+    VALUES (${data.fileId}, ${data.blockId ?? null}, ${data.authorType}, ${authorId}, ${data.body})
+    RETURNING *
+  `;
+  return mapComment(getSingleRow(result));
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

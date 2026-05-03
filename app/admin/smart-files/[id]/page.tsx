@@ -29,7 +29,7 @@ const STATUS_OPTIONS: SfFileStatus[] = ['draft', 'sent', 'partial', 'completed',
 export default function SmartFileDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const fileId = Number(params.id);
+  const fileId = Number(params?.id);
 
   const [file, setFile] = useState<SmartFileDetail | null>(null);
   const [loading, setLoading] = useState(true);

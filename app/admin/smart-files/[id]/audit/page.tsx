@@ -26,7 +26,7 @@ const ACTOR_COLORS: Record<string, string> = {
 
 export default function AuditLogPage() {
   const params = useParams();
-  const fileId = Number(params.id);
+  const fileId = Number(params?.id);
 
   const [events, setEvents] = useState<SfAuditEvent[]>([]);
   const [loading, setLoading] = useState(true);

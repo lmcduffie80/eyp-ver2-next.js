@@ -171,7 +171,7 @@ function PayButton({ token, scheduleId, accentColor, amountCents }: { token: str
 
 export default function SmartFileViewer() {
   const params = useParams();
-  const token = params.token as string;
+  const token = params?.token as string;
 
   const [file, setFile] = useState<PublicFile | null>(null);
   const [loading, setLoading] = useState(true);
