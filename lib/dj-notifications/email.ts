@@ -245,6 +245,90 @@ export function renderDigestEmail(args: {
 }
 
 // -----------------------------------------------------------------------------
+// Monthly long-range look-ahead (per DJ, everything on their calendar in the
+// next 12 months). Same shape as the digest, but wider window and different
+// framing/subject so DJs can tell them apart in the inbox.
+// -----------------------------------------------------------------------------
+
+function monthName(monthIndex: number): string {
+  return ['January','February','March','April','May','June','July','August','September','October','November','December'][monthIndex] ?? '';
+}
+
+export function renderMonthlyEmail(args: {
+  djFirstName: string;
+  bookings: DigestBooking[];
+  now?: Date;
+}): { subject: string; html: string; text: string } {
+  const { djFirstName, bookings } = args;
+  const now = args.now ?? new Date();
+
+  // Group by year-month so the email reads like a calendar.
+  const groups = new Map<string, DigestBooking[]>();
+  for (const b of bookings) {
+    // b.date is 'YYYY-MM-DD' by the time it reaches here.
+    const [year, mon] = b.date.split('-');
+    const key = `${year}-${mon}`;
+    const list = groups.get(key) ?? [];
+    list.push(b);
+    groups.set(key, list);
+  }
+  const orderedGroups = Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
+
+  const monthBlocks = orderedGroups.map(([key, list]) => {
+    const [y, m] = key.split('-');
+    const label = `${monthName(Number(m) - 1)} ${y}`;
+    return `
+      <div style="margin:22px 0 6px 0;font-size:13px;letter-spacing:1px;color:#6b7280;font-weight:600;text-transform:uppercase">${escapeHtml(label)} &middot; ${list.length}</div>
+      ${list.map(b => bookingCard(b)).join('')}
+    `;
+  }).join('');
+
+  const currentMonthLabel = `${monthName(now.getMonth())} ${now.getFullYear()}`;
+
+  const inner = `
+    <div style="font-size:12px;color:#f97316;font-weight:600;letter-spacing:0.5px">YOUR NEXT 12 MONTHS</div>
+    <h1 style="font-size:22px;margin:8px 0 12px 0;color:#111827">Hi ${escapeHtml(djFirstName)},</h1>
+    <p style="font-size:15px;line-height:1.55;color:#374151;margin:0 0 4px 0">
+      Here is your long-range calendar as of <strong>${escapeHtml(currentMonthLabel)}</strong>: every project on the books over the next 12 months, grouped by month, with client contact info and notes so you can plan travel, gear, and time off.
+    </p>
+    <p style="font-size:14px;line-height:1.5;color:#6b7280;margin:0 0 8px 0">
+      You will still receive the closer-in biweekly digest and week-of confirmation emails as event dates approach.
+    </p>
+    ${monthBlocks}
+    <p style="font-size:13px;color:#6b7280;margin:18px 0 0 0">
+      See something missing or wrong? Reply and Lee will sort it out.
+    </p>
+  `;
+
+  const subject = `Your next 12 months at EYP — ${bookings.length} project${bookings.length === 1 ? '' : 's'} on the books`;
+  const preheader = `${bookings.length} project${bookings.length === 1 ? '' : 's'} across the next 12 months, with client contacts and notes`;
+
+  const textBits: string[] = [`Hi ${djFirstName},`, '', `Your EYP calendar for the next 12 months (as of ${currentMonthLabel}):`];
+  for (const [key, list] of orderedGroups) {
+    const [y, m] = key.split('-');
+    textBits.push('');
+    textBits.push(`== ${monthName(Number(m) - 1)} ${y} (${list.length}) ==`);
+    for (const b of list) {
+      textBits.push(`- ${projectTitle(b)}`);
+      textBits.push(`  Date: ${formatEventDate(b.date)}${b.time ? ` at ${b.time}` : ''}`);
+      if (b.location) textBits.push(`  Location: ${b.location}`);
+      if (b.contactEmail) textBits.push(`  Client email: ${b.contactEmail}`);
+      if (b.contactPhone) textBits.push(`  Client phone: ${b.contactPhone}`);
+      const notes = (b.notes ?? '').trim();
+      if (notes) {
+        textBits.push('  Notes:');
+        for (const line of notes.split(/\r?\n/)) textBits.push(`    ${line}`);
+      }
+    }
+  }
+  textBits.push('');
+  textBits.push(`Reply to this email or contact ${NOTIFICATION_REPLY_TO} with any changes.`);
+  const text = textBits.join('\n');
+
+  return { subject, html: eyLayout(inner, preheader), text };
+}
+
+// -----------------------------------------------------------------------------
 // Admin notification when a DJ confirms
 // -----------------------------------------------------------------------------
 
