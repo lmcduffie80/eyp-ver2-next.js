@@ -17,8 +17,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS uniq_dj_email_sends_booking
   ON dj_email_sends (booking_id, dj_user, email_type)
   WHERE booking_id IS NOT NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS uniq_dj_email_sends_digest
-  ON dj_email_sends (dj_user, email_type, (sent_at::date))
+-- Digest dedup is enforced at the application layer (dj-digest cron) because
+-- Postgres won't accept sent_at::date in a unique-index predicate. A plain
+-- btree index still speeds up the lookup path.
+CREATE INDEX IF NOT EXISTS idx_dj_email_sends_digest_lookup
+  ON dj_email_sends (dj_user, email_type, sent_at DESC)
   WHERE booking_id IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_dj_email_sends_sent_at

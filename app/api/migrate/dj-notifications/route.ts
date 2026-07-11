@@ -27,9 +27,12 @@ export async function POST() {
         WHERE booking_id IS NOT NULL
     `);
 
+    // Digest dedup is enforced at the application layer (dj-digest cron)
+    // because Postgres won't accept sent_at::date in a unique-index predicate
+    // (it isn't IMMUTABLE). A plain btree index still speeds up the lookup.
     await client.query(`
-      CREATE UNIQUE INDEX IF NOT EXISTS uniq_dj_email_sends_digest
-        ON dj_email_sends (dj_user, email_type, (sent_at::date))
+      CREATE INDEX IF NOT EXISTS idx_dj_email_sends_digest_lookup
+        ON dj_email_sends (dj_user, email_type, sent_at DESC)
         WHERE booking_id IS NULL
     `);
 
