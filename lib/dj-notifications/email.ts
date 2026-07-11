@@ -3,7 +3,9 @@ import { signConfirmToken } from './token';
 import { formatEventDate, reminderLabel, type ReminderType } from './schedule';
 
 // Central config for all DJ notification emails.
-export const NOTIFICATION_FROM = 'EYP DJ Team <djs@externallyyoursproductions.com>';
+// From: ey-productions.com is the domain verified in Resend (agrovus, LLC team).
+// Reply-To / admin notify: Lee's real inbox on externallyyoursproductions.com.
+export const NOTIFICATION_FROM = 'EYP <team@ey-productions.com>';
 export const NOTIFICATION_REPLY_TO = 'Lee@externallyyoursproductions.com';
 export const ADMIN_NOTIFY_TO = 'Lee@externallyyoursproductions.com';
 

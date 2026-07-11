@@ -83,8 +83,8 @@ export default function AdminLogin() {
           <Image 
             src="/EYP Logo_New.png" 
             alt="Externally Yours Productions" 
-            width={507}
-            height={135}
+            width={912}
+            height={339}
             className="login-logo"
             priority
           />

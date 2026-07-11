@@ -43,9 +43,9 @@ export default function Navigation() {
           <Image
             src="/EYP Logo_New.png"
             alt="Externally Yours Productions, LLC"
-            width={507}
-            height={135}
-            style={{ height: '90px', width: 'auto', maxWidth: '340px', aspectRatio: 'auto', display: 'block' }}
+            width={912}
+            height={339}
+            style={{ height: '81px', width: 'auto', maxWidth: '306px', aspectRatio: 'auto', display: 'block' }}
             priority
             loading="eager"
             decoding="async"

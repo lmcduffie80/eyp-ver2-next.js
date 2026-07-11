@@ -47,7 +47,7 @@ export default function ConfirmClient({
     return (
       <PageShell headline="You're locked in — thanks!" tone="success">
         <p style={{ margin: 0, color: '#374151', fontSize: 15, lineHeight: 1.55 }}>
-          Lee has been notified that you'll be there for <strong>{details.title}</strong> on {details.date}.
+          Lee has been notified that you&apos;ll be there for <strong>{details.title}</strong> on {details.date}.
         </p>
         <div style={cardStyle}>
           <div style={cardTitleStyle}>{details.title}</div>
@@ -64,7 +64,7 @@ export default function ConfirmClient({
   return (
     <PageShell headline={`Confirm ${details.title}?`} tone="accent">
       <p style={{ margin: 0, color: '#374151', fontSize: 15, lineHeight: 1.55 }}>
-        Tap the button below to confirm you'll be at this project. Lee will be notified right away.
+        Tap the button below to confirm you&apos;ll be at this project. Lee will be notified right away.
       </p>
       <div style={cardStyle}>
         <div style={cardTitleStyle}>{details.title}</div>

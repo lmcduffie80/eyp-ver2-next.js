@@ -153,8 +153,8 @@ export default function DJPortal() {
             <Image
               src="/EYP Logo_New.png"
               alt="Externally Yours Productions, LLC"
-              width={300}
-              height={80}
+              width={912}
+              height={339}
               style={{ height: 'auto', width: 'auto', maxWidth: '300px' }}
               priority
             />
