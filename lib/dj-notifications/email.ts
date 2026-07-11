@@ -26,6 +26,9 @@ export interface DigestBooking {
   date: string;
   time: string | null;
   location: string | null;
+  notes: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
 }
 
 function baseUrl(): string {
@@ -95,6 +98,14 @@ function confirmButton(url: string, label: string): string {
   </table>`;
 }
 
+function nl2br(s: string): string {
+  return escapeHtml(s).replace(/\r?\n/g, '<br />');
+}
+
+function isDigestBooking(b: ReminderBooking | DigestBooking): b is DigestBooking {
+  return 'notes' in b || 'contactEmail' in b || 'contactPhone' in b;
+}
+
 function bookingCard(b: ReminderBooking | DigestBooking, opts: { showDj?: boolean; djName?: string | null } = {}): string {
   const lines: string[] = [];
   lines.push(`<div style="font-size:16px;font-weight:600;color:#111827">${escapeHtml(projectTitle(b))}</div>`);
@@ -105,6 +116,39 @@ function bookingCard(b: ReminderBooking | DigestBooking, opts: { showDj?: boolea
   if (opts.showDj && opts.djName) {
     lines.push(`<div style="font-size:13px;color:#6b7280;margin-top:4px">DJ: ${escapeHtml(opts.djName)}</div>`);
   }
+
+  // Digest bookings carry client contact info + notes so DJs have everything
+  // they need in the inbox without a login. Reminder bookings keep the compact
+  // shape used in the countdown emails.
+  if (isDigestBooking(b)) {
+    const contactBits: string[] = [];
+    if (b.contactEmail) {
+      contactBits.push(
+        `<a href="mailto:${escapeHtml(b.contactEmail)}" style="color:#f97316;text-decoration:none">${escapeHtml(b.contactEmail)}</a>`
+      );
+    }
+    if (b.contactPhone) {
+      contactBits.push(
+        `<a href="tel:${escapeHtml(b.contactPhone.replace(/[^+\d]/g, ''))}" style="color:#f97316;text-decoration:none">${escapeHtml(b.contactPhone)}</a>`
+      );
+    }
+    if (contactBits.length > 0) {
+      lines.push(
+        `<div style="font-size:13px;color:#374151;margin-top:10px"><span style="color:#6b7280">Client:</span> ${contactBits.join(' &middot; ')}</div>`
+      );
+    }
+
+    const notes = (b.notes ?? '').trim();
+    if (notes) {
+      lines.push(
+        `<div style="margin-top:12px;padding:10px 12px;border-left:3px solid #f97316;background:#fff7ed;border-radius:0 6px 6px 0">
+          <div style="font-size:11px;letter-spacing:0.6px;color:#c2410c;font-weight:600;text-transform:uppercase">Client notes</div>
+          <div style="font-size:13px;color:#374151;margin-top:4px;line-height:1.5">${nl2br(notes)}</div>
+        </div>`
+      );
+    }
+  }
+
   return `<div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin:10px 0;background:#fafafa">${lines.join('')}</div>`;
 }
 
@@ -163,10 +207,11 @@ export function renderDigestEmail(args: {
   const { djFirstName, bookings } = args;
 
   const inner = `
-    <div style="font-size:12px;color:#f97316;font-weight:600;letter-spacing:0.5px">YOUR NEXT 60 DAYS</div>
+    <div style="font-size:12px;color:#f97316;font-weight:600;letter-spacing:0.5px">YOUR UPCOMING PROJECTS</div>
     <h1 style="font-size:22px;margin:8px 0 12px 0;color:#111827">Hi ${escapeHtml(djFirstName)},</h1>
     <p style="font-size:15px;line-height:1.55;color:#374151;margin:0 0 16px 0">
-      Here's a quick look at what's on your calendar. You'll get individual confirmation
+      Here's every project on your calendar right now, with client contact info and notes
+      so you have everything you need in one place. You'll get individual confirmation
       requests starting two weeks before each event.
     </p>
     ${bookings.map(b => bookingCard(b)).join('')}
@@ -176,18 +221,25 @@ export function renderDigestEmail(args: {
   `;
 
   const subject = `Your upcoming EYP projects — ${bookings.length} on the calendar`;
-  const preheader = `${bookings.length} project${bookings.length === 1 ? '' : 's'} in the next 60 days`;
+  const preheader = `${bookings.length} project${bookings.length === 1 ? '' : 's'} with client contacts and notes`;
 
-  const text = [
-    `Hi ${djFirstName},`,
-    '',
-    'Your upcoming EYP projects:',
-    ...bookings.map(b =>
-      `- ${projectTitle(b)} — ${formatEventDate(b.date)}${b.time ? ` at ${b.time}` : ''}${b.location ? ` (${b.location})` : ''}`
-    ),
-    '',
-    `Reply to this email or contact ${NOTIFICATION_REPLY_TO} with any changes.`,
-  ].join('\n');
+  const textBits: string[] = [`Hi ${djFirstName},`, '', 'Your upcoming EYP projects:'];
+  for (const b of bookings) {
+    textBits.push('');
+    textBits.push(`- ${projectTitle(b)}`);
+    textBits.push(`  Date: ${formatEventDate(b.date)}${b.time ? ` at ${b.time}` : ''}`);
+    if (b.location) textBits.push(`  Location: ${b.location}`);
+    if (b.contactEmail) textBits.push(`  Client email: ${b.contactEmail}`);
+    if (b.contactPhone) textBits.push(`  Client phone: ${b.contactPhone}`);
+    const notes = (b.notes ?? '').trim();
+    if (notes) {
+      textBits.push('  Notes:');
+      for (const line of notes.split(/\r?\n/)) textBits.push(`    ${line}`);
+    }
+  }
+  textBits.push('');
+  textBits.push(`Reply to this email or contact ${NOTIFICATION_REPLY_TO} with any changes.`);
+  const text = textBits.join('\n');
 
   return { subject, html: eyLayout(inner, preheader), text };
 }

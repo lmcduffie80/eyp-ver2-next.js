@@ -39,7 +39,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   // Load every upcoming booking in the next 60 days, then group by resolved DJ.
   const rows = normalizeRows(await sql`
-    SELECT id, dj_user, client_name, event_type, date, time, location
+    SELECT id, dj_user, client_name, event_type, date, time, location,
+           notes, contact_email, contact_phone
     FROM bookings
     WHERE date >= CURRENT_DATE
       AND date <= CURRENT_DATE + INTERVAL '60 days'
@@ -61,6 +62,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       date: typeof row.date === 'string' ? row.date : new Date(row.date).toISOString().slice(0, 10),
       time: row.time ?? null,
       location: row.location ?? null,
+      notes: row.notes ?? null,
+      contactEmail: row.contact_email ?? null,
+      contactPhone: row.contact_phone ?? null,
     });
     bookingsByDj.set(dj.username, entry);
   }
