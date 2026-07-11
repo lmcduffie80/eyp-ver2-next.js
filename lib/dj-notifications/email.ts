@@ -47,7 +47,15 @@ function escapeHtml(s: string): string {
 function projectTitle(b: { clientName: string | null; eventType: string | null }): string {
   const client = b.clientName?.trim();
   const type = b.eventType?.trim();
-  if (client && type) return `${client} — ${type}`;
+
+  // Some legacy/imported bookings have the exact same combined string
+  // (e.g. "Client Name | DJ Entertainment | with lights") stored in both
+  // client_name and event_type. Collapse that down to a single mention
+  // instead of printing it twice.
+  if (client && type) {
+    if (client.toLowerCase() === type.toLowerCase()) return client;
+    return `${client} — ${type}`;
+  }
   if (client) return client;
   if (type) return type;
   return 'Upcoming project';
