@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 import { signConfirmToken } from './token';
-import { formatEventDate, reminderLabel, type ReminderType } from './schedule';
+import { formatEventDate, isMilestoneReminder, reminderLabel, type ReminderType } from './schedule';
 
 // Central config for all DJ notification emails.
 // From: ey-productions.com is the domain verified in Resend (agrovus, LLC team).
@@ -173,13 +173,18 @@ export function renderReminderEmail(args: {
   const { djFirstName, booking, reminderType, confirmUrl } = args;
   const title = projectTitle(booking);
   const label = reminderLabel(reminderType);
+  const milestone = isMilestoneReminder(reminderType);
   const preheader = `${label}: ${title} on ${formatEventDate(booking.date)}. Tap to confirm.`;
+
+  const introText = milestone
+    ? `You have an upcoming project. Please tap <strong>Confirm</strong> so Lee knows you're locked in.`
+    : `We still haven't heard back on this one. Please tap <strong>Confirm</strong> so Lee knows you're locked in — you'll keep getting this daily reminder until you do.`;
 
   const inner = `
     <div style="font-size:12px;color:#f97316;font-weight:600;letter-spacing:0.5px">${escapeHtml(label.toUpperCase())}</div>
     <h1 style="font-size:22px;margin:8px 0 12px 0;color:#111827">Hi ${escapeHtml(djFirstName)},</h1>
     <p style="font-size:15px;line-height:1.55;color:#374151;margin:0 0 12px 0">
-      You have an upcoming project. Please tap <strong>Confirm</strong> so Lee knows you're locked in.
+      ${introText}
     </p>
     ${bookingCard(booking)}
     ${confirmButton(confirmUrl, "Confirm I'll be there")}
@@ -192,7 +197,9 @@ export function renderReminderEmail(args: {
   const text = [
     `Hi ${djFirstName},`,
     '',
-    `${label}: ${title}`,
+    milestone
+      ? `${label}: ${title}`
+      : `Still haven't heard back on ${title}. You'll keep getting this daily until you confirm.`,
     formatEventDate(booking.date) + (booking.time ? ` at ${booking.time}` : ''),
     booking.location ?? '',
     '',

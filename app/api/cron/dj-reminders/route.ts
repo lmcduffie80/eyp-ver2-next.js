@@ -43,9 +43,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     errors: [] as { bookingId: number; error: string }[],
   };
 
-  // Pull every booking in the next 15 days. This is a tight window because the
-  // reminder cadence only fires at 14/7/3/1 days out. If the cron misses a day
-  // the UNIQUE constraint still keeps sends idempotent when it runs later.
+  // Pull every booking in the next 15 days. Milestone emails fire at exactly
+  // 14/7/3/1 days out; every other day inside that 14-day window gets a daily
+  // nag reminder instead, for as long as the DJ hasn't confirmed. If the cron
+  // misses a day the UNIQUE constraint still keeps sends idempotent when it
+  // runs later.
   const upcomingRows = normalizeRows(await sql`
     SELECT id, dj_user, client_name, event_type, date, time, location
     FROM bookings
@@ -62,7 +64,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const bookingId: number = row.id;
     const djUserRaw: string = (row.dj_user ?? '').toString().trim();
     const days = daysUntilEvent(row.date, now);
-    const reminderType = reminderTypeForDaysOut(days);
+    const reminderType = reminderTypeForDaysOut(days, now);
 
     if (!reminderType) {
       results.skippedNoMatchingReminder++;

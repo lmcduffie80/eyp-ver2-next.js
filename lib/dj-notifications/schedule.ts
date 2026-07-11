@@ -37,15 +37,33 @@ export function daysUntilEvent(eventDate: string | Date, now: Date = new Date())
   return Math.round((eventUtc.getTime() - nowUtc.getTime()) / 86_400_000);
 }
 
-// Reminder cadence: send at exactly 14/7/3/1 days out.
-export type ReminderType = 'reminder_14d' | 'reminder_7d' | 'reminder_3d' | 'reminder_1d';
+// Reminder cadence: milestone emails at exactly 14/7/3/1 days out. On every
+// other day inside the 14-day confirmation window (including the event day
+// itself), the DJ gets a plain daily nag email instead — but only until they
+// confirm. The moment `dj_confirmations` has a row for the booking, the cron
+// stops sending anything for it (see app/api/cron/dj-reminders/route.ts).
+export type MilestoneReminderType = 'reminder_14d' | 'reminder_7d' | 'reminder_3d' | 'reminder_1d';
+export type ReminderType = MilestoneReminderType | `reminder_daily_${string}`;
 
-export function reminderTypeForDaysOut(days: number): ReminderType | null {
+export function isMilestoneReminder(type: ReminderType): type is MilestoneReminderType {
+  return (
+    type === 'reminder_14d' ||
+    type === 'reminder_7d' ||
+    type === 'reminder_3d' ||
+    type === 'reminder_1d'
+  );
+}
+
+// `now` is only used to stamp the daily reminder type with today's date, so
+// each day's nag email gets its own row in dj_email_sends (and therefore
+// actually goes out instead of being deduped against yesterday's send).
+export function reminderTypeForDaysOut(days: number, now: Date = new Date()): ReminderType | null {
+  if (days < 0 || days > 14) return null;
   if (days === 14) return 'reminder_14d';
   if (days === 7) return 'reminder_7d';
   if (days === 3) return 'reminder_3d';
   if (days === 1) return 'reminder_1d';
-  return null;
+  return `reminder_daily_${ymdInTz(now, TIMEZONE)}`;
 }
 
 export function reminderLabel(type: ReminderType): string {
@@ -54,6 +72,7 @@ export function reminderLabel(type: ReminderType): string {
     case 'reminder_7d':  return 'One week out';
     case 'reminder_3d':  return 'This week';
     case 'reminder_1d':  return 'Tomorrow';
+    default:             return 'Reminder';
   }
 }
 
