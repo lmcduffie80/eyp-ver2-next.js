@@ -45,7 +45,7 @@ export default function Navigation() {
             alt="Externally Yours Productions, LLC"
             width={912}
             height={339}
-            style={{ height: '81px', width: 'auto', maxWidth: '306px', aspectRatio: 'auto', display: 'block' }}
+            style={{ height: '73px', width: 'auto', maxWidth: '275px', aspectRatio: 'auto', display: 'block' }}
             priority
             loading="eager"
             decoding="async"
