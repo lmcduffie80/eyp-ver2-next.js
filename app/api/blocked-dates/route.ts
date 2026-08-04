@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 import { Resend } from 'resend';
 import { NOTIFICATION_FROM, ADMIN_NOTIFY_TO } from '@/lib/dj-notifications/email';
+import { signApprovalToken } from '@/lib/dj-notifications/token';
 
 // GET /api/blocked-dates - Get all blocked dates or filter by DJ
 export async function GET(request: NextRequest) {
@@ -99,19 +100,41 @@ export async function POST(request: NextRequest) {
           month: 'short',
           day: 'numeric'
         });
+        const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://www.externallyyoursproductions.com').replace(/\/+$/, '');
+        const approveToken = signApprovalToken({ blockedDateId: blockedDate.id, djUser: blockedDate.dj_user });
+        const approveUrl = `${baseUrl}/blackout-approve?token=${encodeURIComponent(approveToken)}`;
+
         await resend.emails.send({
           from: NOTIFICATION_FROM,
           to: ADMIN_NOTIFY_TO,
-          subject: `New DJ time-off request: ${blockedDate.dj_user} – ${formattedDate}`,
+          subject: `Time-off request: ${blockedDate.dj_user} – ${formattedDate}`,
           html: `
-            <p><strong>A DJ has submitted a time-off request from the DJ portal.</strong></p>
-            <ul>
-              <li><strong>DJ:</strong> ${blockedDate.dj_user}</li>
-              <li><strong>Date:</strong> ${formattedDate}</li>
-              <li><strong>Reason:</strong> ${blockedDate.reason || 'Not provided'}</li>
-            </ul>
-            <p>Please log in to the <a href="${process.env.NEXT_PUBLIC_BASE_URL || ''}/admin">admin dashboard</a> (Blocked Dates tab) to approve or reject this request.</p>
-          `
+            <div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;padding:32px;background:#f4f4f5;border-radius:12px">
+              <div style="background:#111827;padding:20px 24px;border-radius:8px 8px 0 0">
+                <div style="font-size:14px;letter-spacing:1px;color:#f97316;font-weight:600">EXTERNALLY YOURS PRODUCTIONS</div>
+                <div style="font-size:12px;color:#9ca3af;margin-top:4px">DJ Time-Off Request</div>
+              </div>
+              <div style="background:#fff;padding:28px;border-radius:0 0 8px 8px">
+                <h2 style="margin:0 0 16px 0;font-size:20px;color:#111827">New time-off request</h2>
+                <div style="border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;margin-bottom:20px;background:#f9fafb">
+                  <div style="font-size:16px;font-weight:600;color:#111827">${blockedDate.dj_user}</div>
+                  <div style="font-size:14px;color:#374151;margin-top:6px">${formattedDate}</div>
+                  <div style="font-size:13px;color:#6b7280;margin-top:4px">Reason: ${blockedDate.reason || 'Not provided'}</div>
+                </div>
+                <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 16px 0">
+                  <tr>
+                    <td style="border-radius:8px;background:#16a34a">
+                      <a href="${approveUrl}" style="display:inline-block;padding:14px 28px;color:#fff;text-decoration:none;font-weight:600;font-size:16px">✓ Approve Request</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="font-size:13px;color:#6b7280;margin:0">
+                  Or manage all requests in the <a href="${baseUrl}/admin" style="color:#f97316;text-decoration:none">admin dashboard</a>.
+                </p>
+              </div>
+            </div>
+          `,
+          text: `${blockedDate.dj_user} submitted a time-off request for ${formattedDate}.\nReason: ${blockedDate.reason || 'Not provided'}\n\nApprove: ${approveUrl}\n\nOr visit the admin dashboard: ${baseUrl}/admin`,
         });
       } catch (emailError) {
         console.error('Resend blackout-date notification failed:', emailError);

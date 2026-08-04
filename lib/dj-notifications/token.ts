@@ -23,6 +23,55 @@ function base64UrlDecode(s: string): Buffer {
   return Buffer.from(padded, 'base64');
 }
 
+// ---------------------------------------------------------------------------
+// Blackout-date approval tokens (one-click approve from email)
+// ---------------------------------------------------------------------------
+// Payload: "blackout|{blockedDateId}|{djUser}"
+// The "blackout|" prefix prevents a confirm token from being re-used as an
+// approval token and vice-versa.
+
+export interface ApprovalPayload {
+  blockedDateId: number;
+  djUser: string;
+}
+
+export function signApprovalToken(p: ApprovalPayload): string {
+  const payload = `blackout|${p.blockedDateId}|${p.djUser}`;
+  const mac = createHmac('sha256', getSecret()).update(payload).digest();
+  return `${base64UrlEncode(Buffer.from(payload, 'utf8'))}.${base64UrlEncode(mac)}`;
+}
+
+export function verifyApprovalToken(token: string): ApprovalPayload | null {
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  const [payloadPart, macPart] = parts;
+
+  let payloadBuf: Buffer;
+  let macBuf: Buffer;
+  try {
+    payloadBuf = base64UrlDecode(payloadPart);
+    macBuf = base64UrlDecode(macPart);
+  } catch {
+    return null;
+  }
+
+  const expected = createHmac('sha256', getSecret()).update(payloadBuf).digest();
+  if (macBuf.length !== expected.length) return null;
+  if (!timingSafeEqual(macBuf, expected)) return null;
+
+  const payload = payloadBuf.toString('utf8');
+  const segments = payload.split('|');
+  if (segments.length !== 3 || segments[0] !== 'blackout') return null;
+  const [, blockedDateIdStr, djUser] = segments;
+  const blockedDateId = Number(blockedDateIdStr);
+  if (!Number.isInteger(blockedDateId) || blockedDateId <= 0) return null;
+  if (!djUser) return null;
+
+  return { blockedDateId, djUser };
+}
+
+// ---------------------------------------------------------------------------
+
 export interface ConfirmPayload {
   bookingId: number;
   djUser: string;
