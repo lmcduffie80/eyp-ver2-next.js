@@ -827,6 +827,31 @@ export default function AdminDashboard() {
     }
   };
 
+  const getOtherStaffSummary = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const futureBookings = bookings.filter(b => {
+      const bookingDate = parseLocalDate(b.date);
+      const isUpcoming = (b as any).status === 'upcoming' || !(b as any).status;
+      return bookingDate >= today && isUpcoming && matchesFirstName(b.djUser, ['Lee', 'Misty']);
+    });
+
+    const staffMap = new Map<string, { name: string; projects: any[]; dates: Date[] }>();
+    futureBookings.forEach(booking => {
+      const key = booking.djUser || 'Unknown';
+      if (!staffMap.has(key)) staffMap.set(key, { name: key, projects: [], dates: [] });
+      staffMap.get(key)!.projects.push(booking);
+      staffMap.get(key)!.dates.push(parseLocalDate(booking.date));
+    });
+
+    return Array.from(staffMap.values()).map(s => ({
+      ...s,
+      projectCount: s.projects.length,
+      dates: s.dates.sort((a: Date, b: Date) => a.getTime() - b.getTime()),
+    }));
+  };
+
   const getDJSummary = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -2463,6 +2488,60 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
+
+            {/* Other Staff (Lee, Misty) — project visibility without DJ reminders */}
+            {getOtherStaffSummary().length > 0 && (
+              <div className="section-card" style={{ marginTop: '1.5rem' }}>
+                <h2>Other Staff Overview</h2>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '0.25rem', marginBottom: '1rem' }}>
+                  Upcoming projects for coordination staff. No reminders are sent to these accounts.
+                </p>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gap: '1rem',
+                }}>
+                  {getOtherStaffSummary().map(staff => (
+                    <div
+                      key={staff.name}
+                      style={{
+                        padding: '1.25rem',
+                        background: '#f8f5ff',
+                        border: '1px solid #d8b4fe',
+                        borderRadius: '10px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.75rem' }}>
+                        <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-dark)' }}>{staff.name}</h3>
+                        <span style={{
+                          background: '#7c3aed',
+                          color: 'white',
+                          padding: '0.25rem 0.65rem',
+                          borderRadius: '12px',
+                          fontSize: '0.85rem',
+                          fontWeight: 'bold',
+                        }}>
+                          {staff.projectCount} {staff.projectCount === 1 ? 'project' : 'projects'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: 'var(--text-light)' }}>
+                        <div style={{ fontWeight: '500', marginBottom: '0.5rem' }}>Upcoming Dates:</div>
+                        {staff.dates.slice(0, 4).map((date: Date, idx: number) => (
+                          <div key={idx} style={{ paddingLeft: '0.5rem', marginBottom: '0.25rem' }}>
+                            • {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </div>
+                        ))}
+                        {staff.dates.length > 4 && (
+                          <div style={{ paddingLeft: '0.5rem', color: '#7c3aed', fontStyle: 'italic' }}>
+                            +{staff.dates.length - 4} more...
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* All DJs Upcoming Projects Table */}
             <div className="section-card" style={{ marginTop: '2rem' }}>
