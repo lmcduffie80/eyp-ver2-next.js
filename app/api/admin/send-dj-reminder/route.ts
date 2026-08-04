@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
 // POST /api/admin/send-dj-reminder
 // Body: { djUser: string }
 // Manually sends a digest reminder email to a single DJ. Admin-only.
-export async function POST(req: NextRequest): Promise<NextResponse> {
+export async function POST(req: NextRequest) {
   const guard = await requireAdmin();
   if ('response' in guard) return guard.response;
 
