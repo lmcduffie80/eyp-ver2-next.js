@@ -39,6 +39,7 @@ export default function AdminDashboard() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarDJFilter, setCalendarDJFilter] = useState('');
   const [selectedDJFilter, setSelectedDJFilter] = useState<string>('');
+  const [reminderStatus, setReminderStatus] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'error'>>({});
   
   // All Projects Analytics filters
   const [analyticsFilterDJ, setAnalyticsFilterDJ] = useState<string>('');
@@ -847,6 +848,30 @@ export default function AdminDashboard() {
       projectCount: dj.projects.length,
       dates: dj.dates.sort((a: Date, b: Date) => a.getTime() - b.getTime())
     }));
+  };
+
+  const sendDJReminder = async (djName: string) => {
+    setReminderStatus(prev => ({ ...prev, [djName]: 'sending' }));
+    try {
+      const res = await adminFetch('/api/admin/send-dj-reminder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ djUser: djName }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setReminderStatus(prev => ({ ...prev, [djName]: 'sent' }));
+        setTimeout(() => setReminderStatus(prev => ({ ...prev, [djName]: 'idle' })), 4000);
+      } else {
+        console.error('[sendDJReminder]', data.error);
+        setReminderStatus(prev => ({ ...prev, [djName]: 'error' }));
+        setTimeout(() => setReminderStatus(prev => ({ ...prev, [djName]: 'idle' })), 4000);
+      }
+    } catch (err) {
+      console.error('[sendDJReminder] network error', err);
+      setReminderStatus(prev => ({ ...prev, [djName]: 'error' }));
+      setTimeout(() => setReminderStatus(prev => ({ ...prev, [djName]: 'idle' })), 4000);
+    }
   };
 
   // Booking Status Management
@@ -2379,6 +2404,36 @@ export default function AdminDashboard() {
                         </div>
                       )}
                     </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        sendDJReminder(dj.name);
+                      }}
+                      disabled={reminderStatus[dj.name] === 'sending'}
+                      style={{
+                        marginTop: '0.85rem',
+                        width: '100%',
+                        padding: '0.45rem 0.75rem',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        borderRadius: '6px',
+                        border: 'none',
+                        cursor: reminderStatus[dj.name] === 'sending' ? 'not-allowed' : 'pointer',
+                        transition: 'background 0.2s, opacity 0.2s',
+                        background:
+                          reminderStatus[dj.name] === 'sent' ? '#16a34a' :
+                          reminderStatus[dj.name] === 'error' ? '#dc2626' :
+                          reminderStatus[dj.name] === 'sending' ? '#6b7280' :
+                          '#f97316',
+                        color: '#fff',
+                        opacity: reminderStatus[dj.name] === 'sending' ? 0.7 : 1,
+                      }}
+                    >
+                      {reminderStatus[dj.name] === 'sending' ? 'Sending…' :
+                       reminderStatus[dj.name] === 'sent' ? '✓ Reminder Sent' :
+                       reminderStatus[dj.name] === 'error' ? '✗ Failed — Retry?' :
+                       '✉ Send Reminder'}
+                    </button>
                     {selectedDJFilter === dj.name && (
                       <div style={{
                         position: 'absolute',
