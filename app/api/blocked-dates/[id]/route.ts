@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
+import { loadDjLookup, loadAllStaffLookup, resolveDj } from '@/lib/dj-notifications/djLookup';
+import {
+  NOTIFICATION_FROM,
+  NOTIFICATION_REPLY_TO,
+  ADMIN_NOTIFY_TO,
+  getResend,
+} from '@/lib/dj-notifications/email';
 
 // GET /api/blocked-dates/[id] - Get single blocked date
 export async function GET(
@@ -114,6 +121,72 @@ export async function PUT(
     }
 
     const blockedDate = result.rows[0];
+
+    // When a request is approved, email the DJ and copy Lee.
+    if (status === 'approved' && process.env.RESEND_API_KEY) {
+      try {
+        const dateObj = blockedDate.date instanceof Date
+          ? blockedDate.date
+          : new Date(blockedDate.date);
+        const formattedDate = dateObj.toLocaleDateString('en-US', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        });
+
+        // Resolve the DJ's email from the users table.
+        const { byKey: djByKey } = await loadDjLookup();
+        let djRecord = resolveDj(blockedDate.dj_user, djByKey);
+        if (!djRecord) {
+          const { byKey: allByKey } = await loadAllStaffLookup();
+          djRecord = resolveDj(blockedDate.dj_user, allByKey);
+        }
+        const djEmail = djRecord?.email ?? null;
+        const djFirstName = djRecord?.firstName || blockedDate.dj_user;
+
+        if (djEmail) {
+          const resend = getResend();
+          await resend.emails.send({
+            from: NOTIFICATION_FROM,
+            to: djEmail,
+            cc: ADMIN_NOTIFY_TO,
+            replyTo: NOTIFICATION_REPLY_TO,
+            subject: `Your time-off request for ${formattedDate} has been approved`,
+            html: `
+              <div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;padding:32px;background:#f4f4f5;border-radius:12px">
+                <div style="background:#111827;padding:20px 24px;border-radius:8px 8px 0 0">
+                  <div style="font-size:14px;letter-spacing:1px;color:#f97316;font-weight:600">EXTERNALLY YOURS PRODUCTIONS</div>
+                </div>
+                <div style="background:#ffffff;padding:28px 28px 8px 28px;border-radius:0 0 8px 8px">
+                  <h2 style="color:#16a34a;margin:0 0 12px 0;font-size:20px">✓ Time-Off Approved</h2>
+                  <p style="color:#374151;font-size:15px;line-height:1.55">Hi ${djFirstName},</p>
+                  <p style="color:#374151;font-size:15px;line-height:1.55">
+                    Your time-off request has been approved for:
+                  </p>
+                  <div style="border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;margin:12px 0;background:#f0fdf4">
+                    <div style="font-size:16px;font-weight:600;color:#111827">${formattedDate}</div>
+                    ${blockedDate.reason ? `<div style="font-size:13px;color:#6b7280;margin-top:6px">Reason: ${blockedDate.reason}</div>` : ''}
+                  </div>
+                  <p style="color:#6b7280;font-size:13px;margin-top:16px">
+                    This date is now blocked on your calendar. Questions? Reply to this email.
+                  </p>
+                </div>
+              </div>
+            `,
+            text: [
+              `Hi ${djFirstName},`,
+              '',
+              `Your time-off request for ${formattedDate} has been approved.`,
+              blockedDate.reason ? `Reason: ${blockedDate.reason}` : '',
+              '',
+              `This date is now blocked on your calendar. Questions? Contact ${NOTIFICATION_REPLY_TO}.`,
+            ].filter(Boolean).join('\n'),
+          });
+        }
+      } catch (emailErr) {
+        console.error('[blocked-dates] Approval email failed:', emailErr);
+        // Do not fail the API — the DB update already succeeded.
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {
