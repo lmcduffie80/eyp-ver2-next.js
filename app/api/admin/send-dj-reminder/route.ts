@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
   // (Lee, Misty, coordinators) can also receive digest reminder emails.
   const { byKey: djByKey } = await loadDjLookup();
   let dj = resolveDj(djUserRaw, djByKey);
+  const isDj = dj !== null;
 
   if (!dj) {
     const { byKey: allByKey } = await loadAllStaffLookup();
@@ -51,38 +52,58 @@ export async function POST(req: NextRequest) {
 
   if (!dj.email) {
     return NextResponse.json(
-      { success: false, error: `DJ "${dj.username}" has no email address on file` },
+      { success: false, error: `"${dj.username}" has no email address on file` },
       { status: 422 }
     );
   }
 
-  // Fetch this DJ's upcoming bookings (same filter as the digest cron).
-  const rows = normalizeRows(await sql`
-    SELECT id, dj_user, client_name, event_type, date, time, location,
-           notes, contact_email, contact_phone
-    FROM bookings
-    WHERE date >= CURRENT_DATE
-      AND (archived = FALSE OR archived IS NULL)
-      AND (
-        event_type IS NULL
-        OR event_type = ''
-        OR (
-          event_type NOT ILIKE '%videograph%'
-          AND event_type NOT ILIKE '%photograph%'
-          AND event_type NOT ILIKE '%coordinat%'
+  // DJs: exclude non-DJ service rows (same filter as the digest cron).
+  // Non-DJ staff (Lee, Misty, coordinators): fetch all event types — their
+  // bookings ARE the coordination rows that the DJ filter deliberately strips.
+  let rows: ReturnType<typeof normalizeRows>;
+  if (isDj) {
+    rows = normalizeRows(await sql`
+      SELECT id, dj_user, client_name, event_type, date, time, location,
+             notes, contact_email, contact_phone
+      FROM bookings
+      WHERE date >= CURRENT_DATE
+        AND (archived = FALSE OR archived IS NULL)
+        AND (
+          event_type IS NULL
+          OR event_type = ''
+          OR (
+            event_type NOT ILIKE '%videograph%'
+            AND event_type NOT ILIKE '%photograph%'
+            AND event_type NOT ILIKE '%coordinat%'
+          )
         )
-      )
-    ORDER BY date ASC
-  `);
+      ORDER BY date ASC
+    `);
+  } else {
+    rows = normalizeRows(await sql`
+      SELECT id, dj_user, client_name, event_type, date, time, location,
+             notes, contact_email, contact_phone
+      FROM bookings
+      WHERE date >= CURRENT_DATE
+        AND (archived = FALSE OR archived IS NULL)
+      ORDER BY date ASC
+    `);
+  }
 
-  // Build a combined lookup (DJs + all staff) for matching each booking row.
-  const { byKey: allByKeyFull } = await loadAllStaffLookup();
-
-  // Filter to only this staff member's rows using the same resolver.
+  // For DJs: resolve each row through the lookup so fuzzy dj_user values
+  // (username, full name, first name) all collapse to the right person.
+  // For non-DJ staff: match directly by first-name prefix — simpler and
+  // doesn't depend on the staff member existing in the users table with
+  // a specific username format.
+  const firstName = (dj.firstName || dj.username || '').toLowerCase();
   const djBookings: DigestBooking[] = rows
     .filter(row => {
-      const resolved = resolveDj((row.dj_user ?? '').toString().trim(), allByKeyFull);
-      return resolved?.username === dj!.username;
+      const rowDjUser = (row.dj_user ?? '').toString().trim();
+      if (isDj) {
+        const resolved = resolveDj(rowDjUser, djByKey);
+        return resolved?.username === dj!.username;
+      }
+      return rowDjUser.toLowerCase().startsWith(firstName);
     })
     .map(row => ({
       id: row.id,
