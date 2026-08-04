@@ -41,6 +41,15 @@ async function main() {
     FROM bookings
     WHERE date >= CURRENT_DATE
       AND date <= CURRENT_DATE + INTERVAL '12 months'
+      AND (
+        event_type IS NULL
+        OR event_type = ''
+        OR (
+          event_type NOT ILIKE '%videograph%'
+          AND event_type NOT ILIKE '%photograph%'
+          AND event_type NOT ILIKE '%coordinat%'
+        )
+      )
     ORDER BY date ASC
   `);
   console.log(`\n[send-dj-monthly-now] Found ${rows.length} booking(s) in the next 12 months.`);

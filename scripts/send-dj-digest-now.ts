@@ -39,6 +39,15 @@ async function main() {
            notes, contact_email, contact_phone
     FROM bookings
     WHERE date >= CURRENT_DATE
+      AND (
+        event_type IS NULL
+        OR event_type = ''
+        OR (
+          event_type NOT ILIKE '%videograph%'
+          AND event_type NOT ILIKE '%photograph%'
+          AND event_type NOT ILIKE '%coordinat%'
+        )
+      )
     ORDER BY date ASC
   `);
   console.log(`\n[send-dj-digest-now] Found ${rows.length} upcoming booking(s) (all future dates).`);

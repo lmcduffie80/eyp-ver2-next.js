@@ -37,13 +37,24 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const resend = getResend();
   const { byKey, all } = await loadDjLookup();
 
-  // Load every upcoming booking in the next 60 days, then group by resolved DJ.
+  // Load DJ bookings in the next 60 days. Exclude non-DJ service rows
+  // (Videography, Photography, Coordination) that are stored as separate rows
+  // for the same event but should not appear in DJ notifications.
   const rows = normalizeRows(await sql`
     SELECT id, dj_user, client_name, event_type, date, time, location,
            notes, contact_email, contact_phone
     FROM bookings
     WHERE date >= CURRENT_DATE
       AND date <= CURRENT_DATE + INTERVAL '60 days'
+      AND (
+        event_type IS NULL
+        OR event_type = ''
+        OR (
+          event_type NOT ILIKE '%videograph%'
+          AND event_type NOT ILIKE '%photograph%'
+          AND event_type NOT ILIKE '%coordinat%'
+        )
+      )
     ORDER BY date ASC
   `);
 

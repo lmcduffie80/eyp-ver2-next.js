@@ -53,6 +53,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     FROM bookings
     WHERE date >= CURRENT_DATE
       AND date <= CURRENT_DATE + INTERVAL '15 days'
+      AND (
+        event_type IS NULL
+        OR event_type = ''
+        OR (
+          event_type NOT ILIKE '%videograph%'
+          AND event_type NOT ILIKE '%photograph%'
+          AND event_type NOT ILIKE '%coordinat%'
+        )
+      )
     ORDER BY date ASC
   `);
 
