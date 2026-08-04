@@ -7,6 +7,17 @@ import { useCSVImport } from '../hooks/useCSVImport';
 const adminFetch = (url: string, options: RequestInit = {}) =>
   fetch(url, { ...options, credentials: 'include' });
 
+// First names of users who are actual DJs (user_type = 'dj' in the DB).
+// Used to filter bookings for the DJ reminder cards and stats so that
+// non-DJ staff (Lee, Misty, etc.) are never shown as DJ recipients.
+const DJ_FIRST_NAMES = ['Gavin', 'Will', 'Stephen'];
+
+const matchesFirstName = (djUser: string, names: string[]) => {
+  if (!djUser) return false;
+  const lower = djUser.toLowerCase();
+  return names.some(n => lower.startsWith(n.toLowerCase()));
+};
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('djs');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -235,15 +246,10 @@ export default function AdminDashboard() {
       const distinctProjectCount = (rows: any[]) =>
         new Set(rows.map(projectKey)).size;
 
-      // DJ buckets — match by first name (case-insensitive) to handle
-      // full names ("Gavin Smith"), usernames, or first-name-only values
-      const matchesFirstName = (djUser: string, names: string[]) => {
-        if (!djUser) return false;
-        const lower = djUser.toLowerCase();
-        return names.some(n => lower.startsWith(n.toLowerCase()));
-      };
+      // DJ buckets — use module-level matchesFirstName / DJ_FIRST_NAMES so the
+      // same list drives both these stats and the DJ reminder cards.
       const djBookings = bookings.filter(b =>
-        matchesFirstName(b.djUser, ['Gavin', 'Will', 'Stephen'])
+        matchesFirstName(b.djUser, DJ_FIRST_NAMES)
       );
       const otherBookings = bookings.filter(b =>
         matchesFirstName(b.djUser, ['Lee', 'Misty'])
@@ -825,11 +831,13 @@ export default function AdminDashboard() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Get future bookings with 'upcoming' status
+    // Only include future, upcoming bookings assigned to actual DJs.
+    // Exclude non-DJ staff (Lee, Misty, etc.) so their bookings don't
+    // appear as DJ reminder cards.
     const futureBookings = bookings.filter(b => {
       const bookingDate = parseLocalDate(b.date);
       const isUpcoming = (b as any).status === 'upcoming' || !(b as any).status;
-      return bookingDate >= today && isUpcoming;
+      return bookingDate >= today && isUpcoming && matchesFirstName(b.djUser, DJ_FIRST_NAMES);
     });
     
     // Group by DJ
