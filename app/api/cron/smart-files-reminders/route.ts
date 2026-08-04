@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/api-old/db/connection';
 import { normalizeRows } from '@/lib/db-utils';
 import { Resend } from 'resend';
-import { createHash } from 'crypto';
+import { NOTIFICATION_FROM, ADMIN_NOTIFY_TO } from '@/lib/dj-notifications/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,12 +41,12 @@ export async function GET(req: NextRequest) {
     const tokenRows = normalizeRows(await sql`SELECT token_hash, recipient_email FROM sf_share_tokens WHERE file_id = ${file.id} AND (expires_at IS NULL OR expires_at > NOW()) ORDER BY created_at DESC LIMIT 1`);
     if (!tokenRows.length) continue;
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://externallyyyoursproductions.com';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://externallyyoursproductions.com';
     // Note: we store hash, not raw token — can't reconstruct the link. Just notify admin.
     try {
       await resend.emails.send({
-        from: 'Smart Files <lee@externallyyyoursproductions.com>',
-        to: 'lee@externallyyyoursproductions.com',
+        from: NOTIFICATION_FROM,
+        to: ADMIN_NOTIFY_TO,
         subject: `Reminder: "${file.title}" still awaiting signature`,
         html: `<p>The Smart File "<strong>${file.title}</strong>" for ${file.client_name ?? file.client_email} was sent 3+ days ago and has not been signed yet. Consider following up or re-sending the link from the <a href="${baseUrl}/admin/smart-files/${file.id}">admin dashboard</a>.</p>`,
       });

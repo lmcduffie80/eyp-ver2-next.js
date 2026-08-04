@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import sql from '@/api-old/db/connection';
 import { normalizeRows } from '@/lib/db-utils';
 import { Resend } from 'resend';
+import { NOTIFICATION_FROM } from '@/lib/dj-notifications/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
           try {
             const resend = new Resend(process.env.RESEND_API_KEY);
             await resend.emails.send({
-              from: 'Lee McDuffie <lee@externallyyyoursproductions.com>',
+              from: NOTIFICATION_FROM,
               to: fileRows[0].client_email as string,
               subject: `Payment received — ${fileRows[0].title}`,
               html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;"><h2>Payment Received</h2><p>We received your payment of $${(amountPaid / 100).toFixed(2)} for <strong>${fileRows[0].title}</strong>. Thank you!</p></div>`,
