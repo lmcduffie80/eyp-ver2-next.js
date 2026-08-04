@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 import { Resend } from 'resend';
+import { NOTIFICATION_FROM, ADMIN_NOTIFY_TO } from '@/lib/dj-notifications/email';
 
 // GET /api/blocked-dates - Get all blocked dates or filter by DJ
 export async function GET(request: NextRequest) {
@@ -83,10 +84,6 @@ export async function POST(request: NextRequest) {
     const blockedDate = result.rows[0];
 
     // Send admin notification email via Resend (non-blocking; do not fail API on email error)
-    const adminEmail =
-      process.env.ADMIN_NOTIFICATION_EMAIL || 'lee@externallyyoursproductions.com';
-    const fromAddress =
-      process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
     if (process.env.RESEND_API_KEY) {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
@@ -103,17 +100,17 @@ export async function POST(request: NextRequest) {
           day: 'numeric'
         });
         await resend.emails.send({
-          from: fromAddress,
-          to: adminEmail,
-          subject: `New DJ blackout date: ${blockedDate.dj_user} – ${formattedDate}`,
+          from: NOTIFICATION_FROM,
+          to: ADMIN_NOTIFY_TO,
+          subject: `New DJ time-off request: ${blockedDate.dj_user} – ${formattedDate}`,
           html: `
-            <p><strong>New blackout date submitted from the DJ portal.</strong></p>
+            <p><strong>A DJ has submitted a time-off request from the DJ portal.</strong></p>
             <ul>
               <li><strong>DJ:</strong> ${blockedDate.dj_user}</li>
               <li><strong>Date:</strong> ${formattedDate}</li>
               <li><strong>Reason:</strong> ${blockedDate.reason || 'Not provided'}</li>
             </ul>
-            <p>You can approve or reject this request in the admin dashboard (Blocked Dates tab).</p>
+            <p>Please log in to the <a href="${process.env.NEXT_PUBLIC_BASE_URL || ''}/admin">admin dashboard</a> (Blocked Dates tab) to approve or reject this request.</p>
           `
         });
       } catch (emailError) {
