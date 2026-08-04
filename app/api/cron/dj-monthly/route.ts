@@ -36,6 +36,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     FROM bookings
     WHERE date >= CURRENT_DATE
       AND date <= CURRENT_DATE + INTERVAL '12 months'
+      AND (archived = FALSE OR archived IS NULL)
       AND (
         event_type IS NULL
         OR event_type = ''
