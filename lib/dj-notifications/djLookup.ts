@@ -9,9 +9,10 @@ export interface DjRecord {
 }
 
 // Load every DJ from the users table into a lookup keyed by (case-insensitive)
-// username, first name, last name, and "First Last". This matches how
-// bookings.dj_user is populated across the app (sometimes username, sometimes
-// display name).
+// username, first name, and "First Last". Last names are intentionally excluded
+// as standalone keys because family members share them (e.g. "McDuffie" would
+// ambiguously match multiple people). Username, first name, and full name are
+// sufficient for all real-world dj_user values.
 export async function loadDjLookup(): Promise<{
   byKey: Map<string, DjRecord>;
   all: DjRecord[];
@@ -34,7 +35,6 @@ export async function loadDjLookup(): Promise<{
     const keys = new Set<string>();
     if (dj.username) keys.add(dj.username.toLowerCase());
     if (dj.firstName) keys.add(dj.firstName.toLowerCase());
-    if (dj.lastName) keys.add(dj.lastName.toLowerCase());
     if (dj.firstName && dj.lastName) {
       keys.add(`${dj.firstName} ${dj.lastName}`.toLowerCase());
     }
@@ -57,13 +57,14 @@ export function resolveDj(djUser: string | null | undefined, byKey: Map<string, 
   const direct = byKey.get(trimmed);
   if (direct) return direct;
 
-  // "Gavin McDuffie" -> try just "gavin", then just "mcduffie".
+  // "Gavin McDuffie" stored as dj_user but only first name is indexed ->
+  // try the first token only. Never try the last name: it is shared across
+  // family members and would match the wrong person (e.g. "Lee McDuffie"
+  // falling back to "mcduffie" → Gavin).
   const parts = trimmed.split(/\s+/);
   if (parts.length >= 2) {
-    for (const part of parts) {
-      const p = byKey.get(part);
-      if (p) return p;
-    }
+    const firstToken = byKey.get(parts[0]);
+    if (firstToken) return firstToken;
   }
 
   return null;
