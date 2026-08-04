@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/api-old/db/connection';
 import { normalizeRows } from '@/lib/db-utils';
-import { loadDjLookup, resolveDj } from '@/lib/dj-notifications/djLookup';
+import { loadDjLookup, loadAllStaffLookup, resolveDj } from '@/lib/dj-notifications/djLookup';
 import {
   NOTIFICATION_FROM,
   NOTIFICATION_REPLY_TO,
@@ -32,12 +32,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'djUser is required' }, { status: 400 });
   }
 
-  const { byKey } = await loadDjLookup();
-  const dj = resolveDj(djUserRaw, byKey);
+  // Try DJ-only lookup first; fall back to all staff so non-DJ team members
+  // (Lee, Misty, coordinators) can also receive digest reminder emails.
+  const { byKey: djByKey } = await loadDjLookup();
+  let dj = resolveDj(djUserRaw, djByKey);
+
+  if (!dj) {
+    const { byKey: allByKey } = await loadAllStaffLookup();
+    dj = resolveDj(djUserRaw, allByKey);
+  }
 
   if (!dj) {
     return NextResponse.json(
-      { success: false, error: `No DJ account found matching "${djUserRaw}"` },
+      { success: false, error: `No account found matching "${djUserRaw}"` },
       { status: 404 }
     );
   }
@@ -55,6 +62,7 @@ export async function POST(req: NextRequest) {
            notes, contact_email, contact_phone
     FROM bookings
     WHERE date >= CURRENT_DATE
+      AND (archived = FALSE OR archived IS NULL)
       AND (
         event_type IS NULL
         OR event_type = ''
@@ -67,11 +75,14 @@ export async function POST(req: NextRequest) {
     ORDER BY date ASC
   `);
 
-  // Filter to only this DJ's rows using the same resolver.
+  // Build a combined lookup (DJs + all staff) for matching each booking row.
+  const { byKey: allByKeyFull } = await loadAllStaffLookup();
+
+  // Filter to only this staff member's rows using the same resolver.
   const djBookings: DigestBooking[] = rows
     .filter(row => {
-      const resolved = resolveDj((row.dj_user ?? '').toString().trim(), byKey);
-      return resolved?.username === dj.username;
+      const resolved = resolveDj((row.dj_user ?? '').toString().trim(), allByKeyFull);
+      return resolved?.username === dj!.username;
     })
     .map(row => ({
       id: row.id,

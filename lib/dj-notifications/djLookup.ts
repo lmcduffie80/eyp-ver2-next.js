@@ -46,6 +46,42 @@ export async function loadDjLookup(): Promise<{
   return { byKey, all };
 }
 
+// Like loadDjLookup but includes ALL users with an email, regardless of
+// user_type. Used by the admin send-reminder endpoint so that non-DJ staff
+// (Lee, Misty, coordinators, etc.) can also receive digest emails.
+export async function loadAllStaffLookup(): Promise<{
+  byKey: Map<string, DjRecord>;
+  all: DjRecord[];
+}> {
+  const rows = normalizeRows(await sql`
+    SELECT username, email, first_name, last_name
+    FROM users
+    WHERE email IS NOT NULL AND email <> ''
+  `);
+
+  const all: DjRecord[] = rows.map(r => ({
+    username: r.username,
+    email: r.email,
+    firstName: r.first_name,
+    lastName: r.last_name,
+  }));
+
+  const byKey = new Map<string, DjRecord>();
+  for (const staff of all) {
+    const keys = new Set<string>();
+    if (staff.username) keys.add(staff.username.toLowerCase());
+    if (staff.firstName) keys.add(staff.firstName.toLowerCase());
+    if (staff.firstName && staff.lastName) {
+      keys.add(`${staff.firstName} ${staff.lastName}`.toLowerCase());
+    }
+    for (const k of keys) {
+      if (!byKey.has(k)) byKey.set(k, staff);
+    }
+  }
+
+  return { byKey, all };
+}
+
 // Try to resolve a free-form dj_user value to a DJ record. Returns null when
 // there is no match — the caller decides whether to alert Lee.
 export function resolveDj(djUser: string | null | undefined, byKey: Map<string, DjRecord>): DjRecord | null {

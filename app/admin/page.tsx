@@ -2489,32 +2489,48 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Other Staff (Lee, Misty) — project visibility without DJ reminders */}
+            {/* Other Staff (Lee, Misty) — same cards as DJs with filtering + reminders */}
             {getOtherStaffSummary().length > 0 && (
               <div className="section-card" style={{ marginTop: '1.5rem' }}>
                 <h2>Other Staff Overview</h2>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '0.25rem', marginBottom: '1rem' }}>
-                  Upcoming projects for coordination staff. No reminders are sent to these accounts.
-                </p>
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                   gap: '1rem',
+                  marginTop: '1rem',
                 }}>
                   {getOtherStaffSummary().map(staff => (
                     <div
                       key={staff.name}
+                      onClick={() => setSelectedDJFilter(staff.name === selectedDJFilter ? '' : staff.name)}
                       style={{
                         padding: '1.25rem',
-                        background: '#f8f5ff',
-                        border: '1px solid #d8b4fe',
+                        background: selectedDJFilter === staff.name ? '#f5f0ff' : '#f8f5ff',
+                        border: selectedDJFilter === staff.name ? '2px solid #7c3aed' : '1px solid #d8b4fe',
                         borderRadius: '10px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        position: 'relative',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (selectedDJFilter !== staff.name) {
+                          e.currentTarget.style.borderColor = '#7c3aed';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(124, 58, 237, 0.15)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (selectedDJFilter !== staff.name) {
+                          e.currentTarget.style.borderColor = '#d8b4fe';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.75rem' }}>
                         <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-dark)' }}>{staff.name}</h3>
                         <span style={{
-                          background: '#7c3aed',
+                          background: selectedDJFilter === staff.name ? '#7c3aed' : '#9333ea',
                           color: 'white',
                           padding: '0.25rem 0.65rem',
                           borderRadius: '12px',
@@ -2537,6 +2553,48 @@ export default function AdminDashboard() {
                           </div>
                         )}
                       </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          sendDJReminder(staff.name);
+                        }}
+                        disabled={reminderStatus[staff.name] === 'sending'}
+                        style={{
+                          marginTop: '0.85rem',
+                          width: '100%',
+                          padding: '0.45rem 0.75rem',
+                          fontSize: '0.8rem',
+                          fontWeight: '600',
+                          borderRadius: '6px',
+                          border: 'none',
+                          cursor: reminderStatus[staff.name] === 'sending' ? 'not-allowed' : 'pointer',
+                          transition: 'background 0.2s, opacity 0.2s',
+                          background:
+                            reminderStatus[staff.name] === 'sent' ? '#16a34a' :
+                            reminderStatus[staff.name] === 'error' ? '#dc2626' :
+                            reminderStatus[staff.name] === 'sending' ? '#6b7280' :
+                            '#7c3aed',
+                          color: '#fff',
+                          opacity: reminderStatus[staff.name] === 'sending' ? 0.7 : 1,
+                        }}
+                      >
+                        {reminderStatus[staff.name] === 'sending' ? 'Sending…' :
+                         reminderStatus[staff.name] === 'sent' ? '✓ Reminder Sent' :
+                         reminderStatus[staff.name] === 'error' ? '✗ Failed — Retry?' :
+                         '✉ Send Reminder'}
+                      </button>
+                      {selectedDJFilter === staff.name && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '0.5rem',
+                          right: '0.5rem',
+                          color: '#7c3aed',
+                          fontSize: '1.25rem',
+                          fontWeight: 'bold',
+                        }}>
+                          ✓
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
