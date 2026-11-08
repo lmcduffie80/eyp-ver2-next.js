@@ -6,6 +6,7 @@ import { createHash } from 'crypto';
 import { NextResponse } from 'next/server';
 import sql from '@/api-old/db/connection';
 import { getSingleRow } from '@/lib/db-utils';
+import { getAdminIdleCutoff } from '@/lib/adminSession';
 
 export interface AdminUser {
   id: number;
@@ -36,6 +37,7 @@ export async function getAdminUser(): Promise<AdminUser | null> {
       WHERE s.token_hash = ${tokenHash}
         AND s.user_type = 'admin'
         AND s.expires_at > NOW()
+        AND COALESCE(s.last_used_at, s.created_at) > ${getAdminIdleCutoff()}
       LIMIT 1
     `;
 

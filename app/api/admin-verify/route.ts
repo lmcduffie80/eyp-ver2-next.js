@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createHash } from 'crypto';
 import sql from '@/api-old/db/connection';
+import { getAdminIdleCutoff } from '@/lib/adminSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,10 +28,12 @@ export async function GET() {
       WHERE s.token_hash = ${tokenHash}
         AND s.user_type = 'admin'
         AND s.expires_at > NOW()
+        AND COALESCE(s.last_used_at, s.created_at) > ${getAdminIdleCutoff()}
       LIMIT 1
     `;
 
     if (result.rows.length === 0) {
+      await sql`DELETE FROM user_sessions WHERE token_hash = ${tokenHash}`.catch(() => {});
       cookieStore.delete('admin_session');
       return NextResponse.json(
         { success: false, message: 'Session invalid or expired', authenticated: false },

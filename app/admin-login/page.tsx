@@ -11,6 +11,13 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+    const reason = new URLSearchParams(window.location.search).get('reason');
+    if (reason === 'timeout' || reason === 'expired') {
+      setError('You were logged out after 10 minutes of inactivity. Please sign in again.');
+    }
+  }, []);
+
   // Check if already logged in
   useEffect(() => {
     const checkAuth = async () => {
