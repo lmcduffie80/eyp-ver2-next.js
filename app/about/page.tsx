@@ -2,6 +2,14 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import Contact from '@/components/ContactWrapper';
 import Image from 'next/image';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'About Us — Tifton, GA Photography, Video & DJ Team',
+  description:
+    'Meet Externally Yours Productions, a Tifton, Georgia team providing wedding and event photography, cinematic videography, and DJ entertainment across South Georgia.',
+  alternates: { canonical: '/about' },
+};
 
 export default function About() {
   return (
