@@ -50,6 +50,20 @@ function detectPlatformAndExtractId(url: string): { platform: string; videoId: s
   return null;
 }
 
+// The TikTok player needs the numeric video ID, which vm/vt short links don't contain.
+async function resolveTikTokShortLink(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url, {
+      redirect: 'follow',
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      signal: AbortSignal.timeout(8000),
+    });
+    return response.url.match(/\/video\/(\d+)/)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // GET videos for a project
 export async function GET(request: NextRequest) {
   let client;
@@ -125,8 +139,13 @@ export async function POST(request: NextRequest) {
     
     // Detect platform and extract video ID
     const detected = detectPlatformAndExtractId(video_url);
-    
-    if (!detected) {
+
+    if (detected?.platform === 'tiktok' && !/^\d+$/.test(detected.videoId)) {
+      const resolvedId = await resolveTikTokShortLink(video_url);
+      detected.videoId = resolvedId ?? '';
+    }
+
+    if (!detected || !detected.videoId) {
       return NextResponse.json({
         success: false,
         error: 'Invalid video URL. Please provide a valid YouTube, TikTok, or Instagram video URL.'

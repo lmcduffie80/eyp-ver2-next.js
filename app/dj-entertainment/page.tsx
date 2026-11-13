@@ -7,23 +7,10 @@ import Contact from '@/components/ContactWrapper';
 import Link from 'next/link';
 import Image from 'next/image';
 
-function VideoModal({ video, isOpen, onClose }: { video: any; isOpen: boolean; onClose: () => void }) {
-  useEffect(() => {
-    if (isOpen && video.platform === 'tiktok') {
-      const script = document.createElement('script');
-      script.src = 'https://www.tiktok.com/embed.js';
-      script.async = true;
-      document.body.appendChild(script);
-      return () => {
-        try {
-          document.body.removeChild(script);
-        } catch {
-          // Ignore errors during cleanup - element may already be removed
-        }
-      };
-    }
-  }, [isOpen, video.platform]);
+const tiktokPlayerUrl = (id: string, opts: Record<string, string> = {}) =>
+  `https://www.tiktok.com/player/v1/${id}?${new URLSearchParams({ music_info: '1', description: '1', rel: '0', ...opts })}`;
 
+function VideoModal({ video, isOpen, onClose }: { video: any; isOpen: boolean; onClose: () => void }) {
   if (!isOpen) return null;
 
   const renderFullEmbed = () => {
@@ -39,21 +26,16 @@ function VideoModal({ video, isOpen, onClose }: { video: any; isOpen: boolean; o
           />
         );
       
-      case 'tiktok': {
-        const tiktokUrl = video.video_url || `https://www.tiktok.com/@user/video/${video.video_id}`;
+      case 'tiktok':
         return (
-          <blockquote
-            className="tiktok-embed"
-            cite={tiktokUrl}
-            data-video-id={video.video_id}
-            style={{ maxWidth: '605px', minWidth: '325px', margin: '0 auto' }}
-          >
-            <section>
-              <a target="_blank" rel="noopener noreferrer" href={tiktokUrl}>View on TikTok</a>
-            </section>
-          </blockquote>
+          <iframe
+            src={tiktokPlayerUrl(video.video_id, { autoplay: '1' })}
+            title={video.title || 'TikTok Video'}
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+            allowFullScreen
+            style={{ width: '100%', height: '100%', border: 'none' }}
+          />
         );
-      }
       
       case 'instagram':
         return (
@@ -128,23 +110,6 @@ function VideoModal({ video, isOpen, onClose }: { video: any; isOpen: boolean; o
 
 function VideoEmbed({ video, onClick }: { video: any; onClick: () => void }) {
   const [isHovering, setIsHovering] = useState(false);
-  
-  // Load TikTok script on mount for TikTok videos
-  useEffect(() => {
-    if (video.platform === 'tiktok') {
-      const script = document.createElement('script');
-      script.src = 'https://www.tiktok.com/embed.js';
-      script.async = true;
-      document.body.appendChild(script);
-      return () => {
-        try {
-          document.body.removeChild(script);
-        } catch {
-          // Ignore errors during cleanup - element may already be removed
-        }
-      };
-    }
-  }, [video.platform]);
 
   const renderPreview = () => {
     switch (video.platform) {
@@ -166,30 +131,23 @@ function VideoEmbed({ video, onClick }: { video: any; onClick: () => void }) {
           />
         );
       
-      case 'tiktok': {
-        const tiktokUrl = video.video_url || `https://www.tiktok.com/@user/video/${video.video_id}`;
+      case 'tiktok':
         return (
-          <blockquote
-            className="tiktok-embed"
-            cite={tiktokUrl}
-            data-video-id={video.video_id}
-            style={{ 
-              maxWidth: '100%', 
-              minWidth: '100%', 
-              margin: '0 auto',
+          <iframe
+            src={tiktokPlayerUrl(video.video_id, { autoplay: '0', controls: '0' })}
+            title={video.title || 'TikTok preview'}
+            loading="lazy"
+            style={{
               position: 'absolute',
               top: 0,
               left: 0,
               width: '100%',
-              height: '100%'
+              height: '100%',
+              border: 'none',
+              pointerEvents: 'none'
             }}
-          >
-            <section>
-              <a target="_blank" rel="noopener noreferrer" href={tiktokUrl}>View on TikTok</a>
-            </section>
-          </blockquote>
+          />
         );
-      }
       
       case 'instagram':
         return (
