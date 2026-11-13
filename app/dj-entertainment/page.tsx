@@ -26,17 +26,6 @@ function VideoModal({ video, isOpen, onClose }: { video: any; isOpen: boolean; o
           />
         );
       
-      case 'tiktok':
-        return (
-          <iframe
-            src={tiktokPlayerUrl(video.video_id, { autoplay: '1' })}
-            title={video.title || 'TikTok Video'}
-            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-            allowFullScreen
-            style={{ width: '100%', height: '100%', border: 'none' }}
-          />
-        );
-      
       case 'instagram':
         return (
           <iframe
@@ -73,8 +62,8 @@ function VideoModal({ video, isOpen, onClose }: { video: any; isOpen: boolean; o
         style={{
           position: 'relative',
           width: '100%',
-          maxWidth: video.platform === 'tiktok' ? '500px' : '900px',
-          height: video.platform === 'tiktok' ? '80vh' : '70vh',
+          maxWidth: '900px',
+          height: '70vh',
           backgroundColor: '#000',
           borderRadius: '12px',
           overflow: 'hidden'
@@ -104,31 +93,13 @@ function VideoModal({ video, isOpen, onClose }: { video: any; isOpen: boolean; o
         </button>
         {renderFullEmbed()}
       </div>
-      {video.platform === 'tiktok' && (
-        <a
-          href={video.video_url || `https://www.tiktok.com/video/${video.video_id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            position: 'absolute',
-            bottom: '1rem',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            color: 'white',
-            fontSize: '0.9rem',
-            textDecoration: 'underline'
-          }}
-        >
-          Video not loading? Watch on TikTok
-        </a>
-      )}
     </div>
   );
 }
 
-function VideoEmbed({ video, onClick }: { video: any; onClick: () => void }) {
+function VideoEmbed({ video, isPlaying, onClick }: { video: any; isPlaying: boolean; onClick: () => void }) {
   const [isHovering, setIsHovering] = useState(false);
+  const playingInline = isPlaying && video.platform === 'tiktok';
 
   const renderPreview = () => {
     switch (video.platform) {
@@ -151,8 +122,27 @@ function VideoEmbed({ video, onClick }: { video: any; onClick: () => void }) {
         );
       
       // TikTok blocks visitors ("Access Denied") when many players load at once,
-      // so the grid shows a static card and only the modal loads a player.
+      // so cards stay static until tapped and only one player exists at a time.
       case 'tiktok':
+        if (playingInline) {
+          return (
+            <iframe
+              src={tiktokPlayerUrl(video.video_id, { autoplay: '1' })}
+              title={video.title || video.projectName || 'TikTok video'}
+              allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+              allowFullScreen
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                background: '#000'
+              }}
+            />
+          );
+        }
         return (
           <div
             style={{
@@ -219,7 +209,7 @@ function VideoEmbed({ video, onClick }: { video: any; onClick: () => void }) {
 
   return (
     <div
-      onClick={onClick}
+      onClick={playingInline ? undefined : onClick}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       style={{
@@ -227,9 +217,9 @@ function VideoEmbed({ video, onClick }: { video: any; onClick: () => void }) {
         borderRadius: '12px',
         overflow: 'hidden',
         boxShadow: isHovering ? '0 8px 24px rgba(0, 0, 0, 0.2)' : '0 4px 12px rgba(0, 0, 0, 0.1)',
-        cursor: 'pointer',
+        cursor: playingInline ? 'default' : 'pointer',
         transition: 'transform 0.2s, box-shadow 0.2s',
-        transform: isHovering ? 'scale(1.03)' : 'scale(1)'
+        transform: isHovering && !playingInline ? 'scale(1.03)' : 'scale(1)'
       }}
     >
       <div style={{ 
@@ -243,7 +233,7 @@ function VideoEmbed({ video, onClick }: { video: any; onClick: () => void }) {
         {renderPreview()}
 
         {/* Platform badge */}
-        <div style={{
+        {!playingInline && <div style={{
           position: 'absolute',
           top: '1rem',
           right: '1rem',
@@ -257,12 +247,25 @@ function VideoEmbed({ video, onClick }: { video: any; onClick: () => void }) {
           zIndex: 10
         }}>
           {video.platform}
-        </div>
+        </div>}
       </div>
       
       {video.title && (
         <div style={{ padding: '1rem' }}>
           <h4 style={{ margin: 0, fontSize: '1rem' }}>{video.title}</h4>
+        </div>
+      )}
+
+      {playingInline && (
+        <div style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', textAlign: 'center' }}>
+          <a
+            href={video.video_url || `https://www.tiktok.com/video/${video.video_id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#666', textDecoration: 'underline' }}
+          >
+            Video not loading? Watch on TikTok
+          </a>
         </div>
       )}
     </div>
@@ -276,8 +279,13 @@ export default function DJEntertainment() {
   const [loadingVideos, setLoadingVideos] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [playingVideoId, setPlayingVideoId] = useState<number | null>(null);
 
   const handleVideoClick = (video: any) => {
+    if (video.platform === 'tiktok') {
+      setPlayingVideoId(video.id);
+      return;
+    }
     setSelectedVideo(video);
     setIsModalOpen(true);
   };
@@ -543,6 +551,7 @@ export default function DJEntertainment() {
                 <VideoEmbed 
                   key={video.id} 
                   video={video}
+                  isPlaying={playingVideoId === video.id}
                   onClick={() => handleVideoClick(video)}
                 />
               ))}
