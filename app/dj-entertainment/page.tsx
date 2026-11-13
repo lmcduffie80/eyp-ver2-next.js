@@ -104,6 +104,25 @@ function VideoModal({ video, isOpen, onClose }: { video: any; isOpen: boolean; o
         </button>
         {renderFullEmbed()}
       </div>
+      {video.platform === 'tiktok' && (
+        <a
+          href={video.video_url || `https://www.tiktok.com/video/${video.video_id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'absolute',
+            bottom: '1rem',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            color: 'white',
+            fontSize: '0.9rem',
+            textDecoration: 'underline'
+          }}
+        >
+          Video not loading? Watch on TikTok
+        </a>
+      )}
     </div>
   );
 }
@@ -131,22 +150,49 @@ function VideoEmbed({ video, onClick }: { video: any; onClick: () => void }) {
           />
         );
       
+      // TikTok blocks visitors ("Access Denied") when many players load at once,
+      // so the grid shows a static card and only the modal loads a player.
       case 'tiktok':
         return (
-          <iframe
-            src={tiktokPlayerUrl(video.video_id, { autoplay: '0', controls: '0' })}
-            title={video.title || 'TikTok preview'}
-            loading="lazy"
+          <div
             style={{
               position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              border: 'none',
-              pointerEvents: 'none'
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '1rem',
+              padding: '1.5rem',
+              textAlign: 'center',
+              color: 'white',
+              background: 'radial-gradient(circle at 30% 20%, rgba(37, 244, 238, 0.25), transparent 55%), radial-gradient(circle at 70% 80%, rgba(254, 44, 85, 0.3), transparent 55%), #111'
             }}
-          />
+          >
+            <div
+              style={{
+                width: '72px',
+                height: '72px',
+                borderRadius: '50%',
+                background: isHovering ? 'var(--primary-color, #ff6b35)' : 'rgba(255, 255, 255, 0.15)',
+                border: '2px solid rgba(255, 255, 255, 0.8)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.2s'
+              }}
+            >
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+            {(video.title || video.projectName) && (
+              <div style={{ fontSize: '1.05rem', fontWeight: 600, lineHeight: 1.3 }}>
+                {video.title || video.projectName}
+              </div>
+            )}
+            <div style={{ fontSize: '0.85rem', opacity: 0.75 }}>Tap to play</div>
+          </div>
         );
       
       case 'instagram':
@@ -493,7 +539,7 @@ export default function DJEntertainment() {
             </div>
           ) : (
             <div className="video-grid-fixed">
-              {djProjects.flatMap(project => project.videos).map((video: any) => (
+              {djProjects.flatMap(project => (project.videos || []).map((video: any) => ({ ...video, projectName: project.project_name }))).map((video: any) => (
                 <VideoEmbed 
                   key={video.id} 
                   video={video}
